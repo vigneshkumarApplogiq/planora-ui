@@ -110,6 +110,10 @@ export interface ProjectMember {
   joined_at: string;
   left_at: string | null;
   is_active: boolean;
+  active_tasks: number;
+  completed: number;
+  hours: number;
+  capacity: number;
   id: string;
   created_at: string;
   updated_at: string | null;
@@ -138,6 +142,7 @@ export interface CreateProjectRequest {
   methodology: string;
   project_type: string;
   color?: string;
+  prefix?: string;
 }
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {

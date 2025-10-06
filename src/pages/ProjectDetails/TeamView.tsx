@@ -186,6 +186,19 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
 
       // Convert ProjectMember data to TeamMember format
       const members: TeamMember[] = response.map((member) => {
+        // Calculate workload based on capacity (8 hours/day is typical)
+        const maxCapacity = member.capacity || 8
+        const currentHours = member.hours || 0
+        const workloadPercentage = maxCapacity > 0 ? Math.min(Math.round((currentHours / maxCapacity) * 100), 100) : 0
+
+        // Determine availability based on active tasks and workload
+        let availability = 'available'
+        if (workloadPercentage >= 90 || (member.active_tasks || 0) >= 5) {
+          availability = 'busy'
+        } else if (workloadPercentage >= 75 || (member.active_tasks || 0) >= 3) {
+          availability = 'available'
+        }
+
         const teamMember: TeamMember = {
           id: member.member_id,
           name: member.member_name,
@@ -209,11 +222,12 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
           created_at: member.created_at,
           updated_at: member.updated_at,
           user_profile: member.member_profile,
-          workload: Math.floor(Math.random() * 100), // Mock workload data - could be enhanced to get from tasks
-          availability: ['available', 'busy', 'away'][Math.floor(Math.random() * 3)],
-          currentTasks: Math.floor(Math.random() * 10),
-          completedTasks: Math.floor(Math.random() * 50),
-          hoursLogged: Math.floor(Math.random() * 200),
+          // Use actual data from API response
+          workload: workloadPercentage,
+          availability: availability,
+          currentTasks: member.active_tasks || 0,
+          completedTasks: member.completed || 0,
+          hoursLogged: member.hours || 0,
           teamLead: member.role_id === 'role_project_manager', // Mark project managers as team leads
           joinDate: member.joined_at
         }

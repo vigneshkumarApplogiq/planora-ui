@@ -21,6 +21,8 @@ import { userApiService, User } from '../../services/userApi'
 import { useProjectMasters } from '../../hooks/useProjectMasters'
 import { useProjectOwners } from '../../hooks/useProjectOwners'
 import { useProjectMembers } from '../../hooks/useProjectMembers'
+import { useFormik } from 'formik'
+import * as Yup from 'yup'
 import { 
   CalendarIcon,
   X,
@@ -110,6 +112,47 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
   const [newTag, setNewTag] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  // Formik validation schema - same as create project
+  const projectValidationSchema = Yup.object().shape({
+    name: Yup.string()
+      .required('Project name is required')
+      .min(3, 'Project name must be at least 3 characters')
+      .max(100, 'Project name must be at most 100 characters'),
+    description: Yup.string()
+      .optional(),
+    customer: Yup.string()
+      .required('Customer is required'),
+    status: Yup.string()
+      .required('Status is required'),
+    priority: Yup.string()
+      .required('Priority is required'),
+    methodology: Yup.string()
+      .required('Methodology is required'),
+    type: Yup.string()
+      .required('Project type is required'),
+    owner: Yup.string()
+      .required('Project owner is required'),
+    startDate: Yup.date()
+      .required('Start date is required'),
+    dueDate: Yup.date()
+      .required('End date is required')
+      .min(Yup.ref('startDate'), 'End date must be after start date'),
+    budget: Yup.number()
+      .min(0, 'Budget must be a positive number')
+  })
+
+  // Initialize Formik
+  const formik = useFormik({
+    initialValues: formData,
+    validationSchema: projectValidationSchema,
+    validateOnChange: true,
+    validateOnBlur: true,
+    enableReinitialize: true,
+    onSubmit: async (values) => {
+      await handleSaveSubmit(values)
+    }
+  })
+
   // Helper functions to process API data
   const getApiStatuses = () => {
     if (!projectMasters?.statuses) return []
@@ -178,17 +221,17 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
       setFormData({
         name: project.name || '',
         description: project.description || '',
-        status: project.status || 'Planning',
-        priority: project.priority || 'Medium',
-        methodology: project.methodology || 'Scrum',
+        status: project.status || '',
+        priority: project.priority || '',
+        methodology: project.methodology || '',
         // Map API field names to form field names
-        type: project.project_type || project.projectType || project.type || 'Software Development',
+        type: project.project_type || project.projectType || project.type || '',
         startDate: project.start_date ? new Date(project.start_date) :
                    project.startDate ? new Date(project.startDate) : new Date(),
         dueDate: project.end_date ? new Date(project.end_date) :
                  project.dueDate ? new Date(project.dueDate) : new Date(),
         budget: project.budget || 0,
-        customer: project.customer || 'Internal',
+        customer: project.customer || '',
         // Use team_lead_detail for Project Owner display
         owner: project.team_lead_detail?.name ||
                project.team_lead?.name ||
@@ -286,6 +329,7 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
   }, [])
 
   const handleInputChange = (field: string, value: any) => {
+    formik.setFieldValue(field, value)
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -335,33 +379,8 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
     }))
   }
 
-  const handleSave = async () => {
+  const handleSaveSubmit = async (values: typeof formData) => {
     setIsLoading(true)
-
-    // Validation
-    if (!formData.name.trim()) {
-      toast.error('Project name is required')
-      setIsLoading(false)
-      return
-    }
-
-    if (!formData.description.trim()) {
-      toast.error('Project description is required')
-      setIsLoading(false)
-      return
-    }
-
-    if (formData.dueDate <= formData.startDate) {
-      toast.error('Due date must be after start date')
-      setIsLoading(false)
-      return
-    }
-
-    if (formData.budget < 0) {
-      toast.error('Budget must be a positive number')
-      setIsLoading(false)
-      return
-    }
 
     if (!project?.id) {
       toast.error('Project ID is required')
@@ -371,21 +390,21 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
 
     try {
       // Find customer and owner IDs from the selected names
-      const selectedCustomer = customers.find(c => c.name === formData.customer)
-      const selectedOwner = projectOwners?.items?.find(owner => owner.name === formData.owner)
+      const selectedCustomer = customers.find(c => c.name === values.customer)
+      const selectedOwner = projectOwners?.items?.find(owner => owner.name === values.owner)
 
       const updateData: UpdateProjectRequest = {
-        name: formData.name,
-        description: formData.description,
-        status: formData.status as 'Active' | 'On Hold' | 'Completed' | 'Planning',
-        start_date: formData.startDate.toISOString().split('T')[0],
-        end_date: formData.dueDate.toISOString().split('T')[0],
-        budget: formData.budget,
+        name: values.name,
+        description: values.description,
+        status: values.status,
+        start_date: values.startDate.toISOString().split('T')[0],
+        end_date: values.dueDate.toISOString().split('T')[0],
+        budget: values.budget,
         customer_id: selectedCustomer?.id || null,
-        customer: formData.customer,
-        priority: formData.priority as 'Low' | 'Medium' | 'High' | 'Critical',
+        customer: values.customer,
+        priority: values.priority,
         team_lead_id: selectedOwner?.id || null,
-        team_members: formData.team
+        team_members: values.team
           .map(member => {
             // First priority: try to find the member ID from the API data
             const apiMember = projectMembers?.items?.find(apiM => apiM.name === member.name)
@@ -409,15 +428,15 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
             return null
           })
           .filter(Boolean), // Remove null entries
-        tags: formData.tags,
-        methodology: formData.methodology as 'Agile' | 'Waterfall' | 'Scrum' | 'Kanban' | 'Lean' | 'Hybrid',
-        project_type: formData.type as 'Web Development' | 'Mobile App' | 'Desktop App' | 'API Development' | 'Data Analytics' | 'E-commerce' | 'CRM' | 'ERP' | 'DevOps' | 'Machine Learning' | 'Other'
+        tags: values.tags,
+        methodology: values.methodology as 'Agile' | 'Waterfall' | 'Scrum' | 'Kanban' | 'Lean' | 'Hybrid',
+        project_type: values.type as 'Web Development' | 'Mobile App' | 'Desktop App' | 'API Development' | 'Data Analytics' | 'E-commerce' | 'CRM' | 'ERP' | 'DevOps' | 'Machine Learning' | 'Other'
       }
 
       await dispatch(updateProject({ id: project.id, projectData: updateData })).unwrap()
 
       toast.success('Project updated successfully')
-      onSave(formData) // Call the callback for any local UI updates
+      onSave(values) // Call the callback for any local UI updates
       onClose()
     } catch (error) {
       toast.error(`Failed to update project: ${error}`)
@@ -528,13 +547,17 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
+                    onBlur={formik.handleBlur}
                     placeholder="Enter project name"
-                    className="mt-1"
+                    className={cn("mt-1", formik.touched.name && formik.errors.name && "border-red-500")}
                   />
+                  {formik.touched.name && formik.errors.name && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.name}</p>
+                  )}
                 </div>
                 
                 <div>
-                  <Label htmlFor="description">Description *</Label>
+                  <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
@@ -546,9 +569,15 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                 </div>
 
                 <div>
-                  <Label htmlFor="customer">Customer</Label>
-                  <Select value={formData.customer} onValueChange={(value) => handleInputChange('customer', value)}>
-                    <SelectTrigger className="mt-1">
+                  <Label htmlFor="customer">Customer *</Label>
+                  <Select
+                    value={formData.customer}
+                    onValueChange={(value) => {
+                      handleInputChange('customer', value)
+                      formik.setFieldTouched('customer', true)
+                    }}
+                  >
+                    <SelectTrigger className={cn("mt-1", formik.touched.customer && formik.errors.customer && "border-red-500")}>
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
@@ -570,6 +599,9 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       )}
                     </SelectContent>
                   </Select>
+                  {formik.touched.customer && formik.errors.customer && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.customer}</p>
+                  )}
                 </div>
 
                 <div>
@@ -586,9 +618,15 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                    <SelectTrigger className="mt-1">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => {
+                      handleInputChange('status', value)
+                      formik.setFieldTouched('status', true)
+                    }}
+                  >
+                    <SelectTrigger className={cn("mt-1", formik.touched.status && formik.errors.status && "border-red-500")}>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -602,12 +640,21 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       ))}
                     </SelectContent>
                   </Select>
+                  {formik.touched.status && formik.errors.status && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.status}</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-                    <SelectTrigger className="mt-1">
+                  <Label htmlFor="priority">Priority *</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value) => {
+                      handleInputChange('priority', value)
+                      formik.setFieldTouched('priority', true)
+                    }}
+                  >
+                    <SelectTrigger className={cn("mt-1", formik.touched.priority && formik.errors.priority && "border-red-500")}>
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
@@ -621,12 +668,21 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       ))}
                     </SelectContent>
                   </Select>
+                  {formik.touched.priority && formik.errors.priority && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.priority}</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="methodology">Methodology</Label>
-                  <Select value={formData.methodology} onValueChange={(value) => handleInputChange('methodology', value)}>
-                    <SelectTrigger className="mt-1">
+                  <Label htmlFor="methodology">Methodology *</Label>
+                  <Select
+                    value={formData.methodology}
+                    onValueChange={(value) => {
+                      handleInputChange('methodology', value)
+                      formik.setFieldTouched('methodology', true)
+                    }}
+                  >
+                    <SelectTrigger className={cn("mt-1", formik.touched.methodology && formik.errors.methodology && "border-red-500")}>
                       <SelectValue placeholder="Select methodology" />
                     </SelectTrigger>
                     <SelectContent>
@@ -637,12 +693,21 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       ))}
                     </SelectContent>
                   </Select>
+                  {formik.touched.methodology && formik.errors.methodology && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.methodology}</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="type">Project Type</Label>
-                  <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
-                    <SelectTrigger className="mt-1">
+                  <Label htmlFor="type">Project Type *</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => {
+                      handleInputChange('type', value)
+                      formik.setFieldTouched('type', true)
+                    }}
+                  >
+                    <SelectTrigger className={cn("mt-1", formik.touched.type && formik.errors.type && "border-red-500")}>
                       <SelectValue placeholder="Select project type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -653,12 +718,21 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       ))}
                     </SelectContent>
                   </Select>
+                  {formik.touched.type && formik.errors.type && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.type}</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="owner">Project Owner</Label>
-                  <Select value={formData.owner} onValueChange={(value) => handleInputChange('owner', value)}>
-                    <SelectTrigger className="mt-1">
+                  <Label htmlFor="owner">Project Owner *</Label>
+                  <Select
+                    value={formData.owner}
+                    onValueChange={(value) => {
+                      handleInputChange('owner', value)
+                      formik.setFieldTouched('owner', true)
+                    }}
+                  >
+                    <SelectTrigger className={cn("mt-1", formik.touched.owner && formik.errors.owner && "border-red-500")}>
                       <SelectValue placeholder="Select project owner" />
                     </SelectTrigger>
                     <SelectContent>
@@ -704,6 +778,9 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       )}
                     </SelectContent>
                   </Select>
+                  {formik.touched.owner && formik.errors.owner && (
+                    <p className="text-sm text-red-500 mt-1">{formik.errors.owner}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -862,14 +939,15 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <Label>Start Date</Label>
+                    <Label>Start Date *</Label>
                     <Popover open={showStartDatePicker} onOpenChange={setShowStartDatePicker}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal mt-1",
-                            !formData.startDate && "text-muted-foreground"
+                            !formData.startDate && "text-muted-foreground",
+                            formik.touched.startDate && formik.errors.startDate && "border-red-500"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -883,6 +961,7 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                           onSelect={(date) => {
                             if (date) {
                               handleInputChange('startDate', date)
+                              formik.setFieldTouched('startDate', true)
                               setShowStartDatePicker(false)
                             }
                           }}
@@ -890,17 +969,21 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                         />
                       </PopoverContent>
                     </Popover>
+                    {formik.touched.startDate && formik.errors.startDate && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.startDate}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label>Due Date</Label>
+                    <Label>End Date *</Label>
                     <Popover open={showDueDatePicker} onOpenChange={setShowDueDatePicker}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal mt-1",
-                            !formData.dueDate && "text-muted-foreground"
+                            !formData.dueDate && "text-muted-foreground",
+                            formik.touched.dueDate && formik.errors.dueDate && "border-red-500"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -914,6 +997,7 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                           onSelect={(date) => {
                             if (date) {
                               handleInputChange('dueDate', date)
+                              formik.setFieldTouched('dueDate', true)
                               setShowDueDatePicker(false)
                             }
                           }}
@@ -922,6 +1006,9 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                         />
                       </PopoverContent>
                     </Popover>
+                    {formik.touched.dueDate && formik.errors.dueDate && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.dueDate}</p>
+                    )}
                   </div>
 
                   <div className="pt-2">
@@ -1050,7 +1137,24 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isLoading} className="bg-[#28A745] hover:bg-[#218838]">
+          <Button
+            onClick={() => {
+              // Mark all fields as touched to show validation errors
+              formik.setTouched({
+                name: true,
+                customer: true,
+                status: true,
+                priority: true,
+                methodology: true,
+                type: true,
+                owner: true,
+                startDate: true,
+                dueDate: true
+              })
+              formik.handleSubmit()
+            }}
+            disabled={isLoading}
+            className="bg-[#28A745] hover:bg-[#218838]">
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

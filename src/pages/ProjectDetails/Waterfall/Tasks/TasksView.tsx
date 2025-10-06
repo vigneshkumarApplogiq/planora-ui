@@ -28,7 +28,6 @@ import { storiesApiService, Story } from '../../../../services/storiesApi'
 import { sprintApiService, Sprint } from '../../../../services/sprintApi'
 import { projectApiService, ProjectMastersResponse, ProjectStatusItem, ProjectPriorityItem, ProjectMember, ProjectMemberDetail } from '../../../../services/projectApi'
 import { getEnrichedTeamMemberDetails, getAssigneeDisplayInfo, EnrichedMemberDetail } from '../../../../utils/teamMemberDetails'
-import { BOARD_TASKS, SPRINTS } from '../../../../mock-data/tasks'
 import { toast } from 'sonner'
 import { SessionStorageService } from '../../../../utils/sessionStorage'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog'
@@ -40,90 +39,6 @@ interface TasksViewProps {
   user: any
   project?: any
 }
-
-// Mock tasks data with different methodologies in mind
-const mockTasks = [
-  {
-    id: '1',
-    title: 'Implement OAuth 2.0 Authentication',
-    description: 'Set up OAuth 2.0 authentication with Google and GitHub providers',
-    status: 'in-progress',
-    priority: 'high',
-    assignee: { name: 'Alice Johnson', avatar: 'AJ' },
-    storyPoints: 8,
-    type: 'story',
-    epic: 'User Management',
-    labels: ['frontend', 'authentication', 'security'],
-    createdAt: '2024-03-01',
-    updatedAt: '2024-03-05',
-    estimatedHours: 16,
-    loggedHours: 9
-  },
-  {
-    id: '2',
-    title: 'Design user profile UI',
-    description: 'Create responsive user profile interface with edit capabilities',
-    status: 'done',
-    priority: 'medium',
-    assignee: { name: 'Carol Davis', avatar: 'CD' },
-    storyPoints: 5,
-    type: 'story',
-    epic: 'User Management',
-    labels: ['ui', 'design', 'frontend'],
-    createdAt: '2024-02-28',
-    updatedAt: '2024-03-04',
-    estimatedHours: 12,
-    loggedHours: 11
-  },
-  {
-    id: '3',
-    title: 'Fix login validation bug',
-    description: 'Login form not properly validating email format',
-    status: 'todo',
-    priority: 'high',
-    assignee: { name: 'Bob Chen', avatar: 'BC' },
-    storyPoints: 3,
-    type: 'bug',
-    epic: 'User Management',
-    labels: ['bug', 'frontend', 'validation'],
-    createdAt: '2024-03-03',
-    updatedAt: '2024-03-03',
-    estimatedHours: 6,
-    loggedHours: 0
-  },
-  {
-    id: '4',
-    title: 'Setup password reset flow',
-    description: 'Implement secure password reset with email verification',
-    status: 'in-progress',
-    priority: 'medium',
-    assignee: { name: 'David Wilson', avatar: 'DW' },
-    storyPoints: 5,
-    type: 'story',
-    epic: 'User Management',
-    labels: ['backend', 'security', 'email'],
-    createdAt: '2024-03-02',
-    updatedAt: '2024-03-05',
-    estimatedHours: 10,
-    loggedHours: 4
-  },
-  {
-    id: '5',
-    title: 'User Management Epic',
-    description: 'Complete user authentication and profile management system',
-    status: 'in-progress',
-    priority: 'high',
-    assignee: { name: 'Alice Johnson', avatar: 'AJ' },
-    storyPoints: 21,
-    type: 'epic',
-    epic: 'User Management',
-    labels: ['epic', 'milestone'],
-    createdAt: '2024-02-15',
-    updatedAt: '2024-03-05',
-    estimatedHours: 80,
-    loggedHours: 45
-  }
-]
 
 const statusColumns = [
   { id: 'todo', title: 'To Do', color: 'bg-gray-100 text-gray-800' },
@@ -250,6 +165,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       // Convert Story data to Task format
       const convertedTasks: Task[] = response.items.map((story: Story) => ({
         id: story.id,
+        task_id: story.task_id,
         title: story.title,
         description: story.description,
         status: story.status,
@@ -259,11 +175,16 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         sprint_name: story.sprint_id ? sprints.find(s => s.id === story.sprint_id)?.name : undefined,
         assignee_name: story.assignee_name,
         assignee_id: story.assignee_id,
+        // Preserve nested assignee object for proper loading in TaskModal
+        assignee: story.assignee,
         progress: story.progress || 0,
         tags: story.tags || [],
         subtasks: [],
-        comments: [],
+        // Preserve comments from API response
+        comments: story.comments || [],
         attachments: [],
+        // Preserve files array from API response
+        files: story.files,
         is_active: true,
         created_at: story.start_date,
         updated_at: story.end_date
@@ -315,6 +236,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       // Convert Story data to Task format
       const convertedTasks: Task[] = response.items.map((story: Story) => ({
         id: story.id,
+        task_id: story.task_id,
         title: story.title,
         description: story.description,
         status: story.status,
@@ -324,11 +246,16 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         sprint_name: story.sprint_id ? sprints.find(s => s.id === story.sprint_id)?.name : undefined,
         assignee_name: story.assignee_name,
         assignee_id: story.assignee_id,
+        // Preserve nested assignee object for proper loading in TaskModal
+        assignee: story.assignee,
         progress: story.progress || 0,
         tags: story.tags || [],
         subtasks: [],
-        comments: [],
+        // Preserve comments from API response
+        comments: story.comments || [],
         attachments: [],
+        // Preserve files array from API response
+        files: story.files,
         is_active: true,
         created_at: story.start_date,
         updated_at: story.end_date
@@ -354,32 +281,6 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       setSprints(response.items)
     } catch (error) {
       console.error('Error fetching sprints:', error)
-      // Convert mock sprints to match our Sprint interface
-      const mockSprints: Sprint[] = SPRINTS.map(mockSprint => ({
-        id: mockSprint.id.toLowerCase().replace(' ', '-'),
-        name: mockSprint.name,
-        status: mockSprint.status,
-        start_date: mockSprint.startDate,
-        end_date: mockSprint.endDate,
-        goal: `Complete planned tasks for ${mockSprint.name}`,
-        total_points: 0,
-        completed_points: 0,
-        total_tasks: 0,
-        completed_tasks: 0,
-        velocity: 0,
-        project_id: effectiveProjectId,
-        scrum_master_id: '',
-        team_size: 5,
-        burndown_trend: 'On Track',
-        created_at: mockSprint.startDate,
-        updated_at: mockSprint.startDate,
-        project_name: 'Demo Project',
-        scrum_master_name: 'Demo Scrum Master',
-        project: {} as any,
-        scrum_master: {} as any
-      }))
-
-      setSprints(mockSprints)
     }
   }
 
@@ -458,7 +359,8 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         assignee_id: taskData.assignee_id || undefined,
         progress: taskData.progress || 0,
         tags: taskData.tags || [],
-        labels: taskData.tags || []
+        labels: taskData.tags || [],
+        comments: taskData.comments || []
       }
 
       try {

@@ -25,7 +25,14 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Calendar
+  Calendar,
+  Upload,
+  File,
+  Image as ImageIcon,
+  Download,
+  Trash2,
+  Paperclip,
+  Edit
 } from 'lucide-react'
 import { TaskModal } from './TaskModal'
 import { taskApiService, Task, CreateTaskRequest } from '../../../../services/taskApi'
@@ -33,10 +40,9 @@ import { storiesApiService, Story } from '../../../../services/storiesApi'
 import { sprintApiService, Sprint } from '../../../../services/sprintApi'
 import { projectApiService, ProjectMastersResponse, ProjectStatusItem, ProjectPriorityItem, ProjectMember, ProjectMemberDetail } from '../../../../services/projectApi'
 import { getEnrichedTeamMemberDetails, getAssigneeDisplayInfo, EnrichedMemberDetail } from '../../../../utils/teamMemberDetails'
-import { BOARD_TASKS, SPRINTS } from '../../../../mock-data/tasks'
 import { toast } from 'sonner'
 import { SessionStorageService } from '../../../../utils/sessionStorage'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../../../components/ui/dialog'
 import { Label } from '../../../../components/ui/label'
 import { Textarea } from '../../../../components/ui/textarea'
 
@@ -45,90 +51,6 @@ interface TasksViewProps {
   user: any
   project?: any
 }
-
-// Mock tasks data with different methodologies in mind
-const mockTasks = [
-  {
-    id: '1',
-    title: 'Implement OAuth 2.0 Authentication',
-    description: 'Set up OAuth 2.0 authentication with Google and GitHub providers',
-    status: 'in-progress',
-    priority: 'high',
-    assignee: { name: 'Alice Johnson', avatar: 'AJ' },
-    storyPoints: 8,
-    type: 'story',
-    epic: 'User Management',
-    labels: ['frontend', 'authentication', 'security'],
-    createdAt: '2024-03-01',
-    updatedAt: '2024-03-05',
-    estimatedHours: 16,
-    loggedHours: 9
-  },
-  {
-    id: '2',
-    title: 'Design user profile UI',
-    description: 'Create responsive user profile interface with edit capabilities',
-    status: 'done',
-    priority: 'medium',
-    assignee: { name: 'Carol Davis', avatar: 'CD' },
-    storyPoints: 5,
-    type: 'story',
-    epic: 'User Management',
-    labels: ['ui', 'design', 'frontend'],
-    createdAt: '2024-02-28',
-    updatedAt: '2024-03-04',
-    estimatedHours: 12,
-    loggedHours: 11
-  },
-  {
-    id: '3',
-    title: 'Fix login validation bug',
-    description: 'Login form not properly validating email format',
-    status: 'todo',
-    priority: 'high',
-    assignee: { name: 'Bob Chen', avatar: 'BC' },
-    storyPoints: 3,
-    type: 'bug',
-    epic: 'User Management',
-    labels: ['bug', 'frontend', 'validation'],
-    createdAt: '2024-03-03',
-    updatedAt: '2024-03-03',
-    estimatedHours: 6,
-    loggedHours: 0
-  },
-  {
-    id: '4',
-    title: 'Setup password reset flow',
-    description: 'Implement secure password reset with email verification',
-    status: 'in-progress',
-    priority: 'medium',
-    assignee: { name: 'David Wilson', avatar: 'DW' },
-    storyPoints: 5,
-    type: 'story',
-    epic: 'User Management',
-    labels: ['backend', 'security', 'email'],
-    createdAt: '2024-03-02',
-    updatedAt: '2024-03-05',
-    estimatedHours: 10,
-    loggedHours: 4
-  },
-  {
-    id: '5',
-    title: 'User Management Epic',
-    description: 'Complete user authentication and profile management system',
-    status: 'in-progress',
-    priority: 'high',
-    assignee: { name: 'Alice Johnson', avatar: 'AJ' },
-    storyPoints: 21,
-    type: 'epic',
-    epic: 'User Management',
-    labels: ['epic', 'milestone'],
-    createdAt: '2024-02-15',
-    updatedAt: '2024-03-05',
-    estimatedHours: 80,
-    loggedHours: 45
-  }
-]
 
 const statusColumns = [
   { id: 'todo', title: 'To Do', color: 'bg-gray-100 text-gray-800' },
@@ -149,7 +71,12 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterAssignee, setFilterAssignee] = useState('all')
   const [filterSprint, setFilterSprint] = useState('all')
-  const [viewMode, setViewMode] = useState<'board' | 'list' | 'table'>(project?.methodology === 'Kanban' ? 'list' : 'board')
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list')
+  const [attachments, setAttachments] = useState<Array<{id: string, name: string, size: number, type: string, url?: string}>>([])
+  const [isDragging, setIsDragging] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -313,53 +240,40 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       // Convert Story data to Task format
       const convertedTasks: Task[] = response.items.map((story: Story) => ({
         id: story.id,
+        task_id: story.task_id,
         title: story.title,
         description: story.description,
         status: story.status,
         priority: story.priority,
+        type: story.story_type,
         project_id: story.project_id,
         sprint_id: story.sprint_id,
         sprint_name: story.sprint_id ? sprints.find(s => s.id === story.sprint_id)?.name : undefined,
         assignee_name: story.assignee_name,
         assignee_id: story.assignee_id,
+        // Preserve nested assignee object for proper loading in TaskModal
+        assignee: story.assignee,
         progress: story.progress || 0,
         tags: story.tags || [],
         acceptance_criteria: story.acceptance_criteria || [],
         subtasks: [],
-        comments: [],
+        // Preserve comments from API response
+        comments: story.comments || [],
         attachments: [],
+        // Preserve files array from API response
+        files: story.files,
         is_active: true,
-        created_at: story.start_date,
-        updated_at: story.end_date
+        start_date: story.start_date,
+        due_date: story.end_date,
+        created_at: story.created_at,
+        updated_at: story.updated_at
       }))
 
       setTasks(convertedTasks)
     } catch (error) {
       console.error('Error fetching stories:', error)
-      // Convert mock data to match our Task interface
-      const mockTasks: Task[] = BOARD_TASKS.map(mockTask => ({
-        id: mockTask.id,
-        title: mockTask.title,
-        description: mockTask.description,
-        status: mockTask.status,
-        priority: mockTask.priority,
-        project_id: effectiveProjectId,
-        sprint_id: mockTask.sprint === 'Unassigned' ? null : mockTask.sprint.toLowerCase().replace(' ', '-'),
-        sprint_name: mockTask.sprint === 'Unassigned' ? undefined : mockTask.sprint,
-        assignee_name: mockTask.assignee,
-        assignee_id: null,
-        progress: Math.floor(Math.random() * 100), // Random progress for demo
-        tags: mockTask.labels,
-        subtasks: [],
-        comments: [],
-        attachments: [],
-        is_active: true,
-        created_at: mockTask.createdAt,
-        updated_at: mockTask.updatedAt
-      }))
-
-      setTasks(mockTasks)
-      toast.success('Using demo data (API not available)')
+      toast.error('Failed to load tasks')
+      setTasks([])
     } finally {
       setLoading(false)
     }
@@ -379,24 +293,33 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       // Convert Story data to Task format
       const convertedTasks: Task[] = response.items.map((story: Story) => ({
         id: story.id,
+        task_id: story.task_id,
         title: story.title,
         description: story.description,
         status: story.status,
         priority: story.priority,
+        type: story.story_type,
         project_id: story.project_id,
         sprint_id: story.sprint_id,
         sprint_name: story.sprint_id ? sprints.find(s => s.id === story.sprint_id)?.name : undefined,
         assignee_name: story.assignee_name,
         assignee_id: story.assignee_id,
+        // Preserve nested assignee object for proper loading in TaskModal
+        assignee: story.assignee,
         progress: story.progress || 0,
         tags: story.tags || [],
         acceptance_criteria: story.acceptance_criteria || [],
         subtasks: [],
-        comments: [],
+        // Preserve comments from API response
+        comments: story.comments || [],
         attachments: [],
+        // Preserve files array from API response
+        files: story.files,
         is_active: true,
-        created_at: story.start_date,
-        updated_at: story.end_date
+        start_date: story.start_date,
+        due_date: story.end_date,
+        created_at: story.created_at,
+        updated_at: story.updated_at
       }))
 
       setTasks(convertedTasks)
@@ -420,33 +343,103 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       setSprints(response.items)
     } catch (error) {
       console.error('Error fetching sprints:', error)
-      // Convert mock sprints to match our Sprint interface
-      const mockSprints: Sprint[] = SPRINTS.map(mockSprint => ({
-        id: mockSprint.id.toLowerCase().replace(' ', '-'),
-        name: mockSprint.name,
-        status: mockSprint.status,
-        start_date: mockSprint.startDate,
-        end_date: mockSprint.endDate,
-        goal: `Complete planned tasks for ${mockSprint.name}`,
-        total_points: 0,
-        completed_points: 0,
-        total_tasks: 0,
-        completed_tasks: 0,
-        velocity: 0,
-        project_id: effectiveProjectId,
-        scrum_master_id: '',
-        team_size: 5,
-        burndown_trend: 'On Track',
-        created_at: mockSprint.startDate,
-        updated_at: mockSprint.startDate,
-        project_name: 'Demo Project',
-        scrum_master_name: 'Demo Scrum Master',
-        project: {} as any,
-        scrum_master: {} as any
-      }))
-
-      setSprints(mockSprints)
+      toast.error('Failed to load sprints')
+      setSprints([])
     }
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    const validFiles: File[] = []
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Maximum file size is 10MB.`)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    validFiles.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const newAttachment = {
+          id: `${Date.now()}-${Math.random()}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: e.target?.result as string
+        }
+        setAttachments(prev => [...prev, newAttachment])
+        toast.success(`${file.name} added successfully`)
+      }
+      reader.readAsDataURL(file)
+    })
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== id))
+    toast.success('Attachment removed')
+  }
+
+  const handleDownloadAttachment = (attachment: any) => {
+    if (attachment.url) {
+      const link = document.createElement('a')
+      link.href = attachment.url
+      link.download = attachment.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) {
+      return <ImageIcon className="w-4 h-4" />
+    }
+    return <File className="w-4 h-4" />
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+
+    const mockEvent = {
+      target: {
+        files: e.dataTransfer.files
+      }
+    } as any
+
+    handleFileSelect(mockEvent)
   }
 
   const handleCreateTask = async () => {
@@ -497,7 +490,8 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         end_date: createTaskData.due_date,
         tags: createTaskData.tags || [],
         labels: createTaskData.tags || [],
-        acceptance_criteria: createTaskData.acceptance_criteria?.filter(c => c.trim() !== '') || []
+        acceptance_criteria: createTaskData.acceptance_criteria?.filter(c => c.trim() !== '') || [],
+        attachments: attachments
       }
 
       try {
@@ -536,6 +530,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         attachments: [],
         is_active: true
       })
+      setAttachments([])
       fetchTasks()
     } catch (error) {
       console.error('Error creating task:', error)
@@ -557,7 +552,8 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         progress: taskData.progress || 0,
         tags: taskData.tags || [],
         labels: taskData.tags || [],
-        acceptance_criteria: taskData.acceptance_criteria?.filter((c: string) => c.trim() !== '') || []
+        acceptance_criteria: taskData.acceptance_criteria?.filter((c: string) => c.trim() !== '') || [],
+        comments: taskData.comments || []
       }
 
       try {
@@ -672,6 +668,48 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       })
     }), [task.id, task.title, columnId])
 
+    // Calculate days since creation
+    const getDaysSinceCreation = () => {
+      if (!task.created_at) return null
+      const startDate = new Date(task.created_at)
+      const today = new Date()
+      const diffTime = Math.abs(today.getTime() - startDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
+
+    // Check if overdue
+    const isOverdue = () => {
+      if (!task.due_date) return false
+      const dueDate = new Date(task.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today && task.status !== 'done'
+    }
+
+    // Format due date
+    const formatDueDate = () => {
+      if (!task.due_date) return null
+      const dueDate = new Date(task.due_date)
+      return dueDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short'
+      })
+    }
+
+    // Calculate days until due
+    const getDaysUntilDue = () => {
+      if (!task.due_date) return null
+      const dueDate = new Date(task.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      const diffTime = dueDate.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
+
     return (
       <div
         ref={dragRef}
@@ -684,31 +722,34 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
           className="hover:shadow-md transition-shadow mb-3 hover:bg-gray-50"
           onClick={() => setSelectedTask(task)}
         >
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-start gap-2 flex-1">
-                <GripVertical className="w-4 h-4 text-gray-400 mt-1 cursor-grab" />
-                <h4 className="font-medium text-sm line-clamp-2 flex-1">{task.title}</h4>
+          <CardContent className="p-3 space-y-2.5">
+            {/* Header: Task ID and Days Ago */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <GripVertical className="w-3.5 h-3.5 text-gray-400 cursor-grab" />
+                <span className="text-xs font-bold text-blue-600">
+                  {task.task_id || `#${task.id?.slice(0, 8)}`}
+                </span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 flex-shrink-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="w-3 h-3" />
-              </Button>
+              {getDaysSinceCreation() !== null && (
+                <span className="text-[10px] text-gray-500 font-medium">
+                  {getDaysSinceCreation()}d ago
+                </span>
+              )}
             </div>
 
-            <div className="flex flex-wrap gap-1 mb-3">
+            {/* Task Title */}
+            <h4 className="font-medium text-sm line-clamp-2 leading-tight">{task.title}</h4>
+
+            {/* Description */}
+            {task.description && (
+              <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{task.description}</p>
+            )}
+
+            <div className="flex flex-wrap gap-1.5">
               <Badge variant="outline" className={getPriorityColor(task.priority)} style={{ fontSize: '10px' }}>
                 {task.priority}
               </Badge>
-              {task.progress > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {task.progress}%
-                </Badge>
-              )}
               {task.sprint_id && project?.methodology !== 'Kanban' && (
                 <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
                   {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
@@ -716,35 +757,66 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+            {/* Progress Bar */}
+            {task.progress !== undefined && task.progress !== null && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-gray-600">Progress</span>
+                  <span className="text-[10px] font-semibold text-gray-700">{task.progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div
+                    className={`h-1.5 rounded-full transition-all ${
+                      task.progress === 100 ? 'bg-green-500' : task.progress >= 70 ? 'bg-blue-500' : task.progress >= 40 ? 'bg-yellow-500' : 'bg-orange-500'
+                    }`}
+                    style={{ width: `${task.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Footer: Due Date + Assignee */}
+            <div className="flex items-center justify-between pt-1.5 border-t border-gray-100">
+              <div className="flex items-center gap-1.5">
+                {/* Due Date */}
+                {task.updated_at && (
+                  <div className="flex items-center gap-1">
+                    {isOverdue() ? (
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                    ) : (
+                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                    )}
+                    <div className="flex flex-col">
+                      <span className={`text-[11px] font-semibold ${isOverdue() ? 'text-red-600' : 'text-gray-700'}`}>
+                        {formatDueDate()}
+                      </span>
+                      {getDaysUntilDue() !== null && task.status !== 'done' && (
+                        <span className={`text-[9px] ${isOverdue() ? 'text-red-500' : 'text-gray-500'}`}>
+                          {getDaysUntilDue()! < 0 ? `${Math.abs(getDaysUntilDue()!)}d overdue` : `${getDaysUntilDue()}d left`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Assignee */}
+              <div className="flex items-center gap-1.5">
                 {(() => {
                   const assigneeInfo = getAssigneeDisplayInfo(task.assignee_id || null, task.assignee_name || null, enrichedMembersMap)
                   return (
                     <>
-                      <Avatar className="w-6 h-6">
-                        <AvatarFallback className="bg-[#28A745] text-white text-xs">
+                      <Avatar className="w-6 h-6 border border-gray-200">
+                        <AvatarFallback className="bg-[#28A745] text-white text-[10px]">
                           {assigneeInfo.initials}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground truncate">
-                          {assigneeInfo.name}
-                        </span>
-                        {assigneeInfo.isAssigned && assigneeInfo.role && (
-                          <span className="text-[10px] text-muted-foreground/70 truncate">
-                            {assigneeInfo.role}
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-[11px] text-gray-700 font-medium max-w-[70px] truncate">
+                        {assigneeInfo.name.split(' ')[0]}
+                      </span>
                     </>
                   )
                 })()}
-              </div>
-
-              <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span>{task.progress || 0}%</span>
               </div>
             </div>
           </CardContent>
@@ -754,69 +826,152 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   }
 
   // Static Task Card for non-draggable contexts
-  const TaskCard = ({ task }: { task: Task }) => (
-    <Card
-      className="cursor-pointer hover:shadow-md transition-shadow mb-3"
-      onClick={() => setSelectedTask(task)}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <h4 className="font-medium text-sm line-clamp-2 flex-1 pr-2">{task.title}</h4>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex-shrink-0">
-            <MoreVertical className="w-3 h-3" />
-          </Button>
-        </div>
+  const TaskCard = ({ task }: { task: Task }) => {
+    // Calculate days since creation
+    const getDaysSinceCreation = () => {
+      if (!task.created_at) return null
+      const startDate = new Date(task.created_at)
+      const today = new Date()
+      const diffTime = Math.abs(today.getTime() - startDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
 
-        <div className="flex flex-wrap gap-1 mb-3">
-          <Badge variant="outline" className={getPriorityColor(task.priority)} style={{ fontSize: '10px' }}>
-            {task.priority}
-          </Badge>
-          {task.progress > 0 && (
-            <Badge variant="outline" className="text-xs">
-              {task.progress}%
-            </Badge>
-          )}
-          {task.sprint_id && project?.methodology !== 'Kanban' && (
-            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
-              {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
-            </Badge>
-          )}
-        </div>
+    // Check if overdue
+    const isOverdue = () => {
+      if (!task.due_date) return false
+      const dueDate = new Date(task.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today && task.status !== 'done'
+    }
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {(() => {
-              const assigneeInfo = getAssigneeDisplayInfo(task.assignee_id || null, task.assignee_name || null, enrichedMembersMap)
-              return (
-                <>
-                  <Avatar className="w-6 h-6">
-                    <AvatarFallback className="bg-[#28A745] text-white text-xs">
-                      {assigneeInfo.initials}
-                    </AvatarFallback>
-                  </Avatar>
+    // Format due date
+    const formatDueDate = () => {
+      if (!task.due_date) return null
+      const dueDate = new Date(task.due_date)
+      return dueDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short'
+      })
+    }
+
+    // Calculate days until due
+    const getDaysUntilDue = () => {
+      if (!task.due_date) return null
+      const dueDate = new Date(task.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      const diffTime = dueDate.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
+
+    return (
+      <Card
+        className="cursor-pointer hover:shadow-md transition-shadow mb-3"
+        onClick={() => setSelectedTask(task)}
+      >
+        <CardContent className="p-3 space-y-2.5">
+          {/* Header: Task ID and Days Ago */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-blue-600">
+              {task.task_id || `#${task.id?.slice(0, 8)}`}
+            </span>
+            {getDaysSinceCreation() !== null && (
+              <span className="text-[10px] text-gray-500 font-medium">
+                {getDaysSinceCreation()}d ago
+              </span>
+            )}
+          </div>
+
+          {/* Task Title */}
+          <h4 className="font-medium text-sm line-clamp-2 leading-tight">{task.title}</h4>
+
+          {/* Description */}
+          {task.description && (
+            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{task.description}</p>
+          )}
+
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="outline" className={getPriorityColor(task.priority)} style={{ fontSize: '10px' }}>
+              {task.priority}
+            </Badge>
+            {task.sprint_id && project?.methodology !== 'Kanban' && (
+              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
+                {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
+              </Badge>
+            )}
+          </div>
+
+          {/* Progress Bar */}
+          {task.progress !== undefined && task.progress !== null && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-600">Progress</span>
+                <span className="text-[10px] font-semibold text-gray-700">{task.progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div
+                  className={`h-1.5 rounded-full transition-all ${
+                    task.progress === 100 ? 'bg-green-500' : task.progress >= 70 ? 'bg-blue-500' : task.progress >= 40 ? 'bg-yellow-500' : 'bg-orange-500'
+                  }`}
+                  style={{ width: `${task.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Footer: Due Date + Assignee */}
+          <div className="flex items-center justify-between pt-1.5 border-t border-gray-100">
+            <div className="flex items-center gap-1.5">
+              {/* Due Date */}
+              {task.updated_at && (
+                <div className="flex items-center gap-1">
+                  {isOverdue() ? (
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                  ) : (
+                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                  )}
                   <div className="flex flex-col">
-                    <span className="text-xs text-muted-foreground truncate">
-                      {assigneeInfo.name}
+                    <span className={`text-[11px] font-semibold ${isOverdue() ? 'text-red-600' : 'text-gray-700'}`}>
+                      {formatDueDate()}
                     </span>
-                    {assigneeInfo.isAssigned && assigneeInfo.role && (
-                      <span className="text-[10px] text-muted-foreground/70 truncate">
-                        {assigneeInfo.role}
+                    {getDaysUntilDue() !== null && task.status !== 'done' && (
+                      <span className={`text-[9px] ${isOverdue() ? 'text-red-500' : 'text-gray-500'}`}>
+                        {getDaysUntilDue()! < 0 ? `${Math.abs(getDaysUntilDue()!)}d overdue` : `${getDaysUntilDue()}d left`}
                       </span>
                     )}
                   </div>
-                </>
-              )
-            })()}
-          </div>
+                </div>
+              )}
+            </div>
 
-          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>{task.progress || 0}%</span>
+            {/* Assignee */}
+            <div className="flex items-center gap-1.5">
+              {(() => {
+                const assigneeInfo = getAssigneeDisplayInfo(task.assignee_id || null, task.assignee_name || null, enrichedMembersMap)
+                return (
+                  <>
+                    <Avatar className="w-6 h-6 border border-gray-200">
+                      <AvatarFallback className="bg-[#28A745] text-white text-[10px]">
+                        {assigneeInfo.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-[11px] text-gray-700 font-medium max-w-[70px] truncate">
+                      {assigneeInfo.name.split(' ')[0]}
+                    </span>
+                  </>
+                )
+              })()}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Droppable Column Component
   const DroppableColumn = ({ column, tasks }: { column: any; tasks: Task[] }) => {
@@ -884,38 +1039,99 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     </DndProvider>
   )
 
-  const ListView = () => (
-    <div className="space-y-3">
-      {filteredTasks.map((task) => (
-        <Card
-          key={task.id}
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setSelectedTask(task)}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4 flex-1">
-                <div className="flex items-center space-x-2">
+  const ListView = () => {
+    // Calculate days since creation
+    const getDaysSinceCreation = (createdAt: string | undefined) => {
+      if (!createdAt) return null
+      const startDate = new Date(createdAt)
+      const today = new Date()
+      const diffTime = Math.abs(today.getTime() - startDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
+
+    // Check if overdue
+    const isOverdue = (updatedAt: string | undefined, status: string) => {
+      if (!updatedAt) return false
+      const dueDate = new Date(updatedAt)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today && status !== 'done'
+    }
+
+    // Format due date
+    const formatDueDate = (updatedAt: string | undefined) => {
+      if (!updatedAt) return null
+      const dueDate = new Date(updatedAt)
+      return dueDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short'
+      })
+    }
+
+    // Calculate days until due
+    const getDaysUntilDue = (updatedAt: string | undefined) => {
+      if (!updatedAt) return null
+      const dueDate = new Date(updatedAt)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      const diffTime = dueDate.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
+
+    return (
+      <div className="space-y-3">
+        {filteredTasks.map((task) => (
+          <Card
+            key={task.id}
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setSelectedTask(task)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4">
+                {/* Task ID and Icon */}
+                <div className="flex items-center gap-2">
                   <Target className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-bold text-blue-600">
+                    {task.task_id || `#${task.id?.slice(0, 8)}`}
+                  </span>
                 </div>
 
+                {/* Task Title and Description */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-sm mb-1 truncate">{task.title}</h4>
                   <p className="text-xs text-muted-foreground truncate">{task.description}</p>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                {/* Progress */}
+                {task.progress !== undefined && task.progress !== null && (
+                  <div className="w-24">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-gray-600">Progress</span>
+                      <span className="text-[10px] font-semibold">{task.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          task.progress === 100 ? 'bg-green-500' : task.progress >= 70 ? 'bg-blue-500' : 'bg-yellow-500'
+                        }`}
+                        style={{ width: `${task.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Badges */}
+                <div className="flex items-center gap-2">
                   <Badge variant="outline" className={getStatusColor(task.status)} style={{ fontSize: '10px' }}>
                     {task.status.replace('-', ' ')}
                   </Badge>
                   <Badge variant="outline" className={getPriorityColor(task.priority)} style={{ fontSize: '10px' }}>
                     {task.priority}
                   </Badge>
-                  {task.progress > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {task.progress}%
-                    </Badge>
-                  )}
                   {task.sprint_id && project?.methodology !== 'Kanban' && (
                     <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
                       {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
@@ -923,130 +1139,250 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   )}
                 </div>
 
-                <div className="flex items-center space-x-2">
+                {/* Due Date */}
+                {task.due_date && (
+                  <div className="flex items-center gap-1">
+                    {isOverdue(task.due_date, task.status) ? (
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                    ) : (
+                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                    )}
+                    <div className="flex flex-col items-end">
+                      <span className={`text-[11px] font-semibold ${isOverdue(task.due_date, task.status) ? 'text-red-600' : 'text-gray-700'}`}>
+                        {formatDueDate(task.due_date)}
+                      </span>
+                      {getDaysUntilDue(task.due_date) !== null && task.status !== 'done' && (
+                        <span className={`text-[9px] ${isOverdue(task.due_date, task.status) ? 'text-red-500' : 'text-gray-500'}`}>
+                          {getDaysUntilDue(task.due_date)! < 0 ? `${Math.abs(getDaysUntilDue(task.due_date)!)}d overdue` : `${getDaysUntilDue(task.due_date)}d left`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Assignee */}
+                <div className="flex items-center gap-2">
                   {(() => {
                     const assigneeInfo = getAssigneeDisplayInfo(task.assignee_id || null, task.assignee_name || null, enrichedMembersMap)
                     return (
                       <>
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-7 h-7 border border-gray-200">
                           <AvatarFallback className="bg-[#28A745] text-white text-xs">
                             {assigneeInfo.initials}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm text-muted-foreground truncate">
-                            {assigneeInfo.name}
-                          </span>
-                          {assigneeInfo.isAssigned && (
-                            <div className="flex flex-col text-xs text-muted-foreground/70">
-                              <span className="truncate">{assigneeInfo.role}</span>
-                              {assigneeInfo.email && (
-                                <span className="truncate">{assigneeInfo.email}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        <span className="text-xs text-gray-700 font-medium min-w-[60px] truncate">
+                          {assigneeInfo.name.split(' ')[0]}
+                        </span>
                       </>
                     )
                   })()}
                 </div>
+
+                {/* Days Ago */}
+                {getDaysSinceCreation(task.created_at) !== null && (
+                  <span className="text-[10px] text-gray-500 font-medium min-w-[50px] text-right">
+                    {getDaysSinceCreation(task.created_at)}d ago
+                  </span>
+                )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   // Table View Component
-  const TableView = () => (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40%]">Task</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Assignee</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTasks.length === 0 ? (
+  const TableView = () => {
+    // Calculate days until due or days overdue (using end_date)
+    const getDaysUntilDue = (endDate: string | undefined) => {
+      if (!endDate) return null
+      const dueDate = new Date(endDate)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      const diffTime = dueDate.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays
+    }
+
+    // Check if overdue (using end_date)
+    const isOverdue = (endDate: string | undefined, status: string) => {
+      if (!endDate) return false
+      const dueDate = new Date(endDate)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today && status !== 'done'
+    }
+
+    // Get type icon
+    const getTypeIcon = (type: string | undefined) => {
+      switch (type?.toLowerCase()) {
+        case 'bug':
+          return <AlertTriangle className="w-4 h-4 text-red-600" />
+        case 'story':
+          return <Target className="w-4 h-4 text-blue-600" />
+        case 'task':
+          return <CheckCircle className="w-4 h-4 text-green-600" />
+        default:
+          return <Target className="w-4 h-4 text-gray-600" />
+      }
+    }
+
+    const handleDeleteClick = (task: Task, e: React.MouseEvent) => {
+      e.stopPropagation()
+      setTaskToDelete(task)
+      setDeleteConfirmOpen(true)
+    }
+
+    const confirmDelete = async () => {
+      if (!taskToDelete) return
+
+      try {
+        await storiesApiService.deleteStory(taskToDelete.id)
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskToDelete.id))
+        toast.success('Task deleted successfully')
+        setDeleteConfirmOpen(false)
+        setTaskToDelete(null)
+      } catch (error) {
+        console.error('Error deleting task:', error)
+        toast.error('Failed to delete task')
+      }
+    }
+
+    return (
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No tasks found
-                </TableCell>
+                <TableHead className="w-[50px]">ID</TableHead>
+                <TableHead className="w-[35%]">Task</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Assignee</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              filteredTasks.map((task) => (
-                <TableRow key={task.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedTask(task)}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-sm text-muted-foreground line-clamp-1">
-                          {task.description}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusColor(task.status)}>
-                      {task.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {task.assignee_name ? (
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-xs bg-blue-500 text-white">
-                            {task.assignee_name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{task.assignee_name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {task.due_date ? (
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{new Date(task.due_date).toLocaleDateString()}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedTask(task)
-                      }}
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {filteredTasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No tasks found
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ) : (
+                filteredTasks.map((task) => {
+                  const daysUntilDue = getDaysUntilDue(task.due_date)
+                  const overdue = isOverdue(task.due_date, task.status)
+
+                  return (
+                    <TableRow key={task.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell>
+                        <span className="text-xs font-bold text-blue-600">
+                          {task.task_id || `#${task.id?.slice(0, 6)}`}
+                        </span>
+                      </TableCell>
+                      <TableCell onClick={() => setSelectedTask(task)}>
+                        <div className="flex items-start gap-2">
+                          {getTypeIcon(task.type)}
+                          <div className="flex-1">
+                            <div className="font-medium">{task.title}</div>
+                            {task.description && (
+                              <div className="text-sm text-muted-foreground line-clamp-1">
+                                {task.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell onClick={() => setSelectedTask(task)}>
+                        <Badge variant="outline" className={getStatusColor(task.status)}>
+                          {task.status.replace('-', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell onClick={() => setSelectedTask(task)}>
+                        <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                          {task.priority}
+                        </Badge>
+                      </TableCell>
+                      <TableCell onClick={() => setSelectedTask(task)}>
+                        {(() => {
+                          const assigneeInfo = getAssigneeDisplayInfo(task.assignee_id || null, task.assignee_name || null, enrichedMembersMap)
+                          return assigneeInfo.isAssigned ? (
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="w-6 h-6">
+                                <AvatarFallback className="text-xs bg-blue-500 text-white">
+                                  {assigneeInfo.initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm">{assigneeInfo.name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Unassigned</span>
+                          )
+                        })()}
+                      </TableCell>
+                      <TableCell onClick={() => setSelectedTask(task)}>
+                        {task.due_date ? (
+                          <div className="flex items-center space-x-2">
+                            {overdue ? (
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                            )}
+                            <div className="flex flex-col">
+                              <span className={`text-sm font-medium ${overdue ? 'text-red-600' : ''}`}>
+                                {new Date(task.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                              </span>
+                              {daysUntilDue !== null && task.status !== 'done' && (
+                                <span className={`text-xs ${overdue ? 'text-red-500' : 'text-gray-500'}`}>
+                                  {daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` : `${daysUntilDue}d left`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedTask(task)
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => handleDeleteClick(task, e)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )
+            }
           </TableBody>
         </Table>
       </CardContent>
     </Card>
-  )
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -1356,10 +1692,8 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="story">User Story</SelectItem>
                     <SelectItem value="task">Task</SelectItem>
                     <SelectItem value="bug">Bug</SelectItem>
-                    <SelectItem value="epic">Epic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1579,6 +1913,83 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               </div>
             </div>
 
+            {/* Attachments */}
+            <div>
+              <Label className="flex items-center space-x-2 mb-2">
+                <Paperclip className="w-4 h-4" />
+                <span>Attachments ({attachments.length})</span>
+              </Label>
+
+              {/* Drag and Drop Zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-primary/50'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm font-medium mb-1">
+                  {isDragging ? 'Drop files here' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Images, PDFs, Documents (max 10MB per file)
+                </p>
+              </div>
+
+              {/* File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+              />
+
+              {/* Attachment List */}
+              {attachments.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        {getFileIcon(attachment.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attachment.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadAttachment(attachment)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAttachment(attachment.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end space-x-2 pt-4">
               <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                 Cancel
@@ -1602,6 +2013,46 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {taskToDelete && (
+            <div className="py-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">Task ID:</span>
+                  <span className="text-sm text-blue-600">{taskToDelete.task_id || `#${taskToDelete.id?.slice(0, 6)}`}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-sm font-semibold">Title:</span>
+                  <span className="text-sm">{taskToDelete.title}</span>
+                </div>
+                {taskToDelete.description && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm font-semibold">Description:</span>
+                    <span className="text-sm text-muted-foreground">{taskToDelete.description}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

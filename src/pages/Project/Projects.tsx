@@ -34,6 +34,8 @@ import {
   clearError
 } from '../../store/slices/projectSlice'
 import { CreateProjectRequest } from '../../services/projectApi'
+import { useFormik } from 'formik'
+import * as Yup from 'yup'
 import {
   Plus,
   Search,
@@ -163,24 +165,25 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
-    status: 'Planning',
-    priority: 'Medium',
-    methodology: 'Scrum',
-    type: 'Software Development',
+    status: '',
+    priority: '',
+    methodology: '',
+    type: '',
     startDate: new Date(),
     dueDate: new Date(),
     budget: 0,
-    customer: 'Internal',
+    customer: '',
     owner: '',
     team: [] as any[],
     isPublic: true,
     notifications: true,
     autoArchive: false,
-    version: 'v1.0.0',
+    version: '',
     tags: [] as string[],
     customFields: {} as Record<string, any>,
     customerId: '',
-    teamLead: ''
+    teamLead: '',
+    prefix: ''
   })
 
   // Update default values when API data is loaded
@@ -209,6 +212,52 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   const [showDueDatePicker, setShowDueDatePicker] = useState(false)
   const [newTag, setNewTag] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // Formik validation schema
+  const projectValidationSchema = Yup.object().shape({
+    name: Yup.string()
+      .required('Project name is required')
+      .min(3, 'Project name must be at least 3 characters')
+      .max(100, 'Project name must be at most 100 characters'),
+    description: Yup.string()
+      .optional(),
+    customer: Yup.string()
+      .required('Customer is required'),
+    prefix: Yup.string()
+      .required('Project prefix is required')
+      .min(2, 'Prefix must be at least 2 characters')
+      .max(10, 'Prefix must be at most 10 characters')
+      .matches(/^[A-Z0-9]+$/, 'Prefix must contain only uppercase letters and numbers'),
+    status: Yup.string()
+      .required('Status is required'),
+    priority: Yup.string()
+      .required('Priority is required'),
+    methodology: Yup.string()
+      .required('Methodology is required'),
+    type: Yup.string()
+      .required('Project type is required'),
+    owner: Yup.string()
+      .required('Project owner is required'),
+    startDate: Yup.date()
+      .required('Start date is required'),
+    dueDate: Yup.date()
+      .required('End date is required')
+      .min(Yup.ref('startDate'), 'End date must be after start date'),
+    budget: Yup.number()
+      .min(0, 'Budget must be a positive number')
+  })
+
+  // Initialize Formik
+  const formik = useFormik({
+    initialValues: newProject,
+    validationSchema: projectValidationSchema,
+    validateOnChange: true,
+    validateOnBlur: true,
+    enableReinitialize: true,
+    onSubmit: async (values) => {
+      await handleCreateProjectSubmit(values)
+    }
+  })
 
   // Helper functions to process API data
   const getApiStatuses = () => {
@@ -250,27 +299,13 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   }
 
   // Use API data if available, fallback to mock data
-  const statuses = getApiStatuses().length > 0 ? getApiStatuses() : [
-    { value: 'Planning', color: 'bg-gray-500 text-white' },
-    { value: 'Active', color: 'bg-[#28A745] text-white' },
-    { value: 'On Hold', color: 'bg-[#FFC107] text-white' },
-    { value: 'Completed', color: 'bg-[#007BFF] text-white' }
-  ]
+  const statuses = getApiStatuses().length > 0 ? getApiStatuses() : []
 
-  const priorities = getApiPriorities().length > 0 ? getApiPriorities() : [
-    { value: 'Low', color: 'bg-[#28A745] text-white' },
-    { value: 'Medium', color: 'bg-[#FFC107] text-white' },
-    { value: 'High', color: 'bg-[#DC3545] text-white' },
-    { value: 'Critical', color: 'bg-[#6F42C1] text-white' }
-  ]
+  const priorities = getApiPriorities().length > 0 ? getApiPriorities() : []
 
-  const editableMethodologies = getApiMethodologies().length > 0 ? getApiMethodologies() : [
-    'Agile', 'Waterfall', 'Scrum', 'Kanban', 'Lean', 'Hybrid'
-  ]
+  const editableMethodologies = getApiMethodologies().length > 0 ? getApiMethodologies() : []
 
-  const editableProjectTypes = getApiProjectTypes().length > 0 ? getApiProjectTypes() : [
-    'Web Development', 'Mobile App', 'Desktop App', 'API Development', 'Data Analytics', 'E-commerce', 'CRM', 'ERP', 'DevOps', 'Machine Learning', 'Other'
-  ]
+  const editableProjectTypes = getApiProjectTypes().length > 0 ? getApiProjectTypes() : []
 
   // Fetch projects on component mount
   useEffect(() => {
@@ -369,6 +404,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   }
 
   const handleInputChange = (field: string, value: any) => {
+    formik.setFieldValue(field, value)
     setNewProject(prev => ({
       ...prev,
       [field]: value
@@ -376,30 +412,36 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   }
 
   const handleAddTeamMember = (member: any) => {
-    if (!newProject.team.find(m => m.id === member.id)) {
+    if (!formik.values.team.find(m => m.id === member.id)) {
+      const updatedTeam = [...formik.values.team, member]
+      formik.setFieldValue('team', updatedTeam)
       setNewProject(prev => ({
         ...prev,
-        team: [...prev.team, member]
+        team: updatedTeam
       }))
     }
   }
 
   const handleRemoveTeamMember = (memberId: number) => {
+    const updatedTeam = formik.values.team.filter(m => m.id !== memberId)
+    formik.setFieldValue('team', updatedTeam)
     setNewProject(prev => ({
       ...prev,
-      team: prev.team.filter(m => m.id !== memberId)
+      team: updatedTeam
     }))
   }
 
   const handleAddTag = () => {
     const tagToAdd = newTag.trim()
-    if (tagToAdd && !newProject.tags.includes(tagToAdd)) {
+    if (tagToAdd && !formik.values.tags.includes(tagToAdd)) {
+      const updatedTags = [...formik.values.tags, tagToAdd]
+      formik.setFieldValue('tags', updatedTags)
       setNewProject(prev => ({
         ...prev,
-        tags: [...prev.tags, tagToAdd]
+        tags: updatedTags
       }))
       setNewTag('')
-    } else if (tagToAdd && newProject.tags.includes(tagToAdd)) {
+    } else if (tagToAdd && formik.values.tags.includes(tagToAdd)) {
       toast.error('Tag already exists')
     } else if (!tagToAdd) {
       toast.error('Please enter a tag name')
@@ -407,59 +449,36 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   }
 
   const handleRemoveTag = (tag: string) => {
+    const updatedTags = formik.values.tags.filter(t => t !== tag)
+    formik.setFieldValue('tags', updatedTags)
     setNewProject(prev => ({
       ...prev,
-      tags: prev.tags.filter(t => t !== tag)
+      tags: updatedTags
     }))
   }
 
-  const handleCreateProject = async () => {
+  const handleCreateProjectSubmit = async (values: typeof newProject) => {
     setIsLoading(true)
-
-    // Enhanced validation (same as edit modal)
-    if (!newProject.name.trim()) {
-      toast.error('Project name is required')
-      setIsLoading(false)
-      return
-    }
-
-    if (!newProject.description.trim()) {
-      toast.error('Project description is required')
-      setIsLoading(false)
-      return
-    }
-
-    if (newProject.dueDate <= newProject.startDate) {
-      toast.error('Due date must be after start date')
-      setIsLoading(false)
-      return
-    }
-
-    if (newProject.budget < 0) {
-      toast.error('Budget must be a positive number')
-      setIsLoading(false)
-      return
-    }
 
     try {
       // Find customer ID from the selected customer name
-      const selectedCustomer = customers.find(c => c.name === newProject.customer)
+      const selectedCustomer = customers.find(c => c.name === values.customer)
 
       // Find team lead ID from the selected owner name
-      const selectedOwner = projectOwners?.items?.find(owner => owner.name === newProject.owner)
+      const selectedOwner = projectOwners?.items?.find(owner => owner.name === values.owner)
 
       const projectData: CreateProjectRequest = {
-        name: newProject.name,
-        description: newProject.description,
-        status: newProject.status,
-        start_date: newProject.startDate.toISOString().split('T')[0],
-        end_date: newProject.dueDate.toISOString().split('T')[0],
-        budget: newProject.budget,
-        customer_id: selectedCustomer?.id || newProject.customerId || 'default-customer',
-        customer: newProject.customer,
-        priority: newProject.priority,
-        team_lead_id: selectedOwner?.id || newProject.teamLead || newProject.owner || 'default-lead',
-        team_members: newProject.team.map(member => {
+        name: values.name,
+        description: values.description,
+        status: values.status,
+        start_date: values.startDate.toISOString().split('T')[0],
+        end_date: values.dueDate.toISOString().split('T')[0],
+        budget: values.budget,
+        customer_id: selectedCustomer?.id || values.customerId || 'default-customer',
+        customer: values.customer,
+        priority: values.priority,
+        team_lead_id: selectedOwner?.id || values.teamLead || values.owner || 'default-lead',
+        team_members: values.team.map(member => {
           // Try to find the member ID from the team members data
           const teamMember = teamMembers.find(tm => tm.name === member.name)
           if (teamMember?.id) {
@@ -468,10 +487,11 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
           // Return the member's existing ID or generate a fallback
           return member.id || `member-${Date.now()}`
         }),
-        tags: newProject.tags,
-        methodology: newProject.methodology,
-        project_type: newProject.type,
-        color: '#007BFF' // Default project color
+        tags: values.tags,
+        methodology: values.methodology,
+        project_type: values.type,
+        color: '#007BFF', // Default project color
+        prefix: values.prefix
       }
 
       await dispatch(createProject(projectData)).unwrap()
@@ -482,30 +502,34 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
       const availableStatuses = getApiStatuses()
       const availablePriorities = getApiPriorities()
 
-      setNewProject({
+      const initialValues = {
         name: '',
         description: '',
-        status: availableStatuses.length > 0 ? availableStatuses[0].value : 'Planning',
+        status: availableStatuses.length > 0 ? availableStatuses[0].value : '',
         priority: availablePriorities.length > 0 ?
                  (availablePriorities.find(p => p.value === 'Medium')?.value || availablePriorities[0].value) :
-                 'Medium',
-        methodology: 'Scrum',
-        type: 'Software Development',
+                 '',
+        methodology: '',
+        type: '',
         startDate: new Date(),
         dueDate: new Date(),
         budget: 0,
-        customer: 'Internal',
+        customer: '',
         owner: '',
         team: [] as any[],
         isPublic: true,
         notifications: true,
         autoArchive: false,
-        version: 'v1.0.0',
+        version: '',
         tags: [] as string[],
         customFields: {} as Record<string, any>,
         customerId: '',
-        teamLead: ''
-      })
+        teamLead: '',
+        prefix: ''
+      }
+
+      setNewProject(initialValues)
+      formik.resetForm({ values: initialValues })
       setActiveTab('general')
     } catch (error) {
       toast.error(`Failed to create project: ${error}`)
@@ -1074,13 +1098,17 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       id="name"
                       value={newProject.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
+                      onBlur={formik.handleBlur}
                       placeholder="Enter project name"
-                      className="mt-1"
+                      className={cn("mt-1", formik.touched.name && formik.errors.name && "border-red-500")}
                     />
+                    {formik.touched.name && formik.errors.name && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.name}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
                       value={newProject.description}
@@ -1092,9 +1120,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   </div>
 
                   <div>
-                    <Label htmlFor="customer">Customer</Label>
-                    <Select value={newProject.customer} onValueChange={(value: string) => handleInputChange('customer', value)}>
-                      <SelectTrigger className="mt-1">
+                    <Label htmlFor="customer">Customer *</Label>
+                    <Select
+                      value={newProject.customer}
+                      onValueChange={(value: string) => {
+                        handleInputChange('customer', value)
+                        formik.setFieldTouched('customer', true)
+                      }}
+                    >
+                      <SelectTrigger className={cn("mt-1", formik.touched.customer && formik.errors.customer && "border-red-500")}>
                         <SelectValue placeholder={loadingCustomers ? "Loading customers..." : "Select customer"} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1129,6 +1163,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         )}
                       </SelectContent>
                     </Select>
+                    {formik.touched.customer && formik.errors.customer && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.customer}</p>
+                    )}
                   </div>
 
                   <div>
@@ -1141,13 +1178,34 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       className="mt-1"
                     />
                   </div>
+
+                  <div>
+                    <Label htmlFor="prefix">Project Prefix *</Label>
+                    <Input
+                      id="prefix"
+                      value={newProject.prefix}
+                      onChange={(e) => handleInputChange('prefix', e.target.value.toUpperCase())}
+                      onBlur={formik.handleBlur}
+                      placeholder="e.g., PROJ"
+                      className={cn("mt-1", formik.touched.prefix && formik.errors.prefix && "border-red-500")}
+                    />
+                    {formik.touched.prefix && formik.errors.prefix && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.prefix}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={newProject.status} onValueChange={(value: string) => handleInputChange('status', value)}>
-                      <SelectTrigger className="mt-1">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select
+                      value={newProject.status}
+                      onValueChange={(value: string) => {
+                        handleInputChange('status', value)
+                        formik.setFieldTouched('status', true)
+                      }}
+                    >
+                      <SelectTrigger className={cn("mt-1", formik.touched.status && formik.errors.status && "border-red-500")}>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1161,12 +1219,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {formik.touched.status && formik.errors.status && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.status}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select value={newProject.priority} onValueChange={(value: string) => handleInputChange('priority', value)}>
-                      <SelectTrigger className="mt-1">
+                    <Label htmlFor="priority">Priority *</Label>
+                    <Select
+                      value={newProject.priority}
+                      onValueChange={(value: string) => {
+                        handleInputChange('priority', value)
+                        formik.setFieldTouched('priority', true)
+                      }}
+                    >
+                      <SelectTrigger className={cn("mt-1", formik.touched.priority && formik.errors.priority && "border-red-500")}>
                         <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1180,12 +1247,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {formik.touched.priority && formik.errors.priority && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.priority}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="methodology">Methodology</Label>
-                    <Select value={newProject.methodology} onValueChange={(value: string) => handleInputChange('methodology', value)}>
-                      <SelectTrigger className="mt-1">
+                    <Label htmlFor="methodology">Methodology *</Label>
+                    <Select
+                      value={newProject.methodology}
+                      onValueChange={(value: string) => {
+                        handleInputChange('methodology', value)
+                        formik.setFieldTouched('methodology', true)
+                      }}
+                    >
+                      <SelectTrigger className={cn("mt-1", formik.touched.methodology && formik.errors.methodology && "border-red-500")}>
                         <SelectValue placeholder="Select methodology" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1196,12 +1272,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {formik.touched.methodology && formik.errors.methodology && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.methodology}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="type">Project Type</Label>
-                    <Select value={newProject.type} onValueChange={(value: string) => handleInputChange('type', value)}>
-                      <SelectTrigger className="mt-1">
+                    <Label htmlFor="type">Project Type *</Label>
+                    <Select
+                      value={newProject.type}
+                      onValueChange={(value: string) => {
+                        handleInputChange('type', value)
+                        formik.setFieldTouched('type', true)
+                      }}
+                    >
+                      <SelectTrigger className={cn("mt-1", formik.touched.type && formik.errors.type && "border-red-500")}>
                         <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1212,12 +1297,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {formik.touched.type && formik.errors.type && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.type}</p>
+                    )}
                   </div>
 
                   <div>
-                    <Label htmlFor="owner">Project Owner</Label>
-                    <Select value={newProject.owner} onValueChange={(value: string) => handleInputChange('owner', value)}>
-                      <SelectTrigger className="mt-1">
+                    <Label htmlFor="owner">Project Owner *</Label>
+                    <Select
+                      value={newProject.owner}
+                      onValueChange={(value: string) => {
+                        handleInputChange('owner', value)
+                        formik.setFieldTouched('owner', true)
+                      }}
+                    >
+                      <SelectTrigger className={cn("mt-1", formik.touched.owner && formik.errors.owner && "border-red-500")}>
                         <SelectValue placeholder="Select project owner" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1250,6 +1344,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         )}
                       </SelectContent>
                     </Select>
+                    {formik.touched.owner && formik.errors.owner && (
+                      <p className="text-sm text-red-500 mt-1">{formik.errors.owner}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1390,14 +1487,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <Label>Start Date</Label>
+                      <Label>Start Date *</Label>
                       <Popover open={showStartDatePicker} onOpenChange={setShowStartDatePicker}>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal mt-1",
-                              !newProject.startDate && "text-muted-foreground"
+                              !newProject.startDate && "text-muted-foreground",
+                              formik.touched.startDate && formik.errors.startDate && "border-red-500"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1411,6 +1509,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                             onSelect={(date: Date | undefined) => {
                               if (date) {
                                 handleInputChange('startDate', date)
+                                formik.setFieldTouched('startDate', true)
                                 setShowStartDatePicker(false)
                               }
                             }}
@@ -1418,17 +1517,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           />
                         </PopoverContent>
                       </Popover>
+                      {formik.touched.startDate && formik.errors.startDate && (
+                        <p className="text-sm text-red-500 mt-1">{formik.errors.startDate}</p>
+                      )}
                     </div>
 
                     <div>
-                      <Label>Due Date</Label>
+                      <Label>End Date *</Label>
                       <Popover open={showDueDatePicker} onOpenChange={setShowDueDatePicker}>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal mt-1",
-                              !newProject.dueDate && "text-muted-foreground"
+                              !newProject.dueDate && "text-muted-foreground",
+                              formik.touched.dueDate && formik.errors.dueDate && "border-red-500"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1442,6 +1545,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                             onSelect={(date: Date | undefined) => {
                               if (date) {
                                 handleInputChange('dueDate', date)
+                                formik.setFieldTouched('dueDate', true)
                                 setShowDueDatePicker(false)
                               }
                             }}
@@ -1450,6 +1554,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           />
                         </PopoverContent>
                       </Popover>
+                      {formik.touched.dueDate && formik.errors.dueDate && (
+                        <p className="text-sm text-red-500 mt-1">{formik.errors.dueDate}</p>
+                      )}
                     </div>
 
                     <div className="pt-2">
@@ -1537,7 +1644,25 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
             <Button variant="outline" onClick={() => setShowCreateProject(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button onClick={handleCreateProject} disabled={isLoading} className="bg-[#28A745] hover:bg-[#218838]">
+            <Button
+              onClick={() => {
+                // Mark all fields as touched to show validation errors
+                formik.setTouched({
+                  name: true,
+                  customer: true,
+                  prefix: true,
+                  status: true,
+                  priority: true,
+                  methodology: true,
+                  type: true,
+                  owner: true,
+                  startDate: true,
+                  dueDate: true
+                })
+                formik.handleSubmit()
+              }}
+              disabled={isLoading}
+              className="bg-[#28A745] hover:bg-[#218838]">
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

@@ -3,8 +3,10 @@ import { getApiUrl } from '../config/api';
 
 export interface Task {
   id?: string;
+  task_id?: string;
   title: string;
   description: string;
+  type?: string;
   status: string;
   priority: string;
   project_id: string;
@@ -18,6 +20,7 @@ export interface Task {
   subtasks: any[];
   comments: any[];
   attachments: any[];
+  files?: any[];
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -27,7 +30,7 @@ export interface Task {
     id: string;
     name: string;
     email: string;
-    avatar: string;
+    avatar?: string;
   };
 }
 

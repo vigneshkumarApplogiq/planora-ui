@@ -101,7 +101,7 @@ export function KanbanProjectDashboard({ project, user, masterData: propMasterDa
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`grid gap-4 ${columns.length <= 4 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+            <div className={`grid gap-4 ${columns.length <= 4 ? 'grid-cols-6' : 'grid-cols-6'}`}>
               {columns.map((column) => (
                 <div key={column.name} className="text-center">
                   <div className="mb-2">

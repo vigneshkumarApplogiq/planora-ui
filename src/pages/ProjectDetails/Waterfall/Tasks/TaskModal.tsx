@@ -49,7 +49,7 @@ const priorityOptions = [
 ]
 
 const typeOptions = [
-  { value: 'story', label: 'User Story' },
+  { value: 'story', label: 'User Story-2' },
   { value: 'task', label: 'Task' },
   { value: 'bug', label: 'Bug' },
   { value: 'epic', label: 'Epic' }
@@ -62,7 +62,13 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
   // Update editedTask when task prop changes
   useEffect(() => {
     if (task) {
-      setEditedTask(task)
+      // Extract assignee details from nested assignee object if it exists
+      const normalizedTask = {
+        ...task,
+        assignee_id: task.assignee?.id || task.assignee_id,
+        assignee_name: task.assignee?.name || task.assignee_name
+      }
+      setEditedTask(normalizedTask)
     }
   }, [task])
 
@@ -114,7 +120,7 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>Task Details</span>
+            <span>Task Details{editedTask.task_id ? ` : ${editedTask.task_id}` : ''}</span>
             <div className="flex items-center space-x-2">
               <Badge variant="outline" className={getStatusColor(editedTask.status)}>
                 {editedTask.status.replace('-', ' ')}
@@ -358,22 +364,6 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
                     style={{ width: `${editedTask.progress || 0}%` }}
                   ></div>
                 </div>
-              </div>
-            </div>
-
-            {/* Labels */}
-            <div className="space-y-2">
-              <Label>Labels</Label>
-              <div className="flex flex-wrap gap-1">
-                {editedTask.tags && editedTask.tags.length > 0 ? (
-                  editedTask.tags.map((tag: string, index: number) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-xs text-muted-foreground">No labels</span>
-                )}
               </div>
             </div>
 

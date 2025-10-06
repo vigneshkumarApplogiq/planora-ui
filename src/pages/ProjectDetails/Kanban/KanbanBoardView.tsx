@@ -102,9 +102,30 @@ const TaskCard: React.FC<{
     const dueDate = new Date(task.end_date)
     return dueDate.toLocaleDateString('en-GB', {
       day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+      month: 'short'
     })
+  }
+
+  // Calculate days since creation (from start_date)
+  const getDaysSinceCreation = () => {
+    if (!task.start_date) return null
+    const startDate = new Date(task.start_date)
+    const today = new Date()
+    const diffTime = Math.abs(today.getTime() - startDate.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  // Calculate days until due or days overdue
+  const getDaysUntilDue = () => {
+    if (!task.end_date) return null
+    const dueDate = new Date(task.end_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    dueDate.setHours(0, 0, 0, 0)
+    const diffTime = dueDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
   }
 
   // Truncate description to 100 characters
@@ -164,78 +185,106 @@ const TaskCard: React.FC<{
           onEdit(task)
         }}
       >
-        <CardContent className="p-4 space-y-3">
-          {/* Task ID */}
-          <div className="text-sm font-medium text-gray-600">
-            {task.task_id || task.id || 'N/A'}
+        <CardContent className="p-3 space-y-2.5">
+          {/* Header: Task ID and Created Days Ago */}
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold text-blue-600">
+              {task.task_id || `#${task.id?.slice(0, 8)}` || 'N/A'}
+            </div>
+            {getDaysSinceCreation() !== null && (
+              <div className="text-xs text-gray-500">
+                {getDaysSinceCreation()}d ago
+              </div>
+            )}
           </div>
 
           {/* Task Title */}
-          <h4 className={`font-medium text-base ${isDone ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+          <h4 className={`font-medium text-sm leading-tight ${isDone ? 'line-through text-gray-400' : 'text-gray-900'}`}>
             {task.title}
           </h4>
 
           {/* Description */}
           {task.description && (
-            <p className="text-xs text-gray-600 line-clamp-2">
-              {truncateDescription(task.description, 100)}
+            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+              {truncateDescription(task.description, 150)}
             </p>
           )}
 
           {/* Story Type and Priority */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
-              <StoryIcon className={`w-4 h-4 ${storyTypeInfo.color}`} />
-              <span className={`text-xs ${storyTypeInfo.color} capitalize`}>
+              <StoryIcon className={`w-3.5 h-3.5 ${storyTypeInfo.color}`} />
+              <span className={`text-xs ${storyTypeInfo.color} capitalize font-medium`}>
                 {task.story_type || 'Task'}
               </span>
             </div>
             {task.priority && (
               <Badge
                 variant="outline"
-                className={`text-xs ${priorityBadge.bg} ${priorityBadge.text} border ${priorityBadge.border} capitalize`}
+                className={`text-xs px-1.5 py-0 h-5 ${priorityBadge.bg} ${priorityBadge.text} border ${priorityBadge.border} capitalize`}
               >
                 {task.priority}
               </Badge>
             )}
           </div>
 
-          {/* Epic/Project */}
-          {(task.epic_title || task.project_name) && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Layers className="w-4 h-4" />
-              <span className="truncate">{task.epic_title || task.project_name}</span>
+          {/* Progress Bar */}
+          {task.progress !== undefined && task.progress !== null && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-600">Progress</span>
+                <span className="text-xs font-medium text-gray-700">{task.progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div
+                  className={`h-1.5 rounded-full transition-all ${
+                    task.progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${task.progress}%` }}
+                />
+              </div>
             </div>
           )}
 
-          {/* Footer: Due Date + Avatar */}
-          <div className="flex items-center justify-between pt-2">
+          {/* Footer: Due Date + Assignee */}
+          <div className="flex items-center justify-between pt-1 border-t border-gray-100">
             <div className="flex items-center gap-2">
               {task.end_date && (
                 <div className="flex items-center gap-1">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className={`text-xs ${isOverdue() ? 'text-red-500 font-medium' : 'text-gray-600'}`}>
+                  {isOverdue() ? (
+                    <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                  ) : (
+                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                  )}
+                  <span className={`text-xs ${isOverdue() ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
                     {formatDueDate()}
+                    {getDaysUntilDue() !== null && !isDone && (
+                      <span className={`ml-1 ${isOverdue() ? 'text-red-500' : 'text-gray-500'}`}>
+                        ({getDaysUntilDue() < 0 ? `${Math.abs(getDaysUntilDue()!)}d overdue` : `${getDaysUntilDue()}d left`})
+                      </span>
+                    )}
                   </span>
                 </div>
-              )}
-              {isOverdue() && (
-                <AlertCircle className="w-4 h-4 text-red-500" />
               )}
             </div>
 
             {task.assignee && (
-              <Avatar className="w-8 h-8 border-2 border-white shadow-sm">
-                {task.assignee.user_profile && (
-                  <AvatarImage
-                    src={task.assignee.user_profile}
-                    alt={task.assignee.name}
-                  />
-                )}
-                <AvatarFallback className="text-xs bg-blue-500 text-white font-medium">
-                  {task.assignee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="flex items-center gap-1.5">
+                <Avatar className="w-6 h-6 border border-gray-200">
+                  {task.assignee.user_profile && (
+                    <AvatarImage
+                      src={task.assignee.user_profile}
+                      alt={task.assignee.name}
+                    />
+                  )}
+                  <AvatarFallback className="text-xs bg-blue-500 text-white font-medium">
+                    {task.assignee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-gray-700 font-medium max-w-[80px] truncate">
+                  {task.assignee.name.split(' ')[0]}
+                </span>
+              </div>
             )}
           </div>
         </CardContent>

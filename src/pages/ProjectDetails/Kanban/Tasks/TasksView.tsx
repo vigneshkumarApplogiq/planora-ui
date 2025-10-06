@@ -479,7 +479,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       const storyData = {
         title: createTaskData.title,
         description: createTaskData.description,
-        story_type: 'story',
+        story_type: createTaskData.story_type || 'task',
         priority: createTaskData.priority,
         status: createTaskData.status,
         project_id: effectiveProjectId,
@@ -544,7 +544,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       const storyUpdateData = {
         title: taskData.title,
         description: taskData.description,
-        story_type: taskData.type || 'story',
+        story_type: taskData.story_type,
         priority: taskData.priority,
         status: taskData.status,
         sprint_id: taskData.sprint_id || undefined,
@@ -581,6 +581,21 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       await taskApiService.deleteTask(taskId)
       toast.success('Task deleted successfully')
       fetchTasks()
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      toast.error('Failed to delete task')
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return
+
+    try {
+      await storiesApiService.deleteStory(taskToDelete.id)
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskToDelete.id))
+      toast.success('Task deleted successfully')
+      setDeleteConfirmOpen(false)
+      setTaskToDelete(null)
     } catch (error) {
       console.error('Error deleting task:', error)
       toast.error('Failed to delete task')
@@ -1235,21 +1250,6 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
       e.stopPropagation()
       setTaskToDelete(task)
       setDeleteConfirmOpen(true)
-    }
-
-    const confirmDelete = async () => {
-      if (!taskToDelete) return
-
-      try {
-        await storiesApiService.deleteStory(taskToDelete.id)
-        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskToDelete.id))
-        toast.success('Task deleted successfully')
-        setDeleteConfirmOpen(false)
-        setTaskToDelete(null)
-      } catch (error) {
-        console.error('Error deleting task:', error)
-        toast.error('Failed to delete task')
-      }
     }
 
     return (

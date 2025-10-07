@@ -36,14 +36,19 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
     status: '',
     priority: '',
     budget: 0,
+    spent: 0,
+    progress: 0,
     start_date: '',
     end_date: '',
     customer: '',
     customer_id: '',
     project_type: '',
     tags: [] as string[],
-    color: ''
+    color: '',
+    team_lead_id: ''
   })
+
+  const [tagInput, setTagInput] = useState('')
 
   const [permissions, setPermissions] = useState({
     publicProject: false,
@@ -72,16 +77,33 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
         status: project.status || '',
         priority: project.priority || '',
         budget: project.budget || 0,
+        spent: project.spent || 0,
+        progress: project.progress || 0,
         start_date: project.start_date || '',
         end_date: project.end_date || '',
         customer: project.customer || '',
         customer_id: project.customer_id || '',
         project_type: project.project_type || '',
         tags: project.tags || [],
-        color: project.color || ''
+        color: project.color || '',
+        team_lead_id: project.team_lead_id || ''
       })
     }
   }, [project])
+
+  const handleAddTag = () => {
+    if (tagInput.trim() && !projectData.tags.includes(tagInput.trim())) {
+      setProjectData({ ...projectData, tags: [...projectData.tags, tagInput.trim()] })
+      setTagInput('')
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setProjectData({
+      ...projectData,
+      tags: projectData.tags.filter(tag => tag !== tagToRemove)
+    })
+  }
 
 
   const methodologyOptions = [
@@ -114,6 +136,12 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
       return
     }
 
+    // Validation
+    if (!projectData.name.trim()) {
+      toast.error('Project name is required')
+      return
+    }
+
     try {
       setSaving(true)
 
@@ -125,22 +153,73 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
         status: projectData.status,
         priority: projectData.priority,
         budget: projectData.budget,
+        spent: projectData.spent,
+        progress: projectData.progress,
         start_date: projectData.start_date,
         end_date: projectData.end_date,
         customer: projectData.customer,
         customer_id: projectData.customer_id,
         project_type: projectData.project_type,
         tags: projectData.tags,
-        color: projectData.color
+        color: projectData.color,
+        team_lead_id: projectData.team_lead_id
       }
 
       await projectApiService.updateProject(project.id, updateData)
       toast.success('Project settings updated successfully')
+
+      // Refresh page to show updated data
+      window.location.reload()
     } catch (error) {
       console.error('Failed to update project:', error)
       toast.error('Failed to update project settings')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleArchiveProject = async () => {
+    if (!project || !project.id) return
+
+    if (!window.confirm('Are you sure you want to archive this project? It will be hidden from active projects.')) {
+      return
+    }
+
+    try {
+      await projectApiService.updateProject(project.id, { status: 'archived' })
+      toast.success('Project archived successfully')
+      setTimeout(() => {
+        window.location.href = '/projects'
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to archive project:', error)
+      toast.error('Failed to archive project')
+    }
+  }
+
+  const handleDeleteProject = async () => {
+    if (!project || !project.id) return
+
+    const projectName = window.prompt(
+      `This action cannot be undone. Type "${project.name}" to confirm deletion:`
+    )
+
+    if (projectName !== project.name) {
+      if (projectName !== null) {
+        toast.error('Project name does not match')
+      }
+      return
+    }
+
+    try {
+      await projectApiService.deleteProject(project.id)
+      toast.success('Project deleted successfully')
+      setTimeout(() => {
+        window.location.href = '/projects'
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to delete project:', error)
+      toast.error('Failed to delete project')
     }
   }
 
@@ -273,7 +352,7 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="start_date">Start Date</Label>
                   <Input
@@ -295,16 +374,109 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                     className="mt-1"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="budget">Budget ($)</Label>
                   <Input
                     id="budget"
                     type="number"
                     value={projectData.budget}
-                    onChange={(e) => setProjectData({ ...projectData, budget: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setProjectData({ ...projectData, budget: parseFloat(e.target.value) || 0 })}
                     className="mt-1"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="spent">Spent ($)</Label>
+                  <Input
+                    id="spent"
+                    type="number"
+                    value={projectData.spent}
+                    onChange={(e) => setProjectData({ ...projectData, spent: parseFloat(e.target.value) || 0 })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="progress">Progress (%)</Label>
+                  <Input
+                    id="progress"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={projectData.progress}
+                    onChange={(e) => setProjectData({ ...projectData, progress: parseInt(e.target.value) || 0 })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="project_type">Project Type</Label>
+                  <Input
+                    id="project_type"
+                    value={projectData.project_type}
+                    onChange={(e) => setProjectData({ ...projectData, project_type: e.target.value })}
+                    className="mt-1"
+                    placeholder="e.g., Web Development, Mobile App"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="color">Project Color</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      id="color"
+                      type="color"
+                      value={projectData.color || '#3b82f6'}
+                      onChange={(e) => setProjectData({ ...projectData, color: e.target.value })}
+                      className="w-20 h-10"
+                    />
+                    <Input
+                      type="text"
+                      value={projectData.color || '#3b82f6'}
+                      onChange={(e) => setProjectData({ ...projectData, color: e.target.value })}
+                      className="flex-1"
+                      placeholder="#3b82f6"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="tags">Tags</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="tags"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddTag()
+                      }
+                    }}
+                    placeholder="Add a tag and press Enter"
+                  />
+                  <Button type="button" onClick={handleAddTag} variant="outline">
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {projectData.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="px-3 py-1">
+                      {tag}
+                      <button
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-2 text-gray-500 hover:text-gray-700"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
                 </div>
               </div>
             </CardContent>
@@ -443,7 +615,7 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                 <div className="border-t pt-4">
                   <Label>Archive Project</Label>
                   <p className="text-sm text-muted-foreground mb-2">Archive this project to hide it from active projects</p>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleArchiveProject}>
                     <Archive className="w-4 h-4 mr-2" />
                     Archive Project
                   </Button>
@@ -466,7 +638,7 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   Permanently delete this project and all associated data. This action cannot be undone.
                 </p>
-                <Button variant="destructive">
+                <Button variant="destructive" onClick={handleDeleteProject}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Project
                 </Button>

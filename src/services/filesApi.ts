@@ -3,32 +3,44 @@ import { getApiUrl } from '../config/api';
 
 export interface FileItem {
   id: string;
-  name: string;
+  filename: string;
   original_filename: string;
   file_path: string;
   file_size: number;
   content_type: string;
+  file_extension?: string;
   category?: string;
+  entity_type?: string;
+  entity_id?: string;
+  entity_title?: string;
+  project_id: string;
   folder_id?: string;
   folder_name?: string;
-  tags?: string[];
-  project_id: string;
-  story_id?: string;
-  uploaded_by: string;
+  description?: string;
+  tags?: string;
+  is_public?: boolean;
+  uploaded_by_id: string;
   uploaded_by_name?: string;
   uploaded_by_email?: string;
-  uploaded_at: string;
+  created_at: string;
   updated_at?: string;
   is_deleted?: boolean;
+  deleted_at?: string;
+  deleted_by_id?: string;
+  // Legacy fields for backwards compatibility
+  name?: string;
+  uploaded_by?: string;
+  uploaded_at?: string;
 }
 
 export interface Folder {
   id: string;
   name: string;
   description?: string;
-  project_id: string;
+  project_id?: string;
   parent_folder_id?: string;
-  created_by: string;
+  created_by?: string;
+  created_by_name?: string;
   created_at: string;
   updated_at?: string;
   file_count?: number;
@@ -78,12 +90,13 @@ export interface UpdateFileRequest {
 }
 
 export interface UploadFileRequest {
-  file: File;
+  files: File[];
   project_id: string;
   folder_id?: string;
   category?: string;
-  tags?: string[];
-  story_id?: string;
+  description?: string;
+  tags?: string;
+  is_public?: boolean;
 }
 
 export class FilesApiService {
@@ -149,41 +162,21 @@ export class FilesApiService {
   }
 
   // File operations
-  async getFiles(
-    projectId: string,
-    page: number = 1,
-    perPage: number = 50,
-    folderId?: string,
-    category?: string
-  ): Promise<FilesResponse> {
-    const params = new URLSearchParams({
-      project_id: projectId,
-      page: page.toString(),
-      per_page: perPage.toString(),
-    });
-
-    if (folderId) {
-      params.append('folder_id', folderId);
-    }
-
-    if (category && category !== 'all') {
-      params.append('category', category);
-    }
-
-    const queryString = params.toString();
-    const endpoint = `/api/v1/files${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<FilesResponse>(endpoint);
+  async getFiles(projectId: string): Promise<FileItem[]> {
+    return this.makeRequest<FileItem[]>(`/api/v1/files/projects/${projectId}/files`);
   }
 
   async getFile(id: string): Promise<FileItem> {
     return this.makeRequest<FileItem>(`/api/v1/files/${id}`);
   }
 
-  async uploadFile(uploadRequest: UploadFileRequest): Promise<FileItem> {
+  async uploadFile(uploadRequest: UploadFileRequest): Promise<FileItem[]> {
     const formData = new FormData();
-    formData.append('file', uploadRequest.file);
-    formData.append('project_id', uploadRequest.project_id);
+
+    // Append all files
+    uploadRequest.files.forEach((file) => {
+      formData.append('files', file);
+    });
 
     if (uploadRequest.folder_id) {
       formData.append('folder_id', uploadRequest.folder_id);
@@ -193,15 +186,20 @@ export class FilesApiService {
       formData.append('category', uploadRequest.category);
     }
 
-    if (uploadRequest.tags && uploadRequest.tags.length > 0) {
-      formData.append('tags', JSON.stringify(uploadRequest.tags));
+    if (uploadRequest.description) {
+      formData.append('description', uploadRequest.description);
     }
 
-    if (uploadRequest.story_id) {
-      formData.append('story_id', uploadRequest.story_id);
+    if (uploadRequest.tags) {
+      formData.append('tags', uploadRequest.tags);
     }
 
-    return this.makeRequest<FileItem>('/api/v1/files/upload', {
+    if (uploadRequest.is_public !== undefined) {
+      formData.append('is_public', uploadRequest.is_public.toString());
+    }
+
+    const projectId = uploadRequest.project_id;
+    return this.makeRequest<FileItem[]>(`/api/v1/files/projects/${projectId}/upload-files`, {
       method: 'POST',
       body: formData,
     });
@@ -267,6 +265,10 @@ export class FilesApiService {
     });
 
     return this.makeRequest<FoldersResponse>(`/api/v1/folders?${params.toString()}`);
+  }
+
+  async getFoldersList(projectId: string): Promise<Folder[]> {
+    return this.makeRequest<Folder[]>(`/api/v1/files/projects/${projectId}/folders-list`);
   }
 
   async getFolder(id: string): Promise<Folder> {

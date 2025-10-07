@@ -32,11 +32,12 @@ import { filesApiService, FileItem, Folder as FolderType, CreateFolderRequest, U
 import { toast } from 'sonner'
 
 interface FilesViewProps {
-  projectId: string
-  user: any
+  project: any
+  user?: any
 }
 
-export function FilesView({ projectId, user }: FilesViewProps) {
+export function FilesView({ project, user }: FilesViewProps) {
+  const projectId = project?.id
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedFolder, setSelectedFolder] = useState<string | undefined>(undefined)
@@ -49,8 +50,11 @@ export function FilesView({ projectId, user }: FilesViewProps) {
   // Upload modal state
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
-  const [uploadCategory, setUploadCategory] = useState<string>('none')
   const [uploadFolderId, setUploadFolderId] = useState<string | undefined>(undefined)
+  const [uploadCategory, setUploadCategory] = useState<string>('')
+  const [uploadDescription, setUploadDescription] = useState<string>('')
+  const [uploadTags, setUploadTags] = useState<string>('')
+  const [uploadIsPublic, setUploadIsPublic] = useState<boolean>(false)
   const [isDragging, setIsDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -82,16 +86,14 @@ export function FilesView({ projectId, user }: FilesViewProps) {
   }, [projectId, selectedCategory, selectedFolder])
 
   const loadFiles = async () => {
+    if (!projectId) {
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
-      const response = await filesApiService.getFiles(
-        projectId,
-        1,
-        100,
-        selectedFolder,
-        selectedCategory !== 'all' ? selectedCategory : undefined
-      )
-      setFiles(response.items)
+      const response = await filesApiService.getFiles(projectId)
+      setFiles(response)
     } catch (error) {
       console.error('Failed to load files:', error)
       toast.error('Failed to load files')
@@ -101,9 +103,10 @@ export function FilesView({ projectId, user }: FilesViewProps) {
   }
 
   const loadFolders = async () => {
+    if (!projectId) return
     try {
-      const response = await filesApiService.getFolders(projectId)
-      setFolders(response.items)
+      const foldersList = await filesApiService.getFoldersList(projectId)
+      setFolders(foldersList)
     } catch (error) {
       console.error('Failed to load folders:', error)
       toast.error('Failed to load folders')
@@ -111,26 +114,24 @@ export function FilesView({ projectId, user }: FilesViewProps) {
   }
 
   const loadFileCategories = async () => {
+    if (!projectId) return
     try {
       const categories = await filesApiService.getFileCategories(projectId)
       setFileCategories(categories)
     } catch (error) {
       console.error('Failed to load file categories:', error)
-      // Don't show error toast, use default categories as fallback
-      setFileCategories([
-        { category: 'Documentation', count: 0 },
-        { category: 'Design', count: 0 },
-        { category: 'Development', count: 0 },
-        { category: 'Testing', count: 0 },
-        { category: 'Meetings', count: 0 },
-        { category: 'Other', count: 0 }
-      ])
+      toast.error('Failed to load file categories')
     }
   }
 
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
       toast.error('Folder name is required')
+      return
+    }
+
+    if (!projectId) {
+      toast.error('Project ID is missing')
       return
     }
 
@@ -204,21 +205,24 @@ export function FilesView({ projectId, user }: FilesViewProps) {
     try {
       setUploading(true)
 
-      // Upload files one by one (or use uploadMultipleFiles if backend supports it)
-      for (const file of uploadFiles) {
-        await filesApiService.uploadFile({
-          file,
-          project_id: projectId,
-          folder_id: uploadFolderId,
-          category: uploadCategory !== 'none' ? uploadCategory : undefined
-        })
-      }
+      await filesApiService.uploadFile({
+        files: uploadFiles,
+        project_id: projectId,
+        folder_id: uploadFolderId,
+        category: uploadCategory || undefined,
+        description: uploadDescription || undefined,
+        tags: uploadTags || undefined,
+        is_public: uploadIsPublic
+      })
 
       toast.success(`${uploadFiles.length} file(s) uploaded successfully`)
       setShowUploadModal(false)
       setUploadFiles([])
-      setUploadCategory('none')
       setUploadFolderId(undefined)
+      setUploadCategory('')
+      setUploadDescription('')
+      setUploadTags('')
+      setUploadIsPublic(false)
       loadFiles()
     } catch (error) {
       console.error('Failed to upload files:', error)
@@ -230,7 +234,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
 
   const handleEditFile = (file: FileItem) => {
     setEditingFile(file)
-    setEditFileName(file.original_filename || file.name)
+    setEditFileName(file.original_filename || file.filename || file.name || '')
     setEditFileCategory(file.category || '')
     setEditFileFolderId(file.folder_id)
     setShowEditFileModal(true)
@@ -271,7 +275,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = file.original_filename || file.name
+      a.download = file.original_filename || file.filename || file.name || 'download'
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -346,19 +350,26 @@ export function FilesView({ projectId, user }: FilesViewProps) {
   }
 
   const filteredFiles = files.filter(file => {
-    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fileName = file.filename || file.name || file.original_filename
+    const matchesSearch = fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          file.original_filename.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesSearch
+
+    const matchesFolder = !selectedFolder || file.folder_id === selectedFolder
+    const matchesCategory = selectedCategory === 'all' || file.category === selectedCategory
+
+    return matchesSearch && matchesFolder && matchesCategory
   })
 
   const FileCard = ({ file }: { file: FileItem }) => (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-lg transition-all border-0 shadow-sm">
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          {getFileIcon(file.content_type)}
+        <div className="flex items-start justify-between mb-4">
+          <div className="p-3 bg-red-50 rounded-lg">
+            {getFileIcon(file.content_type)}
+          </div>
           <div className="relative group">
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-              <MoreVertical className="w-3 h-3" />
+              <MoreVertical className="w-4 h-4" />
             </Button>
             <div className="absolute right-0 mt-1 hidden group-hover:block bg-white shadow-lg rounded-md border z-10 min-w-[120px]">
               <button
@@ -382,47 +393,45 @@ export function FilesView({ projectId, user }: FilesViewProps) {
           </div>
         </div>
 
-        <h4 className="font-medium text-sm mb-2 line-clamp-2">{file.original_filename}</h4>
+        <h4 className="font-medium text-sm mb-2 line-clamp-2 text-gray-900">{file.original_filename}</h4>
 
-        <div className="flex flex-wrap gap-1 mb-3">
-          <Badge variant="outline" className={getFileTypeColor(file.content_type)} style={{ fontSize: '10px' }}>
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <Badge variant="secondary" className="text-xs font-medium px-2 py-0.5 bg-red-100 text-red-700 border-0">
             {file.content_type.split('/')[1]?.toUpperCase() || 'FILE'}
           </Badge>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-600 border-gray-300">
             {formatFileSize(file.file_size)}
           </Badge>
           {file.category && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-600 border-gray-300">
               {file.category}
             </Badge>
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-          <div className="flex items-center space-x-1">
-            <Avatar className="w-4 h-4">
-              <AvatarFallback className="bg-[#28A745] text-white text-xs">
-                {file.uploaded_by_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <span>{file.uploaded_by_name || 'Unknown'}</span>
-          </div>
+        <div className="flex items-center text-xs text-gray-600 mb-1">
+          <Avatar className="w-5 h-5 mr-1.5">
+            <AvatarFallback className="bg-green-600 text-white text-xs">
+              {file.uploaded_by_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium">{file.uploaded_by_name || 'Unknown'}</span>
         </div>
 
-        <div className="text-xs text-muted-foreground mb-3">
-          {formatDate(file.uploaded_at)}
+        <div className="text-xs text-gray-500 mb-4">
+          {formatDate(file.created_at || file.uploaded_at || '')}
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="flex-1">
-            <Eye className="w-3 h-3 mr-1" />
+        <div className="flex items-center gap-2 pt-2 border-t">
+          <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs">
+            <Eye className="w-3.5 h-3.5 mr-1" />
             View
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleDownloadFile(file)}>
-            <Download className="w-3 h-3" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadFile(file)}>
+            <Download className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="w-3 h-3" />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Share2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       </CardContent>
@@ -445,7 +454,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
                 <span>•</span>
                 <span>Uploaded by {file.uploaded_by_name || 'Unknown'}</span>
                 <span>•</span>
-                <span>{formatDate(file.uploaded_at)}</span>
+                <span>{formatDate(file.created_at || file.uploaded_at || '')}</span>
               </div>
             </div>
 
@@ -534,100 +543,105 @@ export function FilesView({ projectId, user }: FilesViewProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Categories Sidebar */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Folders</CardTitle>
+      <div className="flex gap-6">
+        {/* Left Sidebar */}
+        <div className="w-72 flex-shrink-0 space-y-4">
+          {/* Folders Card */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold text-gray-900">Folders</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant={selectedFolder === undefined ? 'default' : 'ghost'}
-                size="sm"
-                className="w-full justify-between"
+            <CardContent className="space-y-1 px-2 pb-4">
+              <button
+                className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedFolder === undefined
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
                 onClick={() => setSelectedFolder(undefined)}
               >
-                <div className="flex items-center space-x-2">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>All Files</span>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {files.length}
-                </Badge>
-              </Button>
+                <FolderOpen className="w-4 h-4 mr-2.5" />
+                <span>All Files</span>
+              </button>
               {folders.map((folder) => (
-                <Button
+                <div
                   key={folder.id}
-                  variant={selectedFolder === folder.id ? 'default' : 'ghost'}
-                  size="sm"
-                  className="w-full justify-between"
-                  onClick={() => setSelectedFolder(folder.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all group ${
+                    selectedFolder === folder.id
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 >
-                  <div className="flex items-center space-x-2">
-                    <Folder className="w-4 h-4" />
+                  <button
+                    className="flex items-center flex-1 text-left font-medium"
+                    onClick={() => setSelectedFolder(folder.id)}
+                  >
+                    <Folder className="w-4 h-4 mr-2.5" />
                     <span className="truncate">{folder.name}</span>
-                  </div>
+                  </button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-4 w-4 p-0 text-red-600"
-                    onClick={(e) => {
+                    className="h-6 w-6 p-0 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50"
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation()
                       setDeletingItem({ type: 'folder', id: folder.id, name: folder.name })
                       setShowDeleteConfirm(true)
                     }}
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
-                </Button>
+                </div>
               ))}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Categories</CardTitle>
+          {/* Categories Card */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold text-gray-900">Categories</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant={selectedCategory === 'all' ? 'default' : 'ghost'}
-                size="sm"
-                className="w-full justify-between"
+            <CardContent className="space-y-1 px-2 pb-4">
+              <button
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedCategory === 'all'
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
                 onClick={() => setSelectedCategory('all')}
               >
                 <span>All Categories</span>
-                <Badge variant="outline" className="text-xs">
+                <span className="text-xs font-semibold">
                   {fileCategories.reduce((sum, cat) => sum + cat.count, 0)}
-                </Badge>
-              </Button>
+                </span>
+              </button>
               {fileCategories.map((categoryItem) => (
-                <Button
+                <button
                   key={categoryItem.category}
-                  variant={selectedCategory === categoryItem.category ? 'default' : 'ghost'}
-                  size="sm"
-                  className="w-full justify-between"
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedCategory === categoryItem.category
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                   onClick={() => setSelectedCategory(categoryItem.category)}
                 >
                   <span>{categoryItem.category}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {categoryItem.count}
-                  </Badge>
-                </Button>
+                  <span className="text-xs font-semibold text-gray-400">{categoryItem.count}</span>
+                </button>
               ))}
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Quick Actions</CardTitle>
+          {/* Quick Actions Card */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold text-gray-900">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 px-2 pb-4">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start"
+                className="w-full justify-start text-sm h-9 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                 onClick={() => setShowCreateFolderModal(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -636,7 +650,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start"
+                className="w-full justify-start text-sm h-9 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                 onClick={() => setShowUploadModal(true)}
               >
                 <Upload className="w-4 h-4 mr-2" />
@@ -647,35 +661,35 @@ export function FilesView({ projectId, user }: FilesViewProps) {
         </div>
 
         {/* Files Content */}
-        <div className="lg:col-span-3">
+        <div className="flex-1 min-w-0">
           {/* File Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-semibold text-[#007BFF]">{filteredFiles.length}</div>
-                <div className="text-xs text-muted-foreground">Total Files</div>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">{filteredFiles.length}</div>
+                <div className="text-xs text-gray-600 mt-1">Total Files</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-semibold text-[#28A745]">
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">
                   {(filteredFiles.reduce((sum, file) => sum + file.file_size, 0) / (1024 * 1024)).toFixed(1)}
                 </div>
-                <div className="text-xs text-muted-foreground">Total Size (MB)</div>
+                <div className="text-xs text-gray-600 mt-1">Total Size (MB)</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-semibold text-[#FFC107]">{folders.length}</div>
-                <div className="text-xs text-muted-foreground">Folders</div>
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-yellow-600">{folders.length}</div>
+                <div className="text-xs text-gray-600 mt-1">Folders</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-semibold text-[#DC3545]">
-                  {new Set(files.map(f => f.uploaded_by)).size}
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-red-600">
+                  {new Set(files.map(f => f.uploaded_by_id || f.uploaded_by)).size}
                 </div>
-                <div className="text-xs text-muted-foreground">Contributors</div>
+                <div className="text-xs text-gray-600 mt-1">Contributors</div>
               </CardContent>
             </Card>
           </div>
@@ -687,7 +701,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
               <span className="ml-2">Loading files...</span>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredFiles.map((file) => (
                 <FileCard key={file.id} file={file} />
               ))}
@@ -798,8 +812,8 @@ export function FilesView({ projectId, user }: FilesViewProps) {
               <div>
                 <Label htmlFor="upload-category">Category (Optional)</Label>
                 <Select
-                  value={uploadCategory}
-                  onValueChange={(value) => setUploadCategory(value)}
+                  value={uploadCategory || 'none'}
+                  onValueChange={(value: string) => setUploadCategory(value === 'none' ? '' : value)}
                 >
                   <SelectTrigger id="upload-category">
                     <SelectValue placeholder="Select category" />
@@ -819,7 +833,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
                 <Label htmlFor="upload-folder">Folder (Optional)</Label>
                 <Select
                   value={uploadFolderId || 'none'}
-                  onValueChange={(value) => setUploadFolderId(value === 'none' ? undefined : value)}
+                  onValueChange={(value: string) => setUploadFolderId(value === 'none' ? undefined : value)}
                 >
                   <SelectTrigger id="upload-folder">
                     <SelectValue placeholder="Select folder" />
@@ -835,14 +849,54 @@ export function FilesView({ projectId, user }: FilesViewProps) {
                 </Select>
               </div>
             </div>
+
+            <div>
+              <Label htmlFor="upload-description">Description (Optional)</Label>
+              <Textarea
+                id="upload-description"
+                placeholder="Enter file description"
+                rows={2}
+                value={uploadDescription}
+                onChange={(e) => setUploadDescription(e.target.value)}
+              />
+            </div>
+
+            {/* Tags and Public */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="upload-tags">Tags (Optional)</Label>
+                <Input
+                  id="upload-tags"
+                  placeholder="Comma-separated tags"
+                  value={uploadTags}
+                  onChange={(e) => setUploadTags(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-6">
+                <input
+                  type="checkbox"
+                  id="upload-is-public"
+                  checked={uploadIsPublic}
+                  onChange={(e) => setUploadIsPublic(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="upload-is-public" className="cursor-pointer">
+                  Make files public
+                </Label>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowUploadModal(false)
               setUploadFiles([])
-              setUploadCategory('none')
               setUploadFolderId(undefined)
+              setUploadCategory('')
+              setUploadDescription('')
+              setUploadTags('')
+              setUploadIsPublic(false)
             }}>
               Cancel
             </Button>
@@ -932,7 +986,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
 
             <div>
               <Label htmlFor="edit-file-category">Category</Label>
-              <Select value={editFileCategory || 'none'} onValueChange={(value) => setEditFileCategory(value === 'none' ? '' : value)}>
+              <Select value={editFileCategory || 'none'} onValueChange={(value: string) => setEditFileCategory(value === 'none' ? '' : value)}>
                 <SelectTrigger id="edit-file-category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -951,7 +1005,7 @@ export function FilesView({ projectId, user }: FilesViewProps) {
               <Label htmlFor="edit-file-folder">Folder</Label>
               <Select
                 value={editFileFolderId || 'none'}
-                onValueChange={(value) => setEditFileFolderId(value === 'none' ? undefined : value)}
+                onValueChange={(value: string) => setEditFileFolderId(value === 'none' ? undefined : value)}
               >
                 <SelectTrigger id="edit-file-folder">
                   <SelectValue placeholder="Select folder" />

@@ -29,6 +29,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { storiesApiService } from '../../../../services/storiesApi'
+import { kanbanReportsApiService, OverviewResponse, FlowMetrics, CycleTimeMetrics, WIPAnalysis, TeamPerformanceMetrics } from '../../../../services/kanbanReportsApi'
 import { toast } from 'sonner'
 
 // Simple date formatting function
@@ -58,7 +59,15 @@ export function ReportsView({ project, user }: ReportsViewProps) {
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Load tasks
+  // API-based state
+  const [overviewData, setOverviewData] = useState<OverviewResponse | null>(null)
+  const [flowData, setFlowData] = useState<FlowMetrics | null>(null)
+  const [cycleTimeData, setCycleTimeData] = useState<CycleTimeMetrics | null>(null)
+  const [wipData, setWipData] = useState<WIPAnalysis | null>(null)
+  const [teamData, setTeamData] = useState<TeamPerformanceMetrics | null>(null)
+  const [apiLoading, setApiLoading] = useState(false)
+
+  // Load tasks (fallback for local calculations)
   useEffect(() => {
     const loadTasks = async () => {
       if (!project?.id) return
@@ -78,6 +87,56 @@ export function ReportsView({ project, user }: ReportsViewProps) {
 
     loadTasks()
   }, [project?.id])
+
+  // Load data from API based on selected tab and date range
+  useEffect(() => {
+    const loadReportData = async () => {
+      if (!project?.id) return
+
+      const dateParams = {
+        from_date: dateRange.from?.toISOString(),
+        to_date: dateRange.to?.toISOString()
+      }
+
+      try {
+        setApiLoading(true)
+
+        switch (selectedTab) {
+          case 'overview':
+            const overview = await kanbanReportsApiService.getOverviewMetrics(project.id, dateParams)
+            setOverviewData(overview)
+            break
+
+          case 'flow':
+            const flow = await kanbanReportsApiService.getFlowMetrics(project.id, dateParams)
+            setFlowData(flow)
+            break
+
+          case 'cycle':
+            const cycleTime = await kanbanReportsApiService.getCycleTimeMetrics(project.id, dateParams)
+            setCycleTimeData(cycleTime)
+            break
+
+          case 'wip':
+            const wip = await kanbanReportsApiService.getWIPAnalysis(project.id, { ...dateParams, aging_threshold_days: 7 })
+            setWipData(wip)
+            break
+
+          case 'team':
+            const team = await kanbanReportsApiService.getTeamPerformance(project.id, dateParams)
+            setTeamData(team)
+            break
+        }
+      } catch (error) {
+        console.error(`Failed to load ${selectedTab} data:`, error)
+        toast.error(`Failed to load ${selectedTab} report data`)
+      } finally {
+        setApiLoading(false)
+      }
+    }
+
+    loadReportData()
+  }, [project?.id, selectedTab, dateRange])
 
   // Calculate Kanban metrics
   const metrics = {
@@ -232,6 +291,50 @@ export function ReportsView({ project, user }: ReportsViewProps) {
     }).sort((a, b) => b.daysInProgress - a.daysInProgress)
   }
 
+  // Export report handler
+  const handleExportReport = async () => {
+    if (!project?.id) return
+
+    try {
+      const reportTypeMap: { [key: string]: 'overview' | 'flow' | 'cycle' | 'wip' | 'team' } = {
+        overview: 'overview',
+        flow: 'flow',
+        cycle: 'cycle',
+        wip: 'wip',
+        team: 'team'
+      }
+
+      const currentReportType = reportTypeMap[selectedTab] || 'overview'
+
+      const dateParams = {
+        from_date: dateRange.from?.toISOString(),
+        to_date: dateRange.to?.toISOString()
+      }
+
+      const blob = await kanbanReportsApiService.exportReport(
+        project.id,
+        currentReportType,
+        'csv',
+        dateParams
+      )
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `kanban-${currentReportType}-report-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Report exported successfully')
+    } catch (error) {
+      console.error('Failed to export report:', error)
+      toast.error('Failed to export report')
+    }
+  }
+
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'up': return <ArrowUp className="w-4 h-4 text-green-600" />
@@ -302,6 +405,13 @@ export function ReportsView({ project, user }: ReportsViewProps) {
     )
   }
 
+  const renderLoadingState = () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span className="ml-2">Loading {selectedTab} data...</span>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -344,7 +454,10 @@ export function ReportsView({ project, user }: ReportsViewProps) {
             </PopoverContent>
           </Popover>
 
-          <Button className="bg-[#28A745] hover:bg-[#218838]">
+          <Button
+            className="bg-[#28A745] hover:bg-[#218838]"
+            onClick={handleExportReport}
+          >
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
@@ -352,7 +465,7 @@ export function ReportsView({ project, user }: ReportsViewProps) {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="flow">Flow Metrics</TabsTrigger>
           <TabsTrigger value="cycle">Cycle/Lead Time</TabsTrigger>

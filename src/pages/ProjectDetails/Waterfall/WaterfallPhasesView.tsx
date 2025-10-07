@@ -378,12 +378,12 @@ export function WaterfallPhasesView({ projectId, user }: WaterfallPhasesViewProp
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">End Date:</span>
-                <span>{format(phase.endDate, 'MMM d, yyyy')}</span>
+                <span>{formatDate(phase.endDate, 'MMM d, yyyy')}</span>
               </div>
               {phase.actualEndDate && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Actual End:</span>
-                  <span>{format(phase.actualEndDate, 'MMM d, yyyy')}</span>
+                  <span>{formatDate(phase.actualEndDate, 'MMM d, yyyy')}</span>
                 </div>
               )}
             </div>
@@ -586,7 +586,7 @@ export function WaterfallPhasesView({ projectId, user }: WaterfallPhasesViewProp
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                      {startDate ? formatDate(startDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -605,7 +605,7 @@ export function WaterfallPhasesView({ projectId, user }: WaterfallPhasesViewProp
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                      {endDate ? formatDate(endDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">

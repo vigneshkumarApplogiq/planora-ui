@@ -390,12 +390,27 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
   const projectTeamMembers = project?.team_members_detail || []
   const projectTeamLead = project?.team_lead_detail
 
-  const columns = [
-    { id: 'todo', title: 'To Do', status: 'todo' },
-    { id: 'in-progress', title: 'In Progress', status: 'in-progress' },
-    { id: 'review', title: 'Review', status: 'review' },
-    { id: 'done', title: 'Done', status: 'done' }
-  ]
+  // Create columns dynamically from master data (use task_status for task statuses)
+  const columns = React.useMemo(() => {
+    if (masterData?.task_status && masterData.task_status.length > 0) {
+      return masterData.task_status
+        .filter((status: any) => status.is_active)
+        .sort((a: any, b: any) => a.sort_order - b.sort_order)
+        .map((status: any) => ({
+          id: status.name.toLowerCase().replace(/\s+/g, '-'),
+          title: status.name,
+          status: status.name.toLowerCase().replace(/\s+/g, '-'),
+          color: status.color || '#gray'
+        }))
+    }
+    // Fallback to default columns if master data is not available
+    return [
+      { id: 'todo', title: 'To Do', status: 'todo', color: '#6B7280' },
+      { id: 'in-progress', title: 'In Progress', status: 'in-progress', color: '#3B82F6' },
+      { id: 'review', title: 'Review', status: 'review', color: '#EAB308' },
+      { id: 'done', title: 'Done', status: 'done', color: '#22C55E' }
+    ]
+  }, [masterData])
 
   useEffect(() => {
     loadTasks()
@@ -424,7 +439,26 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
 
   const handleTaskUpdate = async (updatedTask: any) => {
     try {
-      await storiesApiService.updateStory(updatedTask.id, updatedTask)
+      // Convert Task data to Story format for API (similar to TasksView)
+      const storyUpdateData = {
+        title: updatedTask.title,
+        description: updatedTask.description,
+        story_type: updatedTask.story_type,
+        priority: updatedTask.priority,
+        status: updatedTask.status,
+        sprint_id: updatedTask.sprint_id || undefined,
+        assignee_id: updatedTask.assignee_id || undefined,
+        progress: updatedTask.progress || 0,
+        start_date: updatedTask.start_date,
+        end_date: updatedTask.end_date || updatedTask.due_date,
+        tags: updatedTask.tags || [],
+        labels: updatedTask.tags || [],
+        acceptance_criteria: updatedTask.acceptance_criteria?.filter((c: string) => c.trim() !== '') || [],
+        comments: updatedTask.comments || [],
+        attached_files: updatedTask.attachments || []  // API expects 'attached_files', not 'attachments'
+      }
+
+      await storiesApiService.updateStory(updatedTask.id, storyUpdateData)
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === updatedTask.id ? { ...task, ...updatedTask } : task
@@ -440,26 +474,32 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
   }
 
   const handleTaskMove = async (taskId: string, newStatus: string) => {
-    try {
-      // Update via API
-      await storiesApiService.updateStory(taskId, { status: newStatus })
+    console.log('🚀 Moving task:', taskId, 'to status:', newStatus)
 
-      // Update local state
+    try {
+      // Optimistically update local state first for better UX
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? { ...task, status: newStatus } : task
         )
       )
+
+      // Update via API
+      await storiesApiService.updateStory(taskId, { status: newStatus })
+
       toast.success('Task moved successfully')
+      console.log('✅ Task moved successfully')
     } catch (error) {
       console.error('❌ Failed to move task:', error)
       toast.error('Failed to move task')
+      // Reload tasks to revert the optimistic update on error
+      loadTasks()
     }
   }
 
   const getTasksForColumn = (status: string) => {
     return tasks.filter(task => {
-      const taskStatus = task.status?.toLowerCase().replace(' ', '-') || 'todo'
+      const taskStatus = task.status?.toLowerCase().replace(/\s+/g, '-') || 'todo'
       const matchesStatus = taskStatus === status
       const matchesSearch = !searchTerm ||
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -620,7 +660,7 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
           onClose={() => setShowTaskDialog(false)}
           onUpdate={handleTaskUpdate}
           user={user}
-          availableStatuses={masterData?.statuses}
+          availableStatuses={masterData?.task_status}
           availablePriorities={masterData?.priorities}
           projectTeamMembers={projectTeamMembers}
           projectTeamLead={projectTeamLead}

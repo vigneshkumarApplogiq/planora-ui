@@ -42,9 +42,9 @@ export function KanbanProjectDashboard({ project, user, masterData: propMasterDa
           const tasksResponse = await storiesApiService.getStories(project.id, 1, 100)
           setTasks(tasksResponse.items || [])
 
-          // Create columns from master statuses with task counts
-          if (masterData?.statuses) {
-            const columnsData = masterData.statuses
+          // Create columns from master task_status with task counts
+          if (masterData?.task_status) {
+            const columnsData = masterData.task_status
               .filter((status: any) => status.is_active)
               .sort((a: any, b: any) => a.sort_order - b.sort_order)
               .map((status: any) => {

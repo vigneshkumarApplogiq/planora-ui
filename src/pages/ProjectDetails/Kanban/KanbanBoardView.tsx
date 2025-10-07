@@ -436,12 +436,12 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
   // Initialize columns with tasks
   useEffect(() => {
     // Only create columns if master data is loaded
-    if (!masterData || !masterData.statuses || masterData.statuses.length === 0) {
+    if (!masterData || !masterData.task_status || masterData.task_status.length === 0) {
       console.warn('⚠️ [Kanban] Master data not available yet, skipping column initialization')
       return
     }
-    // Create columns from master statuses
-    const defaultColumns: KanbanColumn[] = masterData.statuses
+    // Create columns from master task_status
+    const defaultColumns: KanbanColumn[] = masterData.task_status
       .filter((status: any) => status.is_active)
       .sort((a: any, b: any) => a.sort_order - b.sort_order)
       .map((status: any) => {
@@ -470,36 +470,36 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
 
   const handleTaskMove = useCallback(async (taskId: string, targetColumnId: string) => {
     try {
-      // Find target column to get the status
-      const targetColumn = columns.find(col => col.id === targetColumnId)
-      if (!targetColumn) return
-
-      // Check WIP limits
-      if (targetColumn.wipLimit && targetColumn.tasks.length >= targetColumn.wipLimit) {
-        toast.error(`Cannot move task: WIP limit (${targetColumn.wipLimit}) exceeded for ${targetColumn.title}`)
-        return
-      }
-
-      // Update task status via API
-      await storiesApiService.updateStory(taskId, {
-        status: targetColumn.status
-      })
-
-      // Update local state
+      // Update local state optimistically first
       setColumns(prevColumns => {
+        // Find target column to get the status
+        const targetColumn = prevColumns.find(col => col.id === targetColumnId)
+        if (!targetColumn) return prevColumns
+
+        // Check WIP limits
+        if (targetColumn.wipLimit && targetColumn.tasks.length >= targetColumn.wipLimit) {
+          toast.error(`Cannot move task: WIP limit (${targetColumn.wipLimit}) exceeded for ${targetColumn.title}`)
+          return prevColumns
+        }
+
+        // Find the task to move from all columns
+        const taskToMove = prevColumns
+          .flatMap(col => col.tasks)
+          .find(task => task.id === taskId)
+
+        if (!taskToMove) return prevColumns
+
+        // Create new columns array with task moved
         return prevColumns.map(column => {
           if (column.id === targetColumnId) {
-            // Add task to target column
-            const taskToMove = prevColumns
-              .flatMap(col => col.tasks)
-              .find(task => task.id === taskId)
-
-            if (taskToMove && !column.tasks.find(t => t.id === taskId)) {
+            // Add task to target column if not already there
+            if (!column.tasks.find(t => t.id === taskId)) {
               return {
                 ...column,
                 tasks: [...column.tasks, { ...taskToMove, status: targetColumn.status }]
               }
             }
+            return column
           } else {
             // Remove task from other columns
             return {
@@ -507,16 +507,26 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
               tasks: column.tasks.filter(task => task.id !== taskId)
             }
           }
-          return column
         })
       })
+
+      // Update task status via API
+      const targetColumn = columns.find(col => col.id === targetColumnId)
+      if (targetColumn) {
+        await storiesApiService.updateStory(taskId, {
+          status: targetColumn.status
+        })
+      }
 
       toast.success('Task moved successfully')
     } catch (error) {
       console.error('Failed to move task:', error)
       toast.error('Failed to move task')
+      // Reload tasks on error to restore state
+      const response = await storiesApiService.getStories(projectId, 1, 100)
+      setTasks(response.items)
     }
-  }, [columns])
+  }, [columns, projectId])
 
   const handleTaskEdit = (task: KanbanTask) => {
     setSelectedTask(task)
@@ -525,8 +535,27 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
 
   const handleTaskUpdate = async (updatedTask: any) => {
     try {
+      // Convert Task data to Story format for API (similar to TasksView)
+      const storyUpdateData = {
+        title: updatedTask.title,
+        description: updatedTask.description,
+        story_type: updatedTask.story_type,
+        priority: updatedTask.priority,
+        status: updatedTask.status,
+        sprint_id: updatedTask.sprint_id || undefined,
+        assignee_id: updatedTask.assignee_id || undefined,
+        progress: updatedTask.progress || 0,
+        start_date: updatedTask.start_date,
+        end_date: updatedTask.end_date || updatedTask.due_date,
+        tags: updatedTask.tags || [],
+        labels: updatedTask.tags || [],
+        acceptance_criteria: updatedTask.acceptance_criteria?.filter((c: string) => c.trim() !== '') || [],
+        comments: updatedTask.comments || [],
+        attached_files: updatedTask.attachments || []  // API expects 'attached_files', not 'attachments'
+      }
+
       // Update task via API
-      await storiesApiService.updateStory(updatedTask.id, updatedTask)
+      await storiesApiService.updateStory(updatedTask.id, storyUpdateData)
 
       // Update local state
       setColumns(prevColumns =>
@@ -692,7 +721,7 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
             onClose={() => setShowTaskDialog(false)}
             onUpdate={handleTaskUpdate}
             user={user}
-            availableStatuses={masterData?.statuses}
+            availableStatuses={masterData?.task_status}
             availablePriorities={masterData?.priorities}
             projectTeamMembers={projectTeamMembers}
             projectTeamLead={projectTeamLead}

@@ -491,7 +491,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         tags: createTaskData.tags || [],
         labels: createTaskData.tags || [],
         acceptance_criteria: createTaskData.acceptance_criteria?.filter(c => c.trim() !== '') || [],
-        attachments: attachments
+        attached_files: attachments  // API expects 'attached_files', not 'attachments'
       }
 
       try {
@@ -553,7 +553,8 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         tags: taskData.tags || [],
         labels: taskData.tags || [],
         acceptance_criteria: taskData.acceptance_criteria?.filter((c: string) => c.trim() !== '') || [],
-        comments: taskData.comments || []
+        comments: taskData.comments || [],
+        attached_files: taskData.attachments || []  // API expects 'attached_files', not 'attachments'
       }
 
       try {

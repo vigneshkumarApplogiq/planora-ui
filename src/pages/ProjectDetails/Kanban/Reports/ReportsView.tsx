@@ -475,496 +475,557 @@ export function ReportsView({ project, user }: ReportsViewProps) {
 
         {/* OVERVIEW TAB */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard
-              title="Total Tasks"
-              value={metrics.totalTasks}
-              icon={Layers}
-              description="All tasks in the board"
-            />
-            <MetricCard
-              title="Completion Rate"
-              value={metrics.completionRate}
-              unit="%"
-              icon={CheckCircle}
-              description={`${metrics.completedTasks} of ${metrics.totalTasks} completed`}
-            />
-            <MetricCard
-              title="Throughput"
-              value={metrics.throughput}
-              unit=" tasks/week"
-              icon={Zap}
-              description="Tasks completed last week"
-            />
-            <MetricCard
-              title="WIP Count"
-              value={metrics.wipCount}
-              icon={Activity}
-              description="Currently in progress"
-            />
-          </div>
+          {apiLoading ? renderLoadingState() : (
+            <>
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                  title="Total Tasks"
+                  value={overviewData?.metrics.total_tasks ?? metrics.totalTasks}
+                  icon={Layers}
+                  description="All tasks in the board"
+                />
+                <MetricCard
+                  title="Completion Rate"
+                  value={overviewData?.metrics.completion_rate ?? metrics.completionRate}
+                  unit="%"
+                  icon={CheckCircle}
+                  description={`${overviewData?.metrics.completed_tasks ?? metrics.completedTasks} of ${overviewData?.metrics.total_tasks ?? metrics.totalTasks} completed`}
+                />
+                <MetricCard
+                  title="Throughput"
+                  value={overviewData?.metrics.throughput ?? metrics.throughput}
+                  unit=" tasks/week"
+                  icon={Zap}
+                  description="Tasks completed last week"
+                />
+                <MetricCard
+                  title="WIP Count"
+                  value={overviewData?.metrics.wip_count ?? metrics.wipCount}
+                  icon={Activity}
+                  description="Currently in progress"
+                />
+              </div>
 
-          {/* Task Distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Task Distribution by Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                      <span className="text-sm">To Do</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">{metrics.todoTasks}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {metrics.totalTasks > 0 ? Math.round((metrics.todoTasks / metrics.totalTasks) * 100) : 0}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <Progress value={metrics.totalTasks > 0 ? (metrics.todoTasks / metrics.totalTasks) * 100 : 0} className="h-2" />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-sm">In Progress</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">{metrics.inProgressTasks}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {metrics.totalTasks > 0 ? Math.round((metrics.inProgressTasks / metrics.totalTasks) * 100) : 0}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <Progress value={metrics.totalTasks > 0 ? (metrics.inProgressTasks / metrics.totalTasks) * 100 : 0} className="h-2" />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-sm">Done</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">{metrics.completedTasks}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {metrics.completionRate}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <Progress value={metrics.completionRate} className="h-2" />
-
-                  {metrics.blockedTasks > 0 && (
-                    <>
+              {/* Task Distribution */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Task Distribution by Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                          <span className="text-sm">Blocked</span>
+                          <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                          <span className="text-sm">To Do</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium">{metrics.blockedTasks}</span>
-                          <Badge variant="outline" className="text-xs bg-red-100 text-red-800">
-                            {metrics.totalTasks > 0 ? Math.round((metrics.blockedTasks / metrics.totalTasks) * 100) : 0}%
-                          </Badge>
-                        </div>
-                      </div>
-                      <Progress value={metrics.totalTasks > 0 ? (metrics.blockedTasks / metrics.totalTasks) * 100 : 0} className="h-2" />
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Task Distribution by Type</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(metrics.tasksByType).map(([type, count]) => (
-                    <div key={type}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm capitalize">{type}</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium">{count}</span>
+                          <span className="text-sm font-medium">{overviewData?.task_distribution_by_status.todo ?? metrics.todoTasks}</span>
                           <Badge variant="outline" className="text-xs">
-                            {metrics.totalTasks > 0 ? Math.round((count as number / metrics.totalTasks) * 100) : 0}%
+                            {(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? Math.round(((overviewData?.task_distribution_by_status.todo ?? metrics.todoTasks) / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100) : 0}%
                           </Badge>
                         </div>
                       </div>
-                      <Progress value={metrics.totalTasks > 0 ? (count as number / metrics.totalTasks) * 100 : 0} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      <Progress value={(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? ((overviewData?.task_distribution_by_status.todo ?? metrics.todoTasks) / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100 : 0} className="h-2" />
 
-          {/* Priority Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Priority Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(metrics.tasksByPriority).map(([priority, count]) => (
-                  <div key={priority} className="text-center p-4 bg-muted rounded-lg">
-                    <div className="text-2xl font-semibold">{count as number}</div>
-                    <div className="text-sm text-muted-foreground capitalize">{priority}</div>
-                  </div>
-                ))}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm">In Progress</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium">{overviewData?.task_distribution_by_status.in_progress ?? metrics.inProgressTasks}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? Math.round(((overviewData?.task_distribution_by_status.in_progress ?? metrics.inProgressTasks) / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100) : 0}%
+                          </Badge>
+                        </div>
+                      </div>
+                      <Progress value={(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? ((overviewData?.task_distribution_by_status.in_progress ?? metrics.inProgressTasks) / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100 : 0} className="h-2" />
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-sm">Done</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium">{overviewData?.task_distribution_by_status.done ?? metrics.completedTasks}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {overviewData?.metrics.completion_rate ?? metrics.completionRate}%
+                          </Badge>
+                        </div>
+                      </div>
+                      <Progress value={overviewData?.metrics.completion_rate ?? metrics.completionRate} className="h-2" />
+
+                      {(overviewData?.task_distribution_by_status.blocked ?? metrics.blockedTasks) > 0 && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                              <span className="text-sm">Blocked</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium">{overviewData?.task_distribution_by_status.blocked ?? metrics.blockedTasks}</span>
+                              <Badge variant="outline" className="text-xs bg-red-100 text-red-800">
+                                {(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? Math.round(((overviewData?.task_distribution_by_status.blocked ?? metrics.blockedTasks) / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100) : 0}%
+                              </Badge>
+                            </div>
+                          </div>
+                          <Progress value={(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? ((overviewData?.task_distribution_by_status.blocked ?? metrics.blockedTasks) / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100 : 0} className="h-2" />
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Task Distribution by Type</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {Object.entries(overviewData?.task_distribution_by_type ?? metrics.tasksByType).map(([type, count]) => (
+                        <div key={type}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm capitalize">{type}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium">{count}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? Math.round((count as number / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100) : 0}%
+                              </Badge>
+                            </div>
+                          </div>
+                          <Progress value={(overviewData?.metrics.total_tasks ?? metrics.totalTasks) > 0 ? (count as number / (overviewData?.metrics.total_tasks ?? metrics.totalTasks)) * 100 : 0} className="h-2" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Priority Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Priority Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(overviewData?.task_distribution_by_priority ?? metrics.tasksByPriority).map(([priority, count]) => (
+                      <div key={priority} className="text-center p-4 bg-muted rounded-lg">
+                        <div className="text-2xl font-semibold">{count as number}</div>
+                        <div className="text-sm text-muted-foreground capitalize">{priority}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* FLOW METRICS TAB */}
         <TabsContent value="flow" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <MetricCard
-              title="Flow Efficiency"
-              value={metrics.flowEfficiency}
-              unit="%"
-              icon={TrendingUp}
-              description="Completion rate across board"
-            />
-            <MetricCard
-              title="Throughput"
-              value={metrics.throughput}
-              unit=" tasks/week"
-              icon={Zap}
-              description="Tasks completed per week"
-            />
-            <MetricCard
-              title="WIP Count"
-              value={metrics.wipCount}
-              icon={Activity}
-              description="Work in progress"
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Flow Efficiency Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className={`p-4 rounded-lg ${
-                  metrics.flowEfficiency >= 80 ? 'bg-green-50 dark:bg-green-950' :
-                  metrics.flowEfficiency >= 60 ? 'bg-yellow-50 dark:bg-yellow-950' :
-                  'bg-red-50 dark:bg-red-950'
-                }`}>
-                  <h4 className={`font-medium mb-2 ${
-                    metrics.flowEfficiency >= 80 ? 'text-green-800 dark:text-green-200' :
-                    metrics.flowEfficiency >= 60 ? 'text-yellow-800 dark:text-yellow-200' :
-                    'text-red-800 dark:text-red-200'
-                  }`}>
-                    {metrics.flowEfficiency >= 80 ? 'Excellent Flow' :
-                     metrics.flowEfficiency >= 60 ? 'Good Flow' :
-                     'Flow Needs Improvement'}
-                  </h4>
-                  <p className={`text-sm ${
-                    metrics.flowEfficiency >= 80 ? 'text-green-700 dark:text-green-300' :
-                    metrics.flowEfficiency >= 60 ? 'text-yellow-700 dark:text-yellow-300' :
-                    'text-red-700 dark:text-red-300'
-                  }`}>
-                    {metrics.flowEfficiency >= 80
-                      ? 'Your team is maintaining excellent flow with high completion rates.'
-                      : metrics.flowEfficiency >= 60
-                      ? 'Flow is good but there is room for improvement in completion rates.'
-                      : 'Consider reviewing bottlenecks and reducing WIP to improve flow.'}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <h5 className="font-medium mb-2">Key Insights</h5>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• {metrics.completedTasks} tasks completed</li>
-                      <li>• {metrics.throughput} tasks finished last week</li>
-                      <li>• {metrics.wipCount} tasks currently in progress</li>
-                      <li>• {metrics.flowEfficiency}% overall flow efficiency</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h5 className="font-medium mb-2">Recommendations</h5>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>• {metrics.wipCount > 10 ? 'Reduce WIP to improve flow' : 'WIP is at a healthy level'}</li>
-                      <li>• {metrics.blockedTasks > 0 ? `Address ${metrics.blockedTasks} blocked tasks` : 'No blocked tasks'}</li>
-                      <li>• Focus on completing in-progress tasks</li>
-                      <li>• Monitor and optimize cycle times</li>
-                    </ul>
-                  </div>
-                </div>
+          {apiLoading ? renderLoadingState() : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MetricCard
+                  title="Flow Efficiency"
+                  value={flowData?.flow_efficiency ?? metrics.flowEfficiency}
+                  unit="%"
+                  icon={TrendingUp}
+                  description="Completion rate across board"
+                />
+                <MetricCard
+                  title="Throughput"
+                  value={flowData?.throughput ?? metrics.throughput}
+                  unit=" tasks/week"
+                  icon={Zap}
+                  description="Tasks completed per week"
+                />
+                <MetricCard
+                  title="WIP Count"
+                  value={flowData?.wip_count ?? metrics.wipCount}
+                  icon={Activity}
+                  description="Work in progress"
+                />
               </div>
-            </CardContent>
-          </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Flow Efficiency Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-lg ${
+                      (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'bg-green-50 dark:bg-green-950' :
+                      (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'bg-yellow-50 dark:bg-yellow-950' :
+                      'bg-red-50 dark:bg-red-950'
+                    }`}>
+                      <h4 className={`font-medium mb-2 ${
+                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'text-green-800 dark:text-green-200' :
+                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'text-yellow-800 dark:text-yellow-200' :
+                        'text-red-800 dark:text-red-200'
+                      }`}>
+                        {flowData?.insights?.completion_status === 'excellent' ? 'Excellent Flow' :
+                         flowData?.insights?.completion_status === 'good' ? 'Good Flow' :
+                         flowData?.insights?.completion_status === 'needs_improvement' ? 'Flow Needs Improvement' :
+                         (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'Excellent Flow' :
+                         (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'Good Flow' :
+                         'Flow Needs Improvement'}
+                      </h4>
+                      <p className={`text-sm ${
+                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'text-green-700 dark:text-green-300' :
+                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'text-yellow-700 dark:text-yellow-300' :
+                        'text-red-700 dark:text-red-300'
+                      }`}>
+                        {flowData?.insights?.message ?? (
+                          (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80
+                            ? 'Your team is maintaining excellent flow with high completion rates.'
+                            : (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60
+                            ? 'Flow is good but there is room for improvement in completion rates.'
+                            : 'Consider reviewing bottlenecks and reducing WIP to improve flow.'
+                        )}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <h5 className="font-medium mb-2">Key Insights</h5>
+                        <ul className="space-y-1 text-muted-foreground">
+                          {flowData?.insights?.key_points ? (
+                            flowData.insights.key_points.map((point, idx) => (
+                              <li key={idx}>• {point}</li>
+                            ))
+                          ) : (
+                            <>
+                              <li>• {flowData?.completed_tasks ?? metrics.completedTasks} tasks completed</li>
+                              <li>• {flowData?.throughput ?? metrics.throughput} tasks finished last week</li>
+                              <li>• {flowData?.wip_count ?? metrics.wipCount} tasks currently in progress</li>
+                              <li>• {flowData?.flow_efficiency ?? metrics.flowEfficiency}% overall flow efficiency</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                      <div>
+                        <h5 className="font-medium mb-2">Recommendations</h5>
+                        <ul className="space-y-1 text-muted-foreground">
+                          {flowData?.recommendations ? (
+                            flowData.recommendations.map((rec, idx) => (
+                              <li key={idx}>• {rec}</li>
+                            ))
+                          ) : (
+                            <>
+                              <li>• {(flowData?.wip_count ?? metrics.wipCount) > 10 ? 'Reduce WIP to improve flow' : 'WIP is at a healthy level'}</li>
+                              <li>• {(flowData?.blocked_tasks ?? metrics.blockedTasks) > 0 ? `Address ${flowData?.blocked_tasks ?? metrics.blockedTasks} blocked tasks` : 'No blocked tasks'}</li>
+                              <li>• Focus on completing in-progress tasks</li>
+                              <li>• Monitor and optimize cycle times</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* CYCLE/LEAD TIME TAB */}
         <TabsContent value="cycle" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <MetricCard
-              title="Average Cycle Time"
-              value={metrics.averageCycleTime}
-              unit=" days"
-              icon={Clock}
-              description="Start to completion"
-            />
-            <MetricCard
-              title="Average Lead Time"
-              value={metrics.averageLeadTime}
-              unit=" days"
-              icon={Target}
-              description="Creation to completion"
-            />
-            <MetricCard
-              title="Time Efficiency"
-              value={
-                metrics.averageLeadTime > 0
-                  ? Math.round((metrics.averageCycleTime / metrics.averageLeadTime) * 100)
-                  : 0
-              }
-              unit="%"
-              icon={TrendingUp}
-              description="Cycle vs Lead time"
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Cycle Time vs Lead Time Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center space-x-2">
-                      <Clock className="w-4 h-4" />
-                      <span>Cycle Time</span>
-                    </h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Time from when work starts until completion
-                    </p>
-                    <div className="text-3xl font-bold text-[#007BFF] mb-2">{metrics.averageCycleTime} days</div>
-                    <p className="text-xs text-muted-foreground">
-                      {metrics.averageCycleTime <= 3 ? 'Excellent' :
-                       metrics.averageCycleTime <= 7 ? 'Good' :
-                       'Needs improvement'}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-3 flex items-center space-x-2">
-                      <Target className="w-4 h-4" />
-                      <span>Lead Time</span>
-                    </h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Total time from task creation to completion
-                    </p>
-                    <div className="text-3xl font-bold text-[#28A745] mb-2">{metrics.averageLeadTime} days</div>
-                    <p className="text-xs text-muted-foreground">
-                      {metrics.averageLeadTime <= 5 ? 'Excellent' :
-                       metrics.averageLeadTime <= 14 ? 'Good' :
-                       'Needs improvement'}
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-4 border-t">
-                  <h5 className="font-medium mb-2">Understanding the Metrics</h5>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>• <strong>Cycle Time:</strong> Measures active work time. Lower is better.</p>
-                    <p>• <strong>Lead Time:</strong> Measures total time including wait time. Should be close to cycle time.</p>
-                    <p>• <strong>Gap Analysis:</strong> Large gap indicates tasks waiting before work starts.</p>
-                  </div>
-                </div>
+          {apiLoading ? renderLoadingState() : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MetricCard
+                  title="Average Cycle Time"
+                  value={cycleTimeData?.average_cycle_time ?? metrics.averageCycleTime}
+                  unit=" days"
+                  icon={Clock}
+                  description="Start to completion"
+                />
+                <MetricCard
+                  title="Average Lead Time"
+                  value={cycleTimeData?.average_lead_time ?? metrics.averageLeadTime}
+                  unit=" days"
+                  icon={Target}
+                  description="Creation to completion"
+                />
+                <MetricCard
+                  title="Time Efficiency"
+                  value={cycleTimeData?.time_efficiency ?? (
+                    metrics.averageLeadTime > 0
+                      ? Math.round((metrics.averageCycleTime / metrics.averageLeadTime) * 100)
+                      : 0
+                  )}
+                  unit="%"
+                  icon={TrendingUp}
+                  description="Cycle vs Lead time"
+                />
               </div>
-            </CardContent>
-          </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Cycle Time vs Lead Time Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center space-x-2">
+                          <Clock className="w-4 h-4" />
+                          <span>Cycle Time</span>
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Time from when work starts until completion
+                        </p>
+                        <div className="text-3xl font-bold text-[#007BFF] mb-2">{cycleTimeData?.average_cycle_time ?? metrics.averageCycleTime} days</div>
+                        <p className="text-xs text-muted-foreground">
+                          {cycleTimeData?.cycle_time_status === 'excellent' ? 'Excellent' :
+                           cycleTimeData?.cycle_time_status === 'good' ? 'Good' :
+                           cycleTimeData?.cycle_time_status === 'needs_improvement' ? 'Needs improvement' :
+                           (cycleTimeData?.average_cycle_time ?? metrics.averageCycleTime) <= 3 ? 'Excellent' :
+                           (cycleTimeData?.average_cycle_time ?? metrics.averageCycleTime) <= 7 ? 'Good' :
+                           'Needs improvement'}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center space-x-2">
+                          <Target className="w-4 h-4" />
+                          <span>Lead Time</span>
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Total time from task creation to completion
+                        </p>
+                        <div className="text-3xl font-bold text-[#28A745] mb-2">{cycleTimeData?.average_lead_time ?? metrics.averageLeadTime} days</div>
+                        <p className="text-xs text-muted-foreground">
+                          {cycleTimeData?.lead_time_status === 'excellent' ? 'Excellent' :
+                           cycleTimeData?.lead_time_status === 'good' ? 'Good' :
+                           cycleTimeData?.lead_time_status === 'needs_improvement' ? 'Needs improvement' :
+                           (cycleTimeData?.average_lead_time ?? metrics.averageLeadTime) <= 5 ? 'Excellent' :
+                           (cycleTimeData?.average_lead_time ?? metrics.averageLeadTime) <= 14 ? 'Good' :
+                           'Needs improvement'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t">
+                      <h5 className="font-medium mb-2">Understanding the Metrics</h5>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p>• <strong>Cycle Time:</strong> Measures active work time. Lower is better.</p>
+                        <p>• <strong>Lead Time:</strong> Measures total time including wait time. Should be close to cycle time.</p>
+                        <p>• <strong>Gap Analysis:</strong> Large gap indicates tasks waiting before work starts.</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* WIP ANALYSIS TAB */}
         <TabsContent value="wip" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <MetricCard
-              title="Current WIP"
-              value={metrics.wipCount}
-              icon={Activity}
-              description="Tasks in progress"
-            />
-            <MetricCard
-              title="Aging WIP"
-              value={metrics.agingWIP.filter(t => t.isAging).length}
-              icon={AlertCircle}
-              description="Tasks over 7 days"
-            />
-            <MetricCard
-              title="WIP Health"
-              value={
-                metrics.wipCount === 0 ? 0 :
-                Math.round(((metrics.wipCount - metrics.agingWIP.filter(t => t.isAging).length) / metrics.wipCount) * 100)
-              }
-              unit="%"
-              icon={CheckCircle}
-              description="Non-aging WIP"
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Work in Progress Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {metrics.agingWIP.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No work in progress</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {metrics.agingWIP.slice(0, 10).map((task: any) => (
-                    <div
-                      key={task.id}
-                      className={`p-4 border rounded-lg ${task.isAging ? 'border-red-300 bg-red-50 dark:bg-red-950' : 'border-gray-200'}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-xs font-semibold text-blue-600">{task.task_id}</span>
-                            {task.isAging && (
-                              <Badge variant="outline" className="text-xs bg-red-100 text-red-800 border-red-300">
-                                Aging
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="font-medium text-sm">{task.title}</p>
-                          <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
-                            <span>Status: {task.status}</span>
-                            {task.assignee && <span>Assigned to: {task.assignee.name}</span>}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-2xl font-bold ${task.isAging ? 'text-red-600' : 'text-gray-900'}`}>
-                            {task.daysInProgress}
-                          </div>
-                          <div className="text-xs text-muted-foreground">days</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">WIP Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                {metrics.agingWIP.filter(t => t.isAging).length > 0 && (
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-                    <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                      ⚠️ {metrics.agingWIP.filter(t => t.isAging).length} tasks have been in progress for over 7 days
-                    </p>
-                    <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
-                      Review these tasks for blockers or consider breaking them down into smaller items.
-                    </p>
-                  </div>
-                )}
-                <ul className="space-y-1 text-muted-foreground">
-                  <li>• {metrics.wipCount > 10 ? 'Consider limiting WIP to improve focus' : 'WIP is at a healthy level'}</li>
-                  <li>• Focus on completing tasks before starting new ones</li>
-                  <li>• Review aging tasks weekly to identify blockers</li>
-                  <li>• Maintain a balanced distribution across team members</li>
-                </ul>
+          {apiLoading ? renderLoadingState() : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MetricCard
+                  title="Current WIP"
+                  value={wipData?.current_wip ?? metrics.wipCount}
+                  icon={Activity}
+                  description="Tasks in progress"
+                />
+                <MetricCard
+                  title="Aging WIP"
+                  value={wipData?.aging_wip_count ?? metrics.agingWIP.filter(t => t.isAging).length}
+                  icon={AlertCircle}
+                  description="Tasks over 7 days"
+                />
+                <MetricCard
+                  title="WIP Health"
+                  value={wipData?.wip_health ?? (
+                    metrics.wipCount === 0 ? 0 :
+                    Math.round(((metrics.wipCount - metrics.agingWIP.filter(t => t.isAging).length) / metrics.wipCount) * 100)
+                  )}
+                  unit="%"
+                  icon={CheckCircle}
+                  description="Non-aging WIP"
+                />
               </div>
-            </CardContent>
-          </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Work in Progress Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(wipData?.wip_tasks ?? metrics.agingWIP).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No work in progress</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(wipData?.wip_tasks ?? metrics.agingWIP).slice(0, 10).map((task: any) => (
+                        <div
+                          key={task.id}
+                          className={`p-4 border rounded-lg ${task.is_aging || task.isAging ? 'border-red-300 bg-red-50 dark:bg-red-950' : 'border-gray-200'}`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-xs font-semibold text-blue-600">{task.task_id}</span>
+                                {(task.is_aging || task.isAging) && (
+                                  <Badge variant="outline" className="text-xs bg-red-100 text-red-800 border-red-300">
+                                    Aging
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="font-medium text-sm">{task.title}</p>
+                              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                                <span>Status: {task.status}</span>
+                                {task.assignee && <span>Assigned to: {task.assignee.name}</span>}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`text-2xl font-bold ${task.is_aging || task.isAging ? 'text-red-600' : 'text-gray-900'}`}>
+                                {task.days_in_progress ?? task.daysInProgress}
+                              </div>
+                              <div className="text-xs text-muted-foreground">days</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">WIP Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    {(wipData?.aging_wip_count ?? metrics.agingWIP.filter(t => t.isAging).length) > 0 && (
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                          ⚠️ {wipData?.aging_wip_count ?? metrics.agingWIP.filter(t => t.isAging).length} tasks have been in progress for over 7 days
+                        </p>
+                        <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
+                          Review these tasks for blockers or consider breaking them down into smaller items.
+                        </p>
+                      </div>
+                    )}
+                    <ul className="space-y-1 text-muted-foreground">
+                      {wipData?.recommendations ? (
+                        wipData.recommendations.map((rec, idx) => (
+                          <li key={idx}>• {rec}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>• {(wipData?.current_wip ?? metrics.wipCount) > 10 ? 'Consider limiting WIP to improve focus' : 'WIP is at a healthy level'}</li>
+                          <li>• Focus on completing tasks before starting new ones</li>
+                          <li>• Review aging tasks weekly to identify blockers</li>
+                          <li>• Maintain a balanced distribution across team members</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
 
         {/* TEAM PERFORMANCE TAB */}
         <TabsContent value="team" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <MetricCard
-              title="Team Members"
-              value={metrics.teamPerformance.length}
-              icon={Users}
-            />
-            <MetricCard
-              title="Total Tasks"
-              value={metrics.totalTasks}
-              icon={Layers}
-            />
-            <MetricCard
-              title="Completed"
-              value={metrics.completedTasks}
-              icon={CheckCircle}
-            />
-            <MetricCard
-              title="Avg Completion"
-              value={
-                metrics.teamPerformance.length > 0
-                  ? Math.round(metrics.teamPerformance.reduce((sum, m) => sum + m.completionRate, 0) / metrics.teamPerformance.length)
-                  : 0
-              }
-              unit="%"
-              icon={TrendingUp}
-            />
-          </div>
+          {apiLoading ? renderLoadingState() : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <MetricCard
+                  title="Team Members"
+                  value={teamData?.team_size ?? metrics.teamPerformance.length}
+                  icon={Users}
+                />
+                <MetricCard
+                  title="Total Tasks"
+                  value={teamData?.total_tasks ?? metrics.totalTasks}
+                  icon={Layers}
+                />
+                <MetricCard
+                  title="Completed"
+                  value={teamData?.completed_tasks ?? metrics.completedTasks}
+                  icon={CheckCircle}
+                />
+                <MetricCard
+                  title="Avg Completion"
+                  value={teamData?.average_completion_rate ?? (
+                    metrics.teamPerformance.length > 0
+                      ? Math.round(metrics.teamPerformance.reduce((sum, m) => sum + m.completionRate, 0) / metrics.teamPerformance.length)
+                      : 0
+                  )}
+                  unit="%"
+                  icon={TrendingUp}
+                />
+              </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Individual Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {metrics.teamPerformance.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No team members assigned</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {metrics.teamPerformance.map((member: any, index: number) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback className="bg-[#28A745] text-white">
-                              {member.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{member.name}</p>
-                            <p className="text-xs text-muted-foreground">{member.role}</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Individual Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(teamData?.team_members ?? metrics.teamPerformance).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No team members assigned</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {(teamData?.team_members ?? metrics.teamPerformance).map((member: any, index: number) => (
+                        <div key={member.member_id || index} className="p-4 border rounded-lg">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-10 h-10">
+                                <AvatarFallback className="bg-[#28A745] text-white">
+                                  {member.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{member.name}</p>
+                                <p className="text-xs text-muted-foreground">{member.role}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold">{member.completion_rate ?? member.completionRate}%</div>
+                              <div className="text-xs text-muted-foreground">Completion Rate</div>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Total Tasks</span>
+                              <span className="font-medium">{member.total_tasks ?? member.totalTasks}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Completed</span>
+                              <span className="font-medium text-green-600">{member.completed_tasks ?? member.completedTasks}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">In Progress</span>
+                              <span className="font-medium text-blue-600">{(member.in_progress_tasks ?? ((member.total_tasks ?? member.totalTasks) - (member.completed_tasks ?? member.completedTasks)))}</span>
+                            </div>
+                            {member.average_cycle_time && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Avg Cycle Time</span>
+                                <span className="font-medium">{member.average_cycle_time} days</span>
+                              </div>
+                            )}
+                            <Progress value={member.completion_rate ?? member.completionRate} className="h-2 mt-2" />
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">{member.completionRate}%</div>
-                          <div className="text-xs text-muted-foreground">Completion Rate</div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Total Tasks</span>
-                          <span className="font-medium">{member.totalTasks}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Completed</span>
-                          <span className="font-medium text-green-600">{member.completedTasks}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">In Progress</span>
-                          <span className="font-medium text-blue-600">{member.totalTasks - member.completedTasks}</span>
-                        </div>
-                        <Progress value={member.completionRate} className="h-2 mt-2" />
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>

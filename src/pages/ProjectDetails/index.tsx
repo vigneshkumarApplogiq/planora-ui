@@ -42,9 +42,9 @@ import { FilesView } from './FilesView'
 import { BacklogView } from './Scrum/Backlog'
 import { SprintsView } from './Scrum/Sprints/SprintsView'
 import { NativeDragDropKanban as KanbanBoardView } from './Kanban/NativeDragDropKanban'
-import { WaterfallPhasesView } from './Waterfall/WaterfallPhasesView'
-import { MilestonesView } from './MilestonesView'
-import { DeliverablesView } from './DeliverablesView'
+import { PhasesView } from './Waterfall/Phases'
+import { MilestonesView } from './Waterfall/Milestones'
+import { DeliverablesView } from './Waterfall/Deliverables'
 import { TeamView } from './TeamView'
 import { ReportsView as ScrumReportsView } from './Scrum/Reports/ReportsView'
 import { ReportsView as KanbanReportsView } from './Kanban/Reports/ReportsView'
@@ -241,11 +241,11 @@ export function ProjectDetails({ projectId, onBack, user, onLogout }: ProjectDet
       case 'kanban':
         return <KanbanBoardView project={project} user={user} masterData={masterData} masterLoading={masterLoading} />
       case 'phases':
-        return <WaterfallPhasesView project={project} user={user} />
+        return <PhasesView projectId={project.id} user={user} />
       case 'milestones':
-        return <MilestonesView project={project} user={user} />
+        return <MilestonesView projectId={project.id} projectName={project.name} user={user} />
       case 'deliverables':
-        return <DeliverablesView project={project} user={user} />
+        return <DeliverablesView projectId={project.id} projectName={project.name} user={user} />
       case 'tasks':
         // Use methodology-specific TasksView
         const methodology = project?.methodology?.toLowerCase()

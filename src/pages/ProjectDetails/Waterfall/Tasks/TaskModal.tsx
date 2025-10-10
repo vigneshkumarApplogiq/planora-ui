@@ -19,6 +19,9 @@ import {
   X
 } from 'lucide-react'
 import { ProjectStatusItem, ProjectPriorityItem, ProjectMemberDetail } from '../../../../services/projectApi'
+import { Phase } from '../../../../services/phaseApi'
+import { Milestone } from '../../../../services/milestoneApi'
+import { Deliverable } from '../../../../services/deliverableApi'
 
 interface TaskModalProps {
   task: any
@@ -30,6 +33,9 @@ interface TaskModalProps {
   availablePriorities?: ProjectPriorityItem[]
   projectTeamMembers?: ProjectMemberDetail[]
   projectTeamLead?: ProjectMemberDetail
+  phases?: Phase[]
+  milestones?: Milestone[]
+  deliverables?: Deliverable[]
   project?: any
 }
 
@@ -55,7 +61,7 @@ const typeOptions = [
   { value: 'epic', label: 'Epic' }
 ]
 
-export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStatuses, availablePriorities, projectTeamMembers = [], projectTeamLead, project }: TaskModalProps) {
+export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStatuses, availablePriorities, projectTeamMembers = [], projectTeamLead, phases = [], milestones = [], deliverables = [], project }: TaskModalProps) {
   const [editedTask, setEditedTask] = useState(task)
   const [newComment, setNewComment] = useState('')
 
@@ -340,14 +346,99 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
               </Select>
             </div>
 
-            {/* Sprint */}
+            {/* Phase */}
             <div className="space-y-2">
-              <Label>Sprint</Label>
-              <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                <span className="text-sm text-purple-700 dark:text-purple-300">
-                  {editedTask.sprint_name || 'No Sprint Assigned'}
-                </span>
-              </div>
+              <Label htmlFor="phase">Phase</Label>
+              <Select
+                value={editedTask.phase_id || 'unassigned'}
+                onValueChange={(value: string) => {
+                  // When phase changes, reset milestone and deliverable
+                  setEditedTask({
+                    ...editedTask,
+                    phase_id: value === 'unassigned' ? null : value,
+                    phase_name: value === 'unassigned' ? null : phases.find(p => p.id === value)?.name,
+                    milestone_id: null,
+                    milestone_name: null,
+                    deliverable_id: null,
+                    deliverable_name: null
+                  })
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {phases.map((phase) => (
+                    <SelectItem key={phase.id} value={phase.id || ''}>
+                      {phase.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Milestone */}
+            <div className="space-y-2">
+              <Label htmlFor="milestone">Milestone</Label>
+              <Select
+                value={editedTask.milestone_id || 'unassigned'}
+                onValueChange={(value: string) => {
+                  // When milestone changes, reset deliverable
+                  setEditedTask({
+                    ...editedTask,
+                    milestone_id: value === 'unassigned' ? null : value,
+                    milestone_name: value === 'unassigned' ? null : milestones.find(m => m.id === value)?.name,
+                    deliverable_id: null,
+                    deliverable_name: null
+                  })
+                }}
+                disabled={!editedTask.phase_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={editedTask.phase_id ? "Select milestone" : "Select phase first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {milestones
+                    .filter((milestone) => milestone.phase_id === editedTask.phase_id)
+                    .map((milestone) => (
+                      <SelectItem key={milestone.id} value={milestone.id || ''}>
+                        {milestone.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Deliverable */}
+            <div className="space-y-2">
+              <Label htmlFor="deliverable">Deliverable</Label>
+              <Select
+                value={editedTask.deliverable_id || 'unassigned'}
+                onValueChange={(value: string) => {
+                  setEditedTask({
+                    ...editedTask,
+                    deliverable_id: value === 'unassigned' ? null : value,
+                    deliverable_name: value === 'unassigned' ? null : deliverables.find(d => d.id === value)?.name
+                  })
+                }}
+                disabled={!editedTask.milestone_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={editedTask.milestone_id ? "Select deliverable" : "Select milestone first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {deliverables
+                    .filter((deliverable) => deliverable.milestone_id === editedTask.milestone_id)
+                    .map((deliverable) => (
+                      <SelectItem key={deliverable.id} value={deliverable.id || ''}>
+                        {deliverable.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Progress Tracking */}

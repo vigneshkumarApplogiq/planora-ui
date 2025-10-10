@@ -11,6 +11,9 @@ export interface Task {
   priority: string;
   project_id: string;
   sprint_id?: string | null;
+  phase_id?: string | null;
+  milestone_id?: string | null;
+  deliverable_id?: string | null;
   assignee_id?: string | null;
   start_date?: string;
   due_date?: string;
@@ -26,6 +29,9 @@ export interface Task {
   updated_at?: string;
   assignee_name?: string;
   sprint_name?: string;
+  phase_name?: string;
+  milestone_name?: string;
+  deliverable_name?: string;
   assignee?: {
     id: string;
     name: string;
@@ -67,6 +73,9 @@ export interface CreateTaskRequest {
   priority: string;
   project_id: string;
   sprint_id?: string | null;
+  phase_id?: string | null;
+  milestone_id?: string | null;
+  deliverable_id?: string | null;
   assignee_id?: string | null;
   assignee_name?: string;
   start_date?: string;

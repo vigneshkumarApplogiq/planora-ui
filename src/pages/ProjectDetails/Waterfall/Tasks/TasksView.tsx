@@ -27,6 +27,9 @@ import { taskApiService, Task, CreateTaskRequest } from '../../../../services/ta
 import { storiesApiService, Story } from '../../../../services/storiesApi'
 import { sprintApiService, Sprint } from '../../../../services/sprintApi'
 import { projectApiService, ProjectMastersResponse, ProjectStatusItem, ProjectPriorityItem, ProjectMember, ProjectMemberDetail } from '../../../../services/projectApi'
+import { phaseApiService, Phase } from '../../../../services/phaseApi'
+import { milestoneApiService, Milestone } from '../../../../services/milestoneApi'
+import { deliverableApiService, Deliverable } from '../../../../services/deliverableApi'
 import { getEnrichedTeamMemberDetails, getAssigneeDisplayInfo, EnrichedMemberDetail } from '../../../../utils/teamMemberDetails'
 import { toast } from 'sonner'
 import { SessionStorageService } from '../../../../utils/sessionStorage'
@@ -53,12 +56,16 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [phases, setPhases] = useState<Phase[]>([])
+  const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterAssignee, setFilterAssignee] = useState('all')
-  const [filterSprint, setFilterSprint] = useState('all')
+  const [filterPhase, setFilterPhase] = useState('all')
+  const [filterMilestone, setFilterMilestone] = useState('all')
+  const [filterDeliverable, setFilterDeliverable] = useState('all')
   const [viewMode, setViewMode] = useState<'board' | 'list' | 'table'>(project?.methodology === 'Kanban' ? 'list' : 'board')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createTaskData, setCreateTaskData] = useState<CreateTaskRequest>({
@@ -67,7 +74,9 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     status: 'todo',
     priority: 'medium',
     project_id: effectiveProjectId || '',
-    sprint_id: null,
+    phase_id: null,
+    milestone_id: null,
+    deliverable_id: null,
     assignee_id: null,
     start_date: '',
     due_date: '',
@@ -114,21 +123,16 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     }
   }
 
-  // Load tasks and sprints when component mounts or project changes
+  // Load tasks, phases, milestones, and deliverables when component mounts or project changes
   useEffect(() => {
     if (effectiveProjectId) {
       fetchTasks()
-      fetchSprints()
+      fetchPhases()
+      fetchMilestones()
+      fetchDeliverables()
       loadProjectMasters()
     }
   }, [effectiveProjectId])
-
-  // Refetch tasks when sprint filter changes (to trigger API calls)
-  useEffect(() => {
-    if (effectiveProjectId && filterSprint !== 'all') {
-     fetchTasksWithSprintFilter(filterSprint)
-    }
-  }, [filterSprint, effectiveProjectId])
 
   const loadProjectMasters = async () => {
     if (!effectiveProjectId) {
@@ -222,65 +226,45 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     }
   }
 
-  const fetchTasksWithSprintFilter = async (sprintFilter: string) => {
+  const fetchPhases = async () => {
     if (!effectiveProjectId) {
-      console.warn('No project ID available for fetching tasks')
+      console.warn('No project ID available for fetching phases')
       return
     }
 
     try {
-      setLoading(true)
-      // Use stories API with project filter - the API should handle sprint filtering on backend
-      const response = await storiesApiService.getStories(effectiveProjectId)
-
-      // Convert Story data to Task format
-      const convertedTasks: Task[] = response.items.map((story: Story) => ({
-        id: story.id,
-        task_id: story.task_id,
-        title: story.title,
-        description: story.description,
-        status: story.status,
-        priority: story.priority,
-        project_id: story.project_id,
-        sprint_id: story.sprint_id,
-        sprint_name: story.sprint_id ? sprints.find(s => s.id === story.sprint_id)?.name : undefined,
-        assignee_name: story.assignee_name,
-        assignee_id: story.assignee_id,
-        // Preserve nested assignee object for proper loading in TaskModal
-        assignee: story.assignee,
-        progress: story.progress || 0,
-        tags: story.tags || [],
-        subtasks: [],
-        // Preserve comments from API response
-        comments: story.comments || [],
-        attachments: [],
-        // Preserve files array from API response
-        files: story.files,
-        is_active: true,
-        created_at: story.start_date,
-        updated_at: story.end_date
-      }))
-
-      setTasks(convertedTasks)
-      toast.success(`Fetched tasks for sprint filter: ${sprintFilter}`)
+      const response = await phaseApiService.getPhases(effectiveProjectId)
+      setPhases(response.items)
     } catch (error) {
-      console.error('Error fetching stories with sprint filter:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error fetching phases:', error)
     }
   }
 
-  const fetchSprints = async () => {
+  const fetchMilestones = async () => {
     if (!effectiveProjectId) {
-      console.warn('No project ID available for fetching sprints')
+      console.warn('No project ID available for fetching milestones')
       return
     }
 
     try {
-      const response = await sprintApiService.getSprints({ project_id: effectiveProjectId })
-      setSprints(response.items)
+      const response = await milestoneApiService.getMilestones(effectiveProjectId)
+      setMilestones(response.items)
     } catch (error) {
-      console.error('Error fetching sprints:', error)
+      console.error('Error fetching milestones:', error)
+    }
+  }
+
+  const fetchDeliverables = async () => {
+    if (!effectiveProjectId) {
+      console.warn('No project ID available for fetching deliverables')
+      return
+    }
+
+    try {
+      const response = await deliverableApiService.getDeliverables(effectiveProjectId)
+      setDeliverables(response.items)
+    } catch (error) {
+      console.error('Error fetching deliverables:', error)
     }
   }
 
@@ -304,8 +288,10 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         priority: createTaskData.priority,
         status: createTaskData.status,
         project_id: effectiveProjectId,
-        sprint_id: createTaskData.sprint_id,
-        assignee_id: createTaskData.assignee_id,
+        phase_id: createTaskData.phase_id || undefined,
+        milestone_id: createTaskData.milestone_id || undefined,
+        deliverable_id: createTaskData.deliverable_id || undefined,
+        assignee_id: createTaskData.assignee_id || undefined,
         progress: createTaskData.progress || 0,
         start_date: createTaskData.start_date,
         end_date: createTaskData.due_date,
@@ -328,7 +314,9 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         status: 'todo',
         priority: 'medium',
         project_id: effectiveProjectId || '',
-        sprint_id: null,
+        phase_id: null,
+        milestone_id: null,
+        deliverable_id: null,
         assignee_id: null,
         start_date: '',
         due_date: '',
@@ -355,7 +343,9 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
         story_type: taskData.type || 'story',
         priority: taskData.priority,
         status: taskData.status,
-        sprint_id: taskData.sprint_id || undefined,
+        phase_id: taskData.phase_id || undefined,
+        milestone_id: taskData.milestone_id || undefined,
+        deliverable_id: taskData.deliverable_id || undefined,
         assignee_id: taskData.assignee_id || undefined,
         progress: taskData.progress || 0,
         tags: taskData.tags || [],
@@ -449,11 +439,17 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     const matchesAssignee = filterAssignee === 'all' ||
                            (filterAssignee === 'unassigned' && !task.assignee_name) ||
                            (task.assignee_name && task.assignee_name === filterAssignee)
-    const matchesSprint = filterSprint === 'all' ||
-                         (filterSprint === 'unassigned' && !task.sprint_id) ||
-                         task.sprint_id === filterSprint
+    const matchesPhase = filterPhase === 'all' ||
+                         (filterPhase === 'unassigned' && !task.phase_id) ||
+                         task.phase_id === filterPhase
+    const matchesMilestone = filterMilestone === 'all' ||
+                            (filterMilestone === 'unassigned' && !task.milestone_id) ||
+                            task.milestone_id === filterMilestone
+    const matchesDeliverable = filterDeliverable === 'all' ||
+                              (filterDeliverable === 'unassigned' && !task.deliverable_id) ||
+                              task.deliverable_id === filterDeliverable
 
-    return matchesSearch && matchesStatus && matchesAssignee && matchesSprint
+    return matchesSearch && matchesStatus && matchesAssignee && matchesPhase && matchesMilestone && matchesDeliverable
   })
 
   // Constants for drag and drop
@@ -519,9 +515,19 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   {task.progress}%
                 </Badge>
               )}
-              {task.sprint_id && project?.methodology !== 'Kanban' && (
+              {task.phase_id && (
+                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
+                  {phases.find(p => p.id === task.phase_id)?.name || 'Phase'}
+                </Badge>
+              )}
+              {task.milestone_id && (
                 <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
-                  {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
+                  {milestones.find(m => m.id === task.milestone_id)?.name || 'Milestone'}
+                </Badge>
+              )}
+              {task.deliverable_id && (
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
+                  {deliverables.find(d => d.id === task.deliverable_id)?.name || 'Deliverable'}
                 </Badge>
               )}
             </div>
@@ -586,9 +592,19 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               {task.progress}%
             </Badge>
           )}
-          {task.sprint_id && project?.methodology !== 'Kanban' && (
+          {task.phase_id && (
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
+              {phases.find(p => p.id === task.phase_id)?.name || 'Phase'}
+            </Badge>
+          )}
+          {task.milestone_id && (
             <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
-              {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
+              {milestones.find(m => m.id === task.milestone_id)?.name || 'Milestone'}
+            </Badge>
+          )}
+          {task.deliverable_id && (
+            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
+              {deliverables.find(d => d.id === task.deliverable_id)?.name || 'Deliverable'}
             </Badge>
           )}
         </div>
@@ -726,9 +742,19 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                       {task.progress}%
                     </Badge>
                   )}
-                  {task.sprint_id && project?.methodology !== 'Kanban' && (
+                  {task.phase_id && (
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
+                      {phases.find(p => p.id === task.phase_id)?.name || 'Phase'}
+                    </Badge>
+                  )}
+                  {task.milestone_id && (
                     <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 text-xs">
-                      {task.sprint_name || sprints.find(s => s.id === task.sprint_id)?.name || 'Sprint'}
+                      {milestones.find(m => m.id === task.milestone_id)?.name || 'Milestone'}
+                    </Badge>
+                  )}
+                  {task.deliverable_id && (
+                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 text-xs">
+                      {deliverables.find(d => d.id === task.deliverable_id)?.name || 'Deliverable'}
                     </Badge>
                   )}
                 </div>
@@ -843,23 +869,50 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
             </SelectContent>
           </Select>
 
-{/* Hide sprint filter for Kanban methodology */}
-          {project?.methodology !== 'Kanban' && (
-            <Select value={filterSprint} onValueChange={setFilterSprint}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sprint" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sprints</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {sprints.map((sprint) => (
-                  <SelectItem key={sprint.id} value={sprint.id}>
-                    {sprint.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select value={filterPhase} onValueChange={setFilterPhase}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Phase" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Phases</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {phases.map((phase) => (
+                <SelectItem key={phase.id} value={phase.id || ''}>
+                  {phase.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterMilestone} onValueChange={setFilterMilestone}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Milestone" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Milestones</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {milestones.map((milestone) => (
+                <SelectItem key={milestone.id} value={milestone.id || ''}>
+                  {milestone.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterDeliverable} onValueChange={setFilterDeliverable}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Deliverable" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Deliverables</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {deliverables.map((deliverable) => (
+                <SelectItem key={deliverable.id} value={deliverable.id || ''}>
+                  {deliverable.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
 {/* Hide board view for Kanban methodology */}
@@ -972,6 +1025,9 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
           availablePriorities={availablePriorities}
           projectTeamMembers={projectTeamMembers}
           projectTeamLead={projectTeamLead || undefined}
+          phases={phases}
+          milestones={milestones}
+          deliverables={deliverables}
         />
       )}
 
@@ -1061,69 +1117,129 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               </div>
             </div>
 
-{/* Sprint and Assignee - Hide sprint for Kanban methodology */}
-            <div className={`grid gap-4 ${project?.methodology === 'Kanban' ? 'grid-cols-1' : 'grid-cols-2'}`}>
-              {project?.methodology !== 'Kanban' && (
-                <div>
-                  <Label htmlFor="sprint">Sprint</Label>
-                  <Select
-                    value={createTaskData.sprint_id || 'unassigned'}
-                    onValueChange={(value: string) => setCreateTaskData({
-                      ...createTaskData,
-                      sprint_id: value === 'unassigned' ? null : value
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select sprint" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {sprints.map((sprint) => (
-                        <SelectItem key={sprint.id} value={sprint.id}>
-                          {sprint.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
+            {/* Phase, Milestone, and Deliverable - Cascading Dropdowns */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="assignee">Assignee</Label>
+                <Label htmlFor="phase">Phase</Label>
                 <Select
-                  value={createTaskData.assignee_id || 'unassigned'}
+                  value={createTaskData.phase_id || 'unassigned'}
                   onValueChange={(value: string) => {
-                    if (value === 'unassigned') {
-                      setCreateTaskData({
-                        ...createTaskData,
-                        assignee_id: null,
-                        assignee_name: undefined
-                      })
-                    } else {
-                      const selectedMember = projectTeamMembers.find(member => member.id === value)
-                      setCreateTaskData({
-                        ...createTaskData,
-                        assignee_id: value,
-                        assignee_name: selectedMember?.name || undefined
-                      })
-                    }
+                    // When phase changes, reset milestone and deliverable
+                    setCreateTaskData({
+                      ...createTaskData,
+                      phase_id: value === 'unassigned' ? null : value,
+                      milestone_id: null,
+                      deliverable_id: null
+                    })
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select assignee" />
+                    <SelectValue placeholder="Select phase" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {projectTeamMembers.length > 0 ? projectTeamMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name} - {member.role_name}
+                    {phases.map((phase) => (
+                      <SelectItem key={phase.id} value={phase.id || ''}>
+                        {phase.name}
                       </SelectItem>
-                    )) : (
-                      <SelectItem value="loading" disabled>Loading team members...</SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <Label htmlFor="milestone">Milestone</Label>
+                <Select
+                  value={createTaskData.milestone_id || 'unassigned'}
+                  onValueChange={(value: string) => {
+                    // When milestone changes, reset deliverable
+                    setCreateTaskData({
+                      ...createTaskData,
+                      milestone_id: value === 'unassigned' ? null : value,
+                      deliverable_id: null
+                    })
+                  }}
+                  disabled={!createTaskData.phase_id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={createTaskData.phase_id ? "Select milestone" : "Select phase first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {milestones
+                      .filter((milestone) => milestone.phase_id === createTaskData.phase_id)
+                      .map((milestone) => (
+                        <SelectItem key={milestone.id} value={milestone.id || ''}>
+                          {milestone.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="deliverable">Deliverable</Label>
+                <Select
+                  value={createTaskData.deliverable_id || 'unassigned'}
+                  onValueChange={(value: string) => setCreateTaskData({
+                    ...createTaskData,
+                    deliverable_id: value === 'unassigned' ? null : value
+                  })}
+                  disabled={!createTaskData.milestone_id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={createTaskData.milestone_id ? "Select deliverable" : "Select milestone first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {deliverables
+                      .filter((deliverable) => deliverable.milestone_id === createTaskData.milestone_id)
+                      .map((deliverable) => (
+                        <SelectItem key={deliverable.id} value={deliverable.id || ''}>
+                          {deliverable.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Assignee */}
+            <div>
+              <Label htmlFor="assignee">Assignee</Label>
+              <Select
+                value={createTaskData.assignee_id || 'unassigned'}
+                onValueChange={(value: string) => {
+                  if (value === 'unassigned') {
+                    setCreateTaskData({
+                      ...createTaskData,
+                      assignee_id: null,
+                      assignee_name: undefined
+                    })
+                  } else {
+                    const selectedMember = projectTeamMembers.find(member => member.id === value)
+                    setCreateTaskData({
+                      ...createTaskData,
+                      assignee_id: value,
+                      assignee_name: selectedMember?.name || undefined
+                    })
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {projectTeamMembers.length > 0 ? projectTeamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name} - {member.role_name}
+                    </SelectItem>
+                  )) : (
+                    <SelectItem value="loading" disabled>Loading team members...</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

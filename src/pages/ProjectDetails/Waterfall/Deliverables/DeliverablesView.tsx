@@ -27,6 +27,7 @@ import {
 import { Deliverable, deliverableApiService, CreateDeliverableRequest, UpdateDeliverableRequest } from '../../../../services/deliverableApi'
 import { Phase, phaseApiService } from '../../../../services/phaseApi'
 import { Milestone, milestoneApiService } from '../../../../services/milestoneApi'
+import { projectApiService, ProjectMember } from '../../../../services/projectApi'
 import { DeliverableModal } from './DeliverableModal'
 import { useToast } from '../../../../components/ui/use-toast'
 import {
@@ -36,6 +37,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../../../components/ui/dropdown-menu'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '../../../../components/ui/pagination'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Simple date formatting function
 const formatDate = (date: Date, formatType: string) => {
@@ -62,7 +73,7 @@ export function DeliverablesView({
   projectId,
   projectName,
   user,
-  teamMembers = [],
+  teamMembers: propTeamMembers = [],
   selectedPhaseId,
   selectedMilestoneId
 }: DeliverablesViewProps) {
@@ -77,14 +88,18 @@ export function DeliverablesView({
   const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string }>>(propTeamMembers)
   const [isLoading, setIsLoading] = useState(true)
   const [deleteDeliverableId, setDeleteDeliverableId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   useEffect(() => {
     fetchPhases()
     fetchMilestones()
     fetchDeliverables()
+    fetchProjectMembers()
   }, [projectId])
 
   useEffect(() => {
@@ -138,6 +153,24 @@ export function DeliverablesView({
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchProjectMembers = async () => {
+    try {
+      const members = await projectApiService.getProjectMembersV2(projectId)
+      // Map the API response to the format expected by the DeliverableModal
+      const mappedMembers = members.map((member: ProjectMember) => ({
+        id: member.member_id,
+        name: member.member_name
+      }))
+      setTeamMembers(mappedMembers)
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to fetch project members',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -264,6 +297,17 @@ export function DeliverablesView({
     return matchesSearch && matchesStatus && matchesPhase && matchesMilestone
   })
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredDeliverables.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedDeliverables = filteredDeliverables.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterStatus, filterPhase, filterMilestone])
+
   const DeliverableCard = ({ deliverable }: { deliverable: Deliverable }) => {
     return (
       <Card
@@ -349,30 +393,32 @@ export function DeliverablesView({
   }
 
   const DeliverableDetails = ({ deliverable }: { deliverable: Deliverable }) => (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">{deliverable.name}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {deliverable.deliverable_type} v{deliverable.version}
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className={getPriorityColor(deliverable.priority)}>
-              {deliverable.priority}
-            </Badge>
-            <Badge variant="outline" className={getStatusColor(deliverable.status)}>
-              {deliverable.status}
-            </Badge>
-            <Button size="sm" variant="outline" onClick={() => handleEditDeliverable(deliverable)}>
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
-            </Button>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-xl font-semibold">{deliverable.name}</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {deliverable.deliverable_type} v{deliverable.version}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Badge variant="outline" className={getPriorityColor(deliverable.priority)}>
+            {deliverable.priority}
+          </Badge>
+          <Badge variant="outline" className={getStatusColor(deliverable.status)}>
+            {deliverable.status}
+          </Badge>
+          <Button size="sm" variant="outline" onClick={() => {
+            setSelectedDeliverable(null)
+            handleEditDeliverable(deliverable)
+          }}>
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t">
         <div>
           <h4 className="font-medium mb-2">Description</h4>
           <p className="text-muted-foreground text-sm">{deliverable.description}</p>
@@ -465,8 +511,8 @@ export function DeliverablesView({
             <p className="text-sm text-muted-foreground">{deliverable.notes}</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 
   return (
@@ -554,7 +600,7 @@ export function DeliverablesView({
       ) : (
         <>
           {/* Deliverable Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-semibold text-[#10B981]">
@@ -613,40 +659,111 @@ export function DeliverablesView({
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Deliverables List */}
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="font-medium">All Deliverables</h3>
-              {filteredDeliverables.length > 0 ? (
-                <div className="space-y-3">
-                  {filteredDeliverables.map((deliverable) => (
-                    <DeliverableCard key={deliverable.id} deliverable={deliverable} />
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    <FileX className="w-12 h-12 mx-auto mb-2" />
-                    <p>No deliverables found</p>
-                  </CardContent>
-                </Card>
+          {/* Deliverables List - Full Width */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">All Deliverables ({filteredDeliverables.length})</h3>
+              {filteredDeliverables.length > itemsPerPage && (
+                <p className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(endIndex, filteredDeliverables.length)} of {filteredDeliverables.length}
+                </p>
               )}
             </div>
 
-            {/* Deliverable Details */}
-            <div>
-              {selectedDeliverable ? (
-                <DeliverableDetails deliverable={selectedDeliverable} />
-              ) : (
-                <Card>
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    <FileText className="w-12 h-12 mx-auto mb-2" />
-                    <p>Select a deliverable to view details</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            {filteredDeliverables.length > 0 ? (
+              <>
+                <div className="space-y-3">
+                  {paginatedDeliverables.map((deliverable) => (
+                    <DeliverableCard key={deliverable.id} deliverable={deliverable} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-6">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className="gap-1 px-3"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                        </PaginationItem>
+
+                        {/* Page numbers */}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                          // Show first page, last page, current page, and pages around current
+                          if (
+                            page === 1 ||
+                            page === totalPages ||
+                            (page >= currentPage - 1 && page <= currentPage + 1)
+                          ) {
+                            return (
+                              <PaginationItem key={page}>
+                                <Button
+                                  variant={currentPage === page ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setCurrentPage(page)}
+                                  className={currentPage === page ? "bg-[#28A745] hover:bg-[#218838]" : ""}
+                                >
+                                  {page}
+                                </Button>
+                              </PaginationItem>
+                            )
+                          } else if (page === currentPage - 2 || page === currentPage + 2) {
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )
+                          }
+                          return null
+                        })}
+
+                        <PaginationItem>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            className="gap-1 px-3"
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <FileX className="w-12 h-12 mx-auto mb-2" />
+                  <p>No deliverables found</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
+
+          {/* Deliverable Details Modal/Sidebar - Show when selected */}
+          {selectedDeliverable && (
+            <Dialog open={!!selectedDeliverable} onOpenChange={() => setSelectedDeliverable(null)}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Deliverable Details</DialogTitle>
+                </DialogHeader>
+                <DeliverableDetails deliverable={selectedDeliverable} />
+              </DialogContent>
+            </Dialog>
+          )}
         </>
       )}
 

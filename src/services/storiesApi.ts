@@ -49,6 +49,14 @@ export interface Story {
   activity: Activity[];
   created_at?: string;
   updated_at?: string;
+  // Waterfall methodology fields
+  phase_id?: string;
+  phase_name?: string;
+  milestone_id?: string;
+  milestone_name?: string;
+  deliverable_id?: string;
+  deliverable_name?: string;
+  files?: any[];
 }
 
 export interface SubTask {
@@ -112,6 +120,13 @@ export interface CreateStoryRequest {
   end_date?: string;
   tags?: string[];
   activity?: Activity[];
+  // Waterfall methodology fields
+  phase_id?: string;
+  phase_name?: string;
+  milestone_id?: string;
+  milestone_name?: string;
+  deliverable_id?: string;
+  deliverable_name?: string;
 }
 
 export interface UpdateStoryRequest extends Partial<CreateStoryRequest> {

@@ -45,6 +45,7 @@ import { NativeDragDropKanban as KanbanBoardView } from './Kanban/NativeDragDrop
 import { PhasesView } from './Waterfall/Phases'
 import { MilestonesView } from './Waterfall/Milestones'
 import { DeliverablesView } from './Waterfall/Deliverables'
+import { BoardView as WaterfallBoardView } from './Waterfall'
 import { TeamView } from './TeamView'
 import { ReportsView as ScrumReportsView } from './Scrum/Reports/ReportsView'
 import { ReportsView as KanbanReportsView } from './Kanban/Reports/ReportsView'
@@ -173,6 +174,7 @@ export function ProjectDetails({ projectId, onBack, user, onLogout }: ProjectDet
       case 'waterfall':
         return [
           { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { value: 'board', label: 'Board', icon: Target },
           { value: 'phases', label: 'Phases', icon: Layers },
           { value: 'milestones', label: 'Milestones', icon: Flag },
           { value: 'deliverables', label: 'Deliverables', icon: Calendar },
@@ -240,6 +242,9 @@ export function ProjectDetails({ projectId, onBack, user, onLogout }: ProjectDet
         return <SprintsView project={project} user={user} />
       case 'kanban':
         return <KanbanBoardView project={project} user={user} masterData={masterData} masterLoading={masterLoading} />
+      case 'board':
+        // Waterfall Board View
+        return <WaterfallBoardView projectId={project.id} user={user} project={project} />
       case 'phases':
         return <PhasesView projectId={project.id} user={user} />
       case 'milestones':

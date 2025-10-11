@@ -42,15 +42,6 @@ import {
   DropdownMenuTrigger,
 } from '../../../../components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '../../../../components/ui/pagination'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Simple date formatting function
@@ -557,22 +548,6 @@ export function WaterfallPhasesView({ projectId, user }: WaterfallPhasesViewProp
             </SelectContent>
           </Select>
         </div>
-
-        {/* Items per page selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Show:</span>
-          <Select value={perPage.toString()} onValueChange={(value) => setPerPage(Number(value))}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">per page</span>
-        </div>
       </div>
 
       {/* Loading State */}
@@ -637,69 +612,47 @@ export function WaterfallPhasesView({ projectId, user }: WaterfallPhasesViewProp
 
           {/* Pagination Controls */}
           {!isLoading && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center justify-between px-4 py-4 border-t">
               <div className="text-sm text-muted-foreground">
                 Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalItems)} of {totalItems} phases
               </div>
-
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="gap-1 px-2.5"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="hidden sm:block">Previous</span>
-                    </Button>
-                  </PaginationItem>
-
-                  {/* Page Numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                    // Show first page, last page, current page, and pages around current
-                    if (
-                      page === 1 ||
-                      page === totalPages ||
-                      (page >= currentPage - 1 && page <= currentPage + 1)
-                    ) {
-                      return (
-                        <PaginationItem key={page}>
-                          <Button
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentPage(page)}
-                            className={currentPage === page ? "bg-[#28A745] hover:bg-[#218838]" : ""}
-                          >
-                            {page}
-                          </Button>
-                        </PaginationItem>
-                      )
-                    } else if (
-                      page === currentPage - 2 ||
-                      page === currentPage + 2
-                    ) {
-                      return <PaginationEllipsis key={page} />
-                    }
-                    return null
-                  })}
-
-                  <PaginationItem>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      className="gap-1 px-2.5"
-                    >
-                      <span className="hidden sm:block">Next</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+              <div className="flex items-center space-x-2">
+                <Select value={perPage.toString()} onValueChange={(value) => {
+                  setPerPage(parseInt(value))
+                  setCurrentPage(1)
+                }}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 per page</SelectItem>
+                    <SelectItem value="20">20 per page</SelectItem>
+                    <SelectItem value="50">50 per page</SelectItem>
+                    <SelectItem value="100">100 per page</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center space-x-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="px-4 py-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </>

@@ -18,7 +18,12 @@ import {
   CheckCircle,
   Clock,
   Users,
-  BarChart3
+  BarChart3,
+  Edit,
+  Trash2,
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { TaskModal } from './TaskModal'
 import { taskApiService, Task, CreateTaskRequest } from '../../../../services/taskApi'
@@ -31,9 +36,16 @@ import { deliverableApiService, Deliverable } from '../../../../services/deliver
 import { getEnrichedTeamMemberDetails, getAssigneeDisplayInfo, EnrichedMemberDetail } from '../../../../utils/teamMemberDetails'
 import { toast } from 'sonner'
 import { SessionStorageService } from '../../../../utils/sessionStorage'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../../../components/ui/dialog'
 import { Label } from '../../../../components/ui/label'
 import { Textarea } from '../../../../components/ui/textarea'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../../../components/ui/dropdown-menu'
 
 interface TasksViewProps {
   projectId?: string
@@ -51,10 +63,11 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterAssignee, setFilterAssignee] = useState('all')
-  const [filterPhase, setFilterPhase] = useState('all')
   const [filterMilestone, setFilterMilestone] = useState('all')
   const [filterDeliverable, setFilterDeliverable] = useState('all')
   const [viewMode, setViewMode] = useState<'board' | 'list' | 'table'>('table')
@@ -86,6 +99,12 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   const [projectTeamMembers, setProjectTeamMembers] = useState<ProjectMemberDetail[]>([])
   const [projectTeamLead, setProjectTeamLead] = useState<ProjectMemberDetail | null>(null)
   const [enrichedMembersMap, setEnrichedMembersMap] = useState<Map<string, EnrichedMemberDetail>>(new Map())
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [perPage, setPerPage] = useState(10)
 
   // Load team members from project data when available (same as BacklogView)
   useEffect(() => {
@@ -125,6 +144,20 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     }
   }, [effectiveProjectId])
 
+  // Refetch tasks when pagination or filters change
+  useEffect(() => {
+    if (effectiveProjectId) {
+      fetchTasks()
+    }
+  }, [currentPage, perPage, filterStatus, filterAssignee])
+
+  // Reset to page 1 when filters change (excluding milestone and deliverable as they are client-side)
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    }
+  }, [filterStatus, filterAssignee, filterMilestone, filterDeliverable, searchTerm])
+
   const loadProjectMasters = async () => {
     if (!effectiveProjectId) {
       console.warn('No project ID available for fetching project masters')
@@ -133,12 +166,13 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
 
     try {
       const masters = await projectApiService.getProjectMasters()
-  
+
       setProjectMasters(masters)
-      setAvailableStatuses(masters.statuses || [])
+      // Use task_status for task-specific statuses, not general project statuses
+      setAvailableStatuses(masters.task_status || [])
       setAvailablePriorities(masters.priorities || [])
 
-
+      console.log('Task Status loaded from masters:', masters.task_status)
     } catch (error) {
       console.error('Error fetching project masters:', error)
     }
@@ -154,8 +188,20 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
 
     try {
       setLoading(true)
-      // Use stories API instead of tasks API
-      const response = await storiesApiService.getStories(effectiveProjectId)
+
+      // Pass pagination and filter parameters to API
+      const response = await storiesApiService.getStories(
+        effectiveProjectId,
+        currentPage,
+        perPage,
+        filterStatus !== 'all' ? filterStatus : undefined,
+        filterAssignee !== 'all' && filterAssignee !== 'unassigned' ? filterAssignee :
+          filterAssignee === 'unassigned' ? '' : undefined
+      )
+
+      // Update pagination metadata
+      setTotalPages(response.total_pages || 1)
+      setTotalItems(response.total || 0)
 
       // Convert Story data to Task format
       const convertedTasks: Task[] = response.items.map((story: Story) => ({
@@ -371,14 +417,24 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     }
   }
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async () => {
+    if (!deleteTaskId) return
+
     try {
-      await taskApiService.deleteTask(taskId)
+      setIsDeleting(true)
+      // Use storiesApiService instead of taskApiService
+      await storiesApiService.deleteStory(deleteTaskId)
       toast.success('Task deleted successfully')
+      setDeleteTaskId(null)
+      if (selectedTask?.id === deleteTaskId) {
+        setSelectedTask(null)
+      }
       fetchTasks()
     } catch (error) {
       console.error('Error deleting task:', error)
       toast.error('Failed to delete task')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -419,9 +475,6 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     const matchesAssignee = filterAssignee === 'all' ||
                            (filterAssignee === 'unassigned' && !task.assignee_name) ||
                            (task.assignee_name && task.assignee_name === filterAssignee)
-    const matchesPhase = filterPhase === 'all' ||
-                         (filterPhase === 'unassigned' && !task.phase_id) ||
-                         task.phase_id === filterPhase
     const matchesMilestone = filterMilestone === 'all' ||
                             (filterMilestone === 'unassigned' && !task.milestone_id) ||
                             task.milestone_id === filterMilestone
@@ -429,7 +482,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                               (filterDeliverable === 'unassigned' && !task.deliverable_id) ||
                               task.deliverable_id === filterDeliverable
 
-    return matchesSearch && matchesStatus && matchesAssignee && matchesPhase && matchesMilestone && matchesDeliverable
+    return matchesSearch && matchesStatus && matchesAssignee && matchesMilestone && matchesDeliverable
   })
 
   const TableView = () => (
@@ -442,11 +495,11 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               <TableHead className="w-[35%]">Task</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
-              <TableHead>Phase</TableHead>
               <TableHead>Milestone</TableHead>
               <TableHead>Deliverable</TableHead>
               <TableHead>Assignee</TableHead>
               <TableHead className="text-right">Progress</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -472,15 +525,6 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   <Badge variant="outline" className={getPriorityColor(task.priority)}>
                     {task.priority}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  {task.phase_id ? (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                      {phases.find(p => p.id === task.phase_id)?.name || 'Phase'}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">-</span>
-                  )}
                 </TableCell>
                 <TableCell>
                   {task.milestone_id ? (
@@ -528,6 +572,34 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                     <span className="text-xs font-medium">{task.progress || 0}%</span>
                   </div>
                 </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedTask(task) }}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Task
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setDeleteTaskId(task.id || null) }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Task
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -566,11 +638,6 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   {task.progress > 0 && (
                     <Badge variant="outline" className="text-xs">
                       {task.progress}%
-                    </Badge>
-                  )}
-                  {task.phase_id && (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
-                      {phases.find(p => p.id === task.phase_id)?.name || 'Phase'}
                     </Badge>
                   )}
                   {task.milestone_id && (
@@ -613,6 +680,33 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   })()}
                 </div>
               </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedTask(task) }}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Task
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setDeleteTaskId(task.id || null) }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Task
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardContent>
         </Card>
@@ -692,21 +786,6 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   </SelectItem>
                 ))
               )}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterPhase} onValueChange={setFilterPhase}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Phase" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Phases</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {phases.map((phase) => (
-                <SelectItem key={phase.id} value={phase.id || ''}>
-                  {phase.name}
-                </SelectItem>
-              ))}
             </SelectContent>
           </Select>
 
@@ -834,6 +913,52 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
           </>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && tasks.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalItems)} of {totalItems} tasks
+          </div>
+          <div className="flex items-center space-x-2">
+            <Select value={perPage.toString()} onValueChange={(value) => {
+              setPerPage(parseInt(value))
+              setCurrentPage(1)
+            }}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 per page</SelectItem>
+                <SelectItem value="20">20 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+                <SelectItem value="100">100 per page</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="px-4 py-2 text-sm">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Task Details Modal */}
       {selectedTask && (
@@ -1115,6 +1240,37 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTaskId} onOpenChange={(open: boolean) => !open && setDeleteTaskId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTaskId(null)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteTask}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

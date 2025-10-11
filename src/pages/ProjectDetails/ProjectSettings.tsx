@@ -88,6 +88,29 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
         color: project.color || '',
         team_lead_id: project.team_lead_id || ''
       })
+
+      // Load permissions if available in project data
+      if (project.permissions) {
+        setPermissions({
+          publicProject: project.permissions.public_project || false,
+          guestAccess: project.permissions.guest_access || false,
+          timeTracking: project.permissions.time_tracking !== undefined ? project.permissions.time_tracking : true,
+          fileSharing: project.permissions.file_sharing !== undefined ? project.permissions.file_sharing : true,
+          taskCreation: project.permissions.task_creation !== undefined ? project.permissions.task_creation : true
+        })
+      }
+
+      // Load notifications if available in project data
+      if (project.notifications) {
+        setNotifications({
+          taskUpdates: project.notifications.task_updates !== undefined ? project.notifications.task_updates : true,
+          fileUploads: project.notifications.file_uploads !== undefined ? project.notifications.file_uploads : true,
+          comments: project.notifications.comments !== undefined ? project.notifications.comments : true,
+          mentions: project.notifications.mentions !== undefined ? project.notifications.mentions : true,
+          deadlines: project.notifications.deadlines !== undefined ? project.notifications.deadlines : true,
+          statusChanges: project.notifications.status_changes !== undefined ? project.notifications.status_changes : true
+        })
+      }
     }
   }, [project])
 
@@ -142,37 +165,83 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
       return
     }
 
+    // Validate dates
+    if (projectData.start_date && projectData.end_date) {
+      const startDate = new Date(projectData.start_date)
+      const endDate = new Date(projectData.end_date)
+      if (endDate < startDate) {
+        toast.error('End date cannot be before start date')
+        return
+      }
+    }
+
     try {
       setSaving(true)
 
-      // Prepare update data
+      // Prepare comprehensive update data with all fields
       const updateData = {
+        // Basic project information
         name: projectData.name,
         description: projectData.description,
         methodology: projectData.methodology,
         status: projectData.status,
         priority: projectData.priority,
+
+        // Financial data
         budget: projectData.budget,
         spent: projectData.spent,
         progress: projectData.progress,
+
+        // Dates
         start_date: projectData.start_date,
         end_date: projectData.end_date,
+
+        // Customer information
         customer: projectData.customer,
         customer_id: projectData.customer_id,
+
+        // Project classification
         project_type: projectData.project_type,
         tags: projectData.tags,
         color: projectData.color,
-        team_lead_id: projectData.team_lead_id
+
+        // Team configuration
+        team_lead_id: projectData.team_lead_id,
+        // Include team_members if available from project
+        ...(project.team_members && { team_members: project.team_members }),
+
+        // Permissions settings
+        permissions: {
+          public_project: permissions.publicProject,
+          guest_access: permissions.guestAccess,
+          time_tracking: permissions.timeTracking,
+          file_sharing: permissions.fileSharing,
+          task_creation: permissions.taskCreation
+        },
+
+        // Notification settings
+        notifications: {
+          task_updates: notifications.taskUpdates,
+          file_uploads: notifications.fileUploads,
+          comments: notifications.comments,
+          mentions: notifications.mentions,
+          deadlines: notifications.deadlines,
+          status_changes: notifications.statusChanges
+        }
       }
+
+      console.log('Sending update payload:', updateData)
 
       await projectApiService.updateProject(project.id, updateData)
       toast.success('Project settings updated successfully')
 
       // Refresh page to show updated data
-      window.location.reload()
-    } catch (error) {
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (error: any) {
       console.error('Failed to update project:', error)
-      toast.error('Failed to update project settings')
+      toast.error(error?.message || 'Failed to update project settings')
     } finally {
       setSaving(false)
     }
@@ -453,7 +522,7 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                     id="tags"
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
                         handleAddTag()

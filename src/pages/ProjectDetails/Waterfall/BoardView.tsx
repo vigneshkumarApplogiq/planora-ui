@@ -349,9 +349,9 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit, p
   }
 
   return (
-    <div className="flex-1 min-w-80">
-      <Card className="h-full">
-        <CardHeader className="pb-3">
+    <div className="w-80 flex-shrink-0">
+      <Card className="h-full flex flex-col">
+        <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${getColumnColor(status)}`} />
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -366,7 +366,7 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit, p
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`min-h-96 transition-all duration-200 ${
+          className={`flex-1 min-h-96 transition-all duration-200 ${
             isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-400 shadow-inner' : ''
           }`}
         >
@@ -444,6 +444,21 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
       setProjectTeamLead(project.team_lead_detail)
     }
   }, [project])
+
+  // Reset milestone filter when phase filter changes
+  useEffect(() => {
+    if (filterPhase === 'all') {
+      setFilterMilestone('all')
+      setFilterDeliverable('all')
+    }
+  }, [filterPhase])
+
+  // Reset deliverable filter when milestone filter changes
+  useEffect(() => {
+    if (filterMilestone === 'all') {
+      setFilterDeliverable('all')
+    }
+  }, [filterMilestone])
 
   const loadProjectMasters = async () => {
     if (!effectiveProjectId) return
@@ -637,10 +652,13 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Priority</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                {availablePriorities
+                  .sort((a, b) => a.level - b.level)
+                  .map((priority) => (
+                    <SelectItem key={priority.id} value={priority.name.toLowerCase()}>
+                      {priority.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
@@ -650,11 +668,9 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="story">Story</SelectItem>
                 <SelectItem value="task">Task</SelectItem>
                 <SelectItem value="bug">Bug</SelectItem>
-                <SelectItem value="epic">Epic</SelectItem>
-              </SelectContent>
+               </SelectContent>
             </Select>
 
             <Select value={filterPhase} onValueChange={setFilterPhase}>
@@ -672,33 +688,45 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
               </SelectContent>
             </Select>
 
-            <Select value={filterMilestone} onValueChange={setFilterMilestone}>
+            <Select
+              value={filterMilestone}
+              onValueChange={setFilterMilestone}
+              disabled={filterPhase === 'all'}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Milestone" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Milestones</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {milestones.map((milestone) => (
-                  <SelectItem key={milestone.id} value={milestone.id || ''}>
-                    {milestone.name}
-                  </SelectItem>
-                ))}
+                {milestones
+                  .filter(milestone => filterPhase === 'all' || milestone.phase_id === filterPhase)
+                  .map((milestone) => (
+                    <SelectItem key={milestone.id} value={milestone.id || ''}>
+                      {milestone.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
-            <Select value={filterDeliverable} onValueChange={setFilterDeliverable}>
+            <Select
+              value={filterDeliverable}
+              onValueChange={setFilterDeliverable}
+              disabled={filterMilestone === 'all'}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Deliverable" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Deliverables</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {deliverables.map((deliverable) => (
-                  <SelectItem key={deliverable.id} value={deliverable.id || ''}>
-                    {deliverable.name}
-                  </SelectItem>
-                ))}
+                {deliverables
+                  .filter(deliverable => filterMilestone === 'all' || deliverable.milestone_id === filterMilestone)
+                  .map((deliverable) => (
+                    <SelectItem key={deliverable.id} value={deliverable.id || ''}>
+                      {deliverable.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 

@@ -315,9 +315,9 @@ const KanbanColumn: React.FC<{
   const isWipLimitExceeded = column.wipLimit && column.tasks.length >= column.wipLimit
 
   return (
-    <div className="flex-1 min-w-80">
-      <Card className="h-full">
-        <CardHeader className="pb-3">
+    <div className="flex-1 min-w-80 h-full">
+      <Card className="h-full flex flex-col">
+        <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${column.color}`} />
@@ -342,31 +342,33 @@ const KanbanColumn: React.FC<{
           </div>
         </CardHeader>
 
-        <CardContent
+        <div
           ref={drop}
-          className={`min-h-96 transition-colors duration-200 ${
-            isOver && canDrop ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''
-          } ${isWipLimitExceeded ? 'bg-red-50' : ''}`}
+          className={`flex-1 overflow-y-auto transition-colors duration-200 relative ${
+            isOver && canDrop ? 'bg-blue-50' : ''
+          } ${isWipLimitExceeded ? 'bg-red-50/50' : ''}`}
         >
-          {column.tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              columnId={column.id}
-              onEdit={onTaskEdit}
-              onDelete={onTaskDelete}
-            />
-          ))}
+          <CardContent className={`min-h-full pb-20 ${isOver && canDrop ? 'border-2 border-dashed border-blue-300' : ''}`}>
+            {column.tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                columnId={column.id}
+                onEdit={onTaskEdit}
+                onDelete={onTaskDelete}
+              />
+            ))}
 
-          {column.tasks.length === 0 && (
-            <div className="flex items-center justify-center h-32 text-muted-foreground">
-              <div className="text-center">
-                <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Drop tasks here</p>
+            {column.tasks.length === 0 && (
+              <div className="flex items-center justify-center h-32 text-muted-foreground">
+                <div className="text-center">
+                  <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Drop tasks here</p>
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
+            )}
+          </CardContent>
+        </div>
       </Card>
     </div>
   )
@@ -659,7 +661,7 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
         </div>
 
         {/* Kanban Board */}
-        <div className="flex gap-6 overflow-x-auto pb-4">
+        <div className="flex gap-6 overflow-x-auto pb-4 h-[calc(100vh-350px)] min-h-[600px]">
           {filteredColumns.map((column) => (
             <KanbanColumn
               key={column.id}

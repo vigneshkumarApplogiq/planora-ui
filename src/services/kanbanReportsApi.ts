@@ -3,104 +3,158 @@ import { getApiUrl } from '../config/api';
 
 // ============ Types & Interfaces ============
 
+// Overview API Response Types
 export interface OverviewMetrics {
   total_tasks: number;
-  completed_tasks: number;
-  in_progress_tasks: number;
-  todo_tasks: number;
-  blocked_tasks: number;
   completion_rate: number;
   throughput: number;
   wip_count: number;
 }
 
 export interface TaskDistributionByStatus {
-  todo: number;
-  in_progress: number;
-  done: number;
-  blocked: number;
+  status: string;
+  count: number;
+  percentage: number;
 }
 
 export interface TaskDistributionByType {
-  [type: string]: number;
+  story_count: number;
+  story_percentage: number;
+  bug_count: number;
+  bug_percentage: number;
+  task_count: number;
+  task_percentage: number;
 }
 
-export interface TaskDistributionByPriority {
-  [priority: string]: number;
+export interface PriorityDistribution {
+  low_count: number;
+  low_percentage: number;
+  medium_count: number;
+  medium_percentage: number;
+  high_count: number;
+  high_percentage: number;
+  critical_count: number;
+  critical_percentage: number;
 }
 
 export interface OverviewResponse {
   metrics: OverviewMetrics;
-  task_distribution_by_status: TaskDistributionByStatus;
+  task_distribution_by_status: TaskDistributionByStatus[];
   task_distribution_by_type: TaskDistributionByType;
-  task_distribution_by_priority: TaskDistributionByPriority;
+  priority_distribution: PriorityDistribution;
 }
 
-export interface FlowMetrics {
+// Flow Metrics API Response Types
+export interface FlowMetricsData {
   flow_efficiency: number;
   throughput: number;
   wip_count: number;
-  completed_tasks: number;
-  blocked_tasks: number;
-  recommendations: string[];
-  insights: FlowInsights;
 }
 
-export interface FlowInsights {
-  completion_status: 'excellent' | 'good' | 'needs_improvement';
+export interface EfficiencyAnalysis {
+  status: string;
   message: string;
-  key_points: string[];
+  recommendation: string;
 }
 
-export interface CycleTimeMetrics {
+export interface KeyInsights {
+  tasks_completed: number;
+  tasks_finished_last_week: number;
+  tasks_currently_in_progress: number;
+  overall_flow_efficiency: number;
+}
+
+export interface FlowRecommendations {
+  wip_status: string;
+  blocked_tasks_status: string;
+  suggestions: string[];
+}
+
+export interface FlowMetrics {
+  metrics: FlowMetricsData;
+  efficiency_analysis: EfficiencyAnalysis;
+  key_insights: KeyInsights;
+  recommendations: FlowRecommendations;
+}
+
+// Cycle/Lead Time API Response Types
+export interface CycleLeadTimeMetrics {
   average_cycle_time: number;
   average_lead_time: number;
   time_efficiency: number;
-  cycle_time_status: 'excellent' | 'good' | 'needs_improvement';
-  lead_time_status: 'excellent' | 'good' | 'needs_improvement';
+}
+
+export interface TimeAnalysis {
+  cycle_time_days: number;
+  cycle_time_status: string;
+  cycle_time_description: string;
+  lead_time_days: number;
+  lead_time_status: string;
+  lead_time_description: string;
+}
+
+export interface TimeInsights {
+  cycle_time_explanation: string;
+  lead_time_explanation: string;
+  gap_analysis: string;
+}
+
+export interface CycleTimeMetrics {
+  metrics: CycleLeadTimeMetrics;
+  time_analysis: TimeAnalysis;
+  insights: TimeInsights;
+}
+
+// WIP Analysis API Response Types
+export interface WIPMetrics {
+  current_wip: number;
+  aging_wip: number;
+  wip_health: number;
 }
 
 export interface WIPTask {
-  id: string;
   task_id: string;
-  title: string;
+  task_title: string;
+  assignee_name: string;
   status: string;
-  assignee?: {
-    id: string;
-    name: string;
-  };
   days_in_progress: number;
-  is_aging: boolean;
-  start_date: string;
-  created_at: string;
+  priority: string;
+}
+
+export interface WIPRecommendations {
+  wip_status_message: string;
+  suggestions: string[];
 }
 
 export interface WIPAnalysis {
-  current_wip: number;
-  aging_wip_count: number;
-  wip_health: number;
-  wip_tasks: WIPTask[];
-  recommendations: string[];
+  metrics: WIPMetrics;
+  work_in_progress_details: WIPTask[];
+  recommendations: WIPRecommendations;
+}
+
+// Team Performance API Response Types
+export interface TeamMetrics {
+  team_members_count: number;
+  total_tasks: number;
+  completed_tasks: number;
+  average_completion_rate: number;
 }
 
 export interface TeamMemberPerformance {
   member_id: string;
-  name: string;
-  email?: string;
+  member_name: string;
+  avatar: string;
   role: string;
   total_tasks: number;
   completed_tasks: number;
   in_progress_tasks: number;
   completion_rate: number;
-  average_cycle_time?: number;
 }
 
 export interface TeamPerformanceMetrics {
-  team_size: number;
-  total_tasks: number;
-  completed_tasks: number;
-  average_completion_rate: number;
-  team_members: TeamMemberPerformance[];
+  team_metrics: TeamMetrics;
+  individual_performance: TeamMemberPerformance[];
+  top_performer: TeamMemberPerformance;
 }
 
 export interface DateRangeParams {
@@ -179,7 +233,7 @@ export class KanbanReportsApiService {
     if (params?.to_date) queryParams.append('to_date', params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/overview${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/reports/kanban/${projectId}/overview${queryString ? `?${queryString}` : ''}`;
 
     return this.makeRequest<OverviewResponse>(endpoint);
   }
@@ -198,7 +252,7 @@ export class KanbanReportsApiService {
     if (params?.to_date) queryParams.append('to_date', params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/flow-metrics${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/reports/kanban/${projectId}/flow-metrics${queryString ? `?${queryString}` : ''}`;
 
     return this.makeRequest<FlowMetrics>(endpoint);
   }
@@ -217,7 +271,7 @@ export class KanbanReportsApiService {
     if (params?.to_date) queryParams.append('to_date', params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/cycle-time${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/reports/kanban/${projectId}/cycle-lead-time${queryString ? `?${queryString}` : ''}`;
 
     return this.makeRequest<CycleTimeMetrics>(endpoint);
   }
@@ -239,7 +293,7 @@ export class KanbanReportsApiService {
     }
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/wip-analysis${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/reports/kanban/${projectId}/wip-analysis${queryString ? `?${queryString}` : ''}`;
 
     return this.makeRequest<WIPAnalysis>(endpoint);
   }
@@ -258,7 +312,7 @@ export class KanbanReportsApiService {
     if (params?.to_date) queryParams.append('to_date', params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/team-performance${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/reports/kanban/${projectId}/team-performance${queryString ? `?${queryString}` : ''}`;
 
     return this.makeRequest<TeamPerformanceMetrics>(endpoint);
   }

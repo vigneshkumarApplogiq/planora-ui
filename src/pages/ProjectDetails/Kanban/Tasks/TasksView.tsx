@@ -71,7 +71,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterAssignee, setFilterAssignee] = useState('all')
   const [filterSprint, setFilterSprint] = useState('all')
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('list')
+  const [viewMode, setViewMode] = useState<'table' | 'list'>('table')
   const [attachments, setAttachments] = useState<Array<{id: string, name: string, size: number, type: string, url?: string}>>([])
   const [isDragging, setIsDragging] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -126,7 +126,7 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   // Update view mode based on methodology
   useEffect(() => {
     if (project?.methodology === 'Kanban') {
-      setViewMode('list')
+      setViewMode('table')
     }
   }, [project?.methodology])
 
@@ -1487,23 +1487,12 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
           )}
         </div>
 
-{/* Hide board view for Kanban methodology */}
-        {project?.methodology !== 'Kanban' ? (
-          <Tabs value={viewMode} onValueChange={(value: string) => setViewMode(value as 'board' | 'list' | 'table')}>
+         <Tabs onValueChange={(value: string) => setViewMode(value as 'board' | 'list' | 'table')}>
             <TabsList>
-              <TabsTrigger value="board">Board</TabsTrigger>
-              <TabsTrigger value="list">List</TabsTrigger>
               <TabsTrigger value="table">Table</TabsTrigger>
+              <TabsTrigger value="list">List</TabsTrigger>
             </TabsList>
           </Tabs>
-        ) : (
-          <Tabs value={viewMode} onValueChange={(value: string) => setViewMode(value as 'board' | 'list' | 'table')}>
-            <TabsList>
-              <TabsTrigger value="list">List</TabsTrigger>
-              <TabsTrigger value="table">Table</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        )}
       </div>
 
       {/* Task Statistics */}

@@ -324,9 +324,9 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit })
   }
 
   return (
-    <div className="flex-1 min-w-80">
-      <Card className="h-full">
-        <CardHeader className="pb-3">
+    <div className="w-80 flex-shrink-0">
+      <Card className="h-full flex flex-col">
+        <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${getColumnColor(status)}`} />
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -341,7 +341,7 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit })
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`min-h-96 transition-all duration-200 ${
+          className={`flex-1 min-h-96 transition-all duration-200 ${
             isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-400 shadow-inner' : ''
           }`}
         >
@@ -477,17 +477,26 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
     console.log('🚀 Moving task:', taskId, 'to status:', newStatus)
 
     try {
+      // Check if the target status is 'done' to automatically set progress to 100%
+      const isDoneStatus = newStatus === 'done' || newStatus.toLowerCase().includes('done') || newStatus.toLowerCase().includes('completed')
+
+      // Prepare update data
+      const updateData: any = { status: newStatus }
+      if (isDoneStatus) {
+        updateData.progress = 100
+      }
+
       // Optimistically update local state first for better UX
       setTasks(prevTasks =>
         prevTasks.map(task =>
-          task.id === taskId ? { ...task, status: newStatus } : task
+          task.id === taskId ? { ...task, ...updateData } : task
         )
       )
 
       // Update via API
-      await storiesApiService.updateStory(taskId, { status: newStatus })
+      await storiesApiService.updateStory(taskId, updateData)
 
-      toast.success('Task moved successfully')
+      toast.success(isDoneStatus ? 'Task completed successfully' : 'Task moved successfully')
       console.log('✅ Task moved successfully')
     } catch (error) {
       console.error('❌ Failed to move task:', error)
@@ -577,11 +586,7 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
                     </SelectItem>
                   ))
                 ) : (
-                  <>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
+                  <>                    
                   </>
                 )}
               </SelectContent>
@@ -593,10 +598,8 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="story">Story</SelectItem>
                 <SelectItem value="task">Task</SelectItem>
                 <SelectItem value="bug">Bug</SelectItem>
-                <SelectItem value="epic">Epic</SelectItem>
               </SelectContent>
             </Select>
 
@@ -623,12 +626,12 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
       </div>
 
       {/* Board Statistics */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-6 gap-6">
         {columns.map((column) => {
           const columnTasks = getTasksForColumn(column.status)
           return (
-            <Card key={column.id}>
-              <CardContent className="p-4 text-center">
+            <Card key={column.id} className='overflow-x-auto'>
+              <CardContent className="p-4 text-center gap-6">
                 <div className={`w-3 h-3 rounded-full ${column.status === 'todo' ? 'bg-gray-500' : column.status === 'in-progress' ? 'bg-blue-500' : column.status === 'review' ? 'bg-yellow-500' : 'bg-green-500'} mx-auto mb-2`} />
                 <div className="text-2xl font-semibold">{columnTasks.length}</div>
                 <div className="text-xs text-muted-foreground">{column.title}</div>

@@ -19,14 +19,16 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { projectApiService } from '../../services/projectApi'
+import { customerApiService } from '../../services/customerApi'
 import { toast } from 'sonner'
 
 interface ProjectSettingsProps {
   project: any
   user: any
+  onProjectUpdate?: (updatedProject: any) => void
 }
 
-export function ProjectSettings({ project, user }: ProjectSettingsProps) {
+export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSettingsProps) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [projectData, setProjectData] = useState({
@@ -49,6 +51,9 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
   })
 
   const [tagInput, setTagInput] = useState('')
+  const [customers, setCustomers] = useState<any[]>([])
+  const [projectTypes, setProjectTypes] = useState<any[]>([])
+  const [loadingMasterData, setLoadingMasterData] = useState(false)
 
   const [permissions, setPermissions] = useState({
     publicProject: false,
@@ -66,6 +71,30 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
     deadlines: true,
     statusChanges: true
   })
+
+  // Load master data (customers and project types) on mount
+  useEffect(() => {
+    const loadMasterData = async () => {
+      setLoadingMasterData(true)
+      try {
+        // Load customers
+        const customersData = await customerApiService.getAllCustomers()
+        setCustomers(customersData)
+
+        // Load project types from project masters
+        const projectMasters = await projectApiService.getProjectMasters()
+        if (projectMasters && projectMasters.types) {
+          setProjectTypes(projectMasters.types)
+        }
+      } catch (error) {
+        console.error('Failed to load master data:', error)
+      } finally {
+        setLoadingMasterData(false)
+      }
+    }
+
+    loadMasterData()
+  }, [])
 
   // Load project data on mount and when project changes
   useEffect(() => {
@@ -131,10 +160,8 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
 
   const methodologyOptions = [
     { value: 'agile', label: 'Agile' },
-    { value: 'scrum', label: 'Scrum' },
     { value: 'kanban', label: 'Kanban' },
-    { value: 'waterfall', label: 'Waterfall' },
-    { value: 'hybrid', label: 'Hybrid' }
+    { value: 'waterfall', label: 'Waterfall' }
   ]
 
   const statusOptions = [
@@ -232,13 +259,18 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
 
       console.log('Sending update payload:', updateData)
 
-      await projectApiService.updateProject(project.id, updateData)
+      const updatedProject = await projectApiService.updateProject(project.id, updateData)
       toast.success('Project settings updated successfully')
 
-      // Refresh page to show updated data
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
+      // Notify parent component about the update
+      if (updatedProject && onProjectUpdate) {
+        onProjectUpdate(updatedProject)
+      }
+
+      // Update local state with the response from API
+      if (updatedProject) {
+        console.log('Project updated successfully:', updatedProject)
+      }
     } catch (error: any) {
       console.error('Failed to update project:', error)
       toast.error(error?.message || 'Failed to update project settings')
@@ -343,12 +375,28 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                 
                 <div>
                   <Label htmlFor="customer">Customer</Label>
-                  <Input
-                    id="customer"
-                    value={projectData.customer}
-                    onChange={(e) => setProjectData({ ...projectData, customer: e.target.value })}
-                    className="mt-1"
-                  />
+                  <Select
+                    value={projectData.customer_id}
+                    onValueChange={(value: string) => {
+                      const selectedCustomer = customers.find(c => c.id === value)
+                      setProjectData({
+                        ...projectData,
+                        customer_id: value,
+                        customer: selectedCustomer?.name || ''
+                      })
+                    }}
+                  >
+                    <SelectTrigger className="mt-1" disabled={loadingMasterData}>
+                      <SelectValue placeholder={loadingMasterData ? 'Loading customers...' : 'Select customer'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -368,6 +416,7 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
                   <Select
                     value={projectData.methodology}
                     onValueChange={(value: string) => setProjectData({ ...projectData, methodology: value })}
+                    disabled
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -485,13 +534,21 @@ export function ProjectSettings({ project, user }: ProjectSettingsProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="project_type">Project Type</Label>
-                  <Input
-                    id="project_type"
+                  <Select
                     value={projectData.project_type}
-                    onChange={(e) => setProjectData({ ...projectData, project_type: e.target.value })}
-                    className="mt-1"
-                    placeholder="e.g., Web Development, Mobile App"
-                  />
+                    onValueChange={(value: string) => setProjectData({ ...projectData, project_type: value })}
+                  >
+                    <SelectTrigger className="mt-1" disabled={loadingMasterData}>
+                      <SelectValue placeholder={loadingMasterData ? 'Loading project types...' : 'Select project type'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projectTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.name}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>

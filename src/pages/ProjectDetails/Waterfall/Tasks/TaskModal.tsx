@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog'
 import { Button } from '../../../../components/ui/button'
 import { Input } from '../../../../components/ui/input'
@@ -16,8 +16,15 @@ import {
   MessageSquare,
   Paperclip,
   Save,
-  X
+  X,
+  Plus,
+  Upload,
+  File,
+  Image as ImageIcon,
+  Download,
+  Trash2
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { ProjectStatusItem, ProjectPriorityItem, ProjectMemberDetail } from '../../../../services/projectApi'
 import { Phase } from '../../../../services/phaseApi'
 import { Milestone } from '../../../../services/milestoneApi'
@@ -64,17 +71,48 @@ const typeOptions = [
 export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStatuses, availablePriorities, projectTeamMembers = [], projectTeamLead, phases = [], milestones = [], deliverables = [], project }: TaskModalProps) {
   const [editedTask, setEditedTask] = useState(task)
   const [newComment, setNewComment] = useState('')
+  const [comments, setComments] = useState<Array<{id: string, author_id: string, author_name: string, content: string, created_at: string}>>([])
+  const [attachments, setAttachments] = useState<Array<{id: string, name: string, size: number, type: string, url?: string}>>([])
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Update editedTask when task prop changes
   useEffect(() => {
     if (task) {
-      // Extract assignee details from nested assignee object if it exists
+      // Normalize status to match the format expected by Select (lowercase-with-hyphens)
       const normalizedTask = {
         ...task,
+        status: task.status ? task.status.toLowerCase().replace(/\s+/g, '-') : 'todo',
+        priority: task.priority ? task.priority.toLowerCase().replace(/\s+/g, '-') : 'medium',
+        // Extract assignee details from nested assignee object if it exists
         assignee_id: task.assignee?.id || task.assignee_id,
         assignee_name: task.assignee?.name || task.assignee_name
       }
       setEditedTask(normalizedTask)
+
+      // Load comments if they exist
+      if (task.comments && Array.isArray(task.comments)) {
+        setComments(task.comments)
+      } else {
+        setComments([])
+      }
+
+      // Load attachments from 'files' field (API returns files, not attachments)
+      if (task.files && Array.isArray(task.files)) {
+        // Convert API file format to attachment format
+        const convertedFiles = task.files.map((file: any) => ({
+          id: file.id,
+          name: file.original_filename || file.filename,
+          size: file.file_size,
+          type: file.content_type || '',
+          url: file.file_path ? `/${file.file_path.replace(/\\/g, '/')}` : undefined
+        }))
+        setAttachments(convertedFiles)
+      } else if (task.attachments && Array.isArray(task.attachments)) {
+        setAttachments(task.attachments)
+      } else {
+        setAttachments([])
+      }
     }
   }, [task])
 
@@ -83,14 +121,124 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
   }, [isOpen, availableStatuses, availablePriorities, projectTeamMembers, editedTask])
 
   const handleSave = () => {
-    onUpdate(editedTask)
+    // Include attachments and comments in the saved task
+    onUpdate({
+      ...editedTask,
+      attachments: attachments,
+      comments: comments
+    })
   }
 
   const handleAddComment = () => {
     if (newComment.trim()) {
-      // Add comment logic here
+      const newCommentObj = {
+        id: `temp-${Date.now()}`, // Temporary ID, will be replaced by server
+        author_id: user?.id || 'current-user',
+        author_name: user?.name || 'Current User',
+        content: newComment.trim(),
+        created_at: new Date().toISOString()
+      }
+      setComments(prev => [...prev, newCommentObj])
       setNewComment('')
     }
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    // Validate file size (max 10MB per file)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    const validFiles: File[] = []
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Maximum file size is 10MB.`)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    // Process valid files
+    validFiles.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const newAttachment = {
+          id: `${Date.now()}-${Math.random()}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: e.target?.result as string
+        }
+        setAttachments(prev => [...prev, newAttachment])
+        toast.success(`${file.name} added successfully`)
+      }
+      reader.readAsDataURL(file)
+    })
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== id))
+    toast.success('Attachment removed')
+  }
+
+  const handleDownloadAttachment = (attachment: any) => {
+    if (attachment.url) {
+      const link = document.createElement('a')
+      link.href = attachment.url
+      link.download = attachment.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) {
+      return <ImageIcon className="w-4 h-4" />
+    }
+    return <File className="w-4 h-4" />
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+
+    // Create a mock event for handleFileSelect
+    const mockEvent = {
+      target: {
+        files: e.dataTransfer.files
+      }
+    } as any
+
+    handleFileSelect(mockEvent)
   }
 
   const getStatusColor = (status: string) => {
@@ -166,10 +314,33 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={editedTask.start_date ? new Date(editedTask.start_date).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setEditedTask({ ...editedTask, start_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={editedTask.end_date ? new Date(editedTask.end_date).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setEditedTask({ ...editedTask, end_date: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <Label htmlFor="type">Type</Label>
                   <Select
-                    value={editedTask.type || 'task'}
-                    onValueChange={(value: string) => setEditedTask({ ...editedTask, type: value })}
+                    value={editedTask.story_type || 'task'}
+                    onValueChange={(value: string) => setEditedTask({ ...editedTask, story_type: value })}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -197,13 +368,60 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
                   />
                 </div>
               </div>
+
+              {/* Acceptance Criteria */}
+              <div>
+                <Label>Acceptance Criteria</Label>
+                <div className="space-y-2 mt-2">
+                  {Array.isArray(editedTask.acceptance_criteria) && editedTask.acceptance_criteria.length > 0 ? (
+                    editedTask.acceptance_criteria.map((criteria, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <Input
+                          placeholder="Enter acceptance criteria"
+                          value={criteria}
+                          onChange={(e) => {
+                            const newCriteria = [...(editedTask.acceptance_criteria || [])]
+                            newCriteria[index] = e.target.value
+                            setEditedTask({ ...editedTask, acceptance_criteria: newCriteria })
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newCriteria = editedTask.acceptance_criteria?.filter((_, i) => i !== index) || []
+                            setEditedTask({ ...editedTask, acceptance_criteria: newCriteria })
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newCriteria = [...(editedTask.acceptance_criteria || []), '']
+                      setEditedTask({ ...editedTask, acceptance_criteria: newCriteria })
+                    }}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Acceptance Criteria
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Comments Section */}
             <div className="space-y-4">
               <h4 className="font-medium flex items-center space-x-2">
                 <MessageSquare className="w-4 h-4" />
-                <span>Comments</span>
+                <span>Comments ({comments.length})</span>
               </h4>
 
               {/* Add Comment */}
@@ -214,26 +432,37 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
                   placeholder="Add a comment..."
                   className="min-h-[80px]"
                 />
-                <Button onClick={handleAddComment} size="sm">
+                <Button onClick={handleAddComment} size="sm" disabled={!newComment.trim()}>
                   Add Comment
                 </Button>
               </div>
 
               {/* Existing Comments */}
-              <div className="space-y-3">
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Avatar className="w-6 h-6">
-                      <AvatarFallback className="bg-[#28A745] text-white text-xs">
-                        AJ
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">Alice Johnson</span>
-                    <span className="text-xs text-muted-foreground">2 hours ago</span>
-                  </div>
-                  <p className="text-sm">Started working on the OAuth implementation. Making good progress on the Google provider integration.</p>
+              {comments.length > 0 ? (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="bg-[#28A745] text-white text-xs">
+                            {comment.author_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{comment.author_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(comment.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No comments yet. Be the first to comment!</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -253,9 +482,14 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
                   <SelectContent>
                     {availableStatuses && availableStatuses.length > 0 ? (
                       availableStatuses.map((status) => (
-                        <SelectItem key={status.id} value={status.name.toLowerCase()}>
+                        <SelectItem key={status.id} value={status.name.toLowerCase().replace(/\s+/g, '-')}>
                           <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            {status.color && (
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: status.color }}
+                              />
+                            )}
                             <span>{status.name}</span>
                           </div>
                         </SelectItem>
@@ -286,9 +520,14 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
                   <SelectContent>
                     {availablePriorities && availablePriorities.length > 0 ? (
                       availablePriorities.map((priority) => (
-                        <SelectItem key={priority.id} value={priority.name.toLowerCase()}>
+                        <SelectItem key={priority.id} value={priority.name.toLowerCase().replace(/\s+/g, '-')}>
                           <div className="flex items-center space-x-2">
-                            <AlertCircle className="w-3 h-3" />
+                            {priority.color && (
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: priority.color }}
+                              />
+                            )}
                             <span>{priority.name}</span>
                           </div>
                         </SelectItem>
@@ -441,32 +680,81 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
               </Select>
             </div>
 
-            {/* Progress Tracking */}
-            <div className="space-y-2">
-              <Label>Progress</Label>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Completed:</span>
-                  <span>{editedTask.progress || 0}%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-[#28A745] h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${editedTask.progress || 0}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-
             {/* Attachments */}
             <div className="space-y-2">
               <Label className="flex items-center space-x-2">
                 <Paperclip className="w-4 h-4" />
-                <span>Attachments</span>
+                <span>Attachments ({attachments.length})</span>
               </Label>
-              <Button variant="outline" size="sm" className="w-full">
-                Add Attachment
-              </Button>
+
+              {/* Drag and Drop Zone */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-primary/50'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm font-medium mb-1">
+                  {isDragging ? 'Drop files here' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Images, PDFs, Documents (max 10MB)
+                </p>
+              </div>
+
+              {/* File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+              />
+
+              {/* Attachment List */}
+              {attachments.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        {getFileIcon(attachment.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attachment.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadAttachment(attachment)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAttachment(attachment.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -479,7 +767,7 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
             <span>•</span>
             <span>Updated 2 hours ago</span>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <Button variant="outline" onClick={onClose}>
               <X className="w-4 h-4 mr-1" />

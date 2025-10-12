@@ -630,21 +630,21 @@ export function ReportsView({ project, user }: ReportsViewProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <MetricCard
                   title="Flow Efficiency"
-                  value={flowData?.flow_efficiency ?? metrics.flowEfficiency}
+                  value={flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency}
                   unit="%"
                   icon={TrendingUp}
                   description="Completion rate across board"
                 />
                 <MetricCard
                   title="Throughput"
-                  value={flowData?.throughput ?? metrics.throughput}
+                  value={flowData?.metrics?.throughput ?? flowData?.throughput ?? metrics.throughput}
                   unit=" tasks/week"
                   icon={Zap}
                   description="Tasks completed per week"
                 />
                 <MetricCard
                   title="WIP Count"
-                  value={flowData?.wip_count ?? metrics.wipCount}
+                  value={flowData?.metrics?.wip_count ?? flowData?.wip_count ?? metrics.wipCount}
                   icon={Activity}
                   description="Work in progress"
                 />
@@ -657,31 +657,34 @@ export function ReportsView({ project, user }: ReportsViewProps) {
                 <CardContent>
                   <div className="space-y-4">
                     <div className={`p-4 rounded-lg ${
-                      (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'bg-green-50 dark:bg-green-950' :
-                      (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'bg-yellow-50 dark:bg-yellow-950' :
+                      (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'bg-green-50 dark:bg-green-950' :
+                      (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'bg-yellow-50 dark:bg-yellow-950' :
                       'bg-red-50 dark:bg-red-950'
                     }`}>
                       <h4 className={`font-medium mb-2 ${
-                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'text-green-800 dark:text-green-200' :
-                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'text-yellow-800 dark:text-yellow-200' :
+                        (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'text-green-800 dark:text-green-200' :
+                        (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'text-yellow-800 dark:text-yellow-200' :
                         'text-red-800 dark:text-red-200'
                       }`}>
-                        {flowData?.insights?.completion_status === 'excellent' ? 'Excellent Flow' :
+                        {flowData?.efficiency_analysis?.status === 'excellent' ? 'Excellent Flow' :
+                         flowData?.efficiency_analysis?.status === 'good' ? 'Good Flow' :
+                         flowData?.efficiency_analysis?.status === 'needs_improvement' ? 'Flow Needs Improvement' :
+                         flowData?.insights?.completion_status === 'excellent' ? 'Excellent Flow' :
                          flowData?.insights?.completion_status === 'good' ? 'Good Flow' :
                          flowData?.insights?.completion_status === 'needs_improvement' ? 'Flow Needs Improvement' :
-                         (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'Excellent Flow' :
-                         (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'Good Flow' :
+                         (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'Excellent Flow' :
+                         (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'Good Flow' :
                          'Flow Needs Improvement'}
                       </h4>
                       <p className={`text-sm ${
-                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'text-green-700 dark:text-green-300' :
-                        (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'text-yellow-700 dark:text-yellow-300' :
+                        (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80 ? 'text-green-700 dark:text-green-300' :
+                        (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60 ? 'text-yellow-700 dark:text-yellow-300' :
                         'text-red-700 dark:text-red-300'
                       }`}>
-                        {flowData?.insights?.message ?? (
-                          (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80
+                        {flowData?.efficiency_analysis?.message ?? flowData?.insights?.message ?? (
+                          (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 80
                             ? 'Your team is maintaining excellent flow with high completion rates.'
-                            : (flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60
+                            : (flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency) >= 60
                             ? 'Flow is good but there is room for improvement in completion rates.'
                             : 'Consider reviewing bottlenecks and reducing WIP to improve flow.'
                         )}
@@ -691,16 +694,23 @@ export function ReportsView({ project, user }: ReportsViewProps) {
                       <div>
                         <h5 className="font-medium mb-2">Key Insights</h5>
                         <ul className="space-y-1 text-muted-foreground">
-                          {flowData?.insights?.key_points ? (
+                          {flowData?.key_insights ? (
+                            <>
+                              <li>• {flowData.key_insights.tasks_completed} tasks completed</li>
+                              <li>• {flowData.key_insights.tasks_finished_last_week} tasks finished last week</li>
+                              <li>• {flowData.key_insights.tasks_currently_in_progress} tasks currently in progress</li>
+                              <li>• {flowData.key_insights.overall_flow_efficiency?.toFixed(1)}% overall flow efficiency</li>
+                            </>
+                          ) : flowData?.insights?.key_points ? (
                             flowData.insights.key_points.map((point, idx) => (
                               <li key={idx}>• {point}</li>
                             ))
                           ) : (
                             <>
                               <li>• {flowData?.completed_tasks ?? metrics.completedTasks} tasks completed</li>
-                              <li>• {flowData?.throughput ?? metrics.throughput} tasks finished last week</li>
-                              <li>• {flowData?.wip_count ?? metrics.wipCount} tasks currently in progress</li>
-                              <li>• {flowData?.flow_efficiency ?? metrics.flowEfficiency}% overall flow efficiency</li>
+                              <li>• {flowData?.metrics?.throughput ?? flowData?.throughput ?? metrics.throughput} tasks finished last week</li>
+                              <li>• {flowData?.metrics?.wip_count ?? flowData?.wip_count ?? metrics.wipCount} tasks currently in progress</li>
+                              <li>• {flowData?.metrics?.flow_efficiency ?? flowData?.flow_efficiency ?? metrics.flowEfficiency}% overall flow efficiency</li>
                             </>
                           )}
                         </ul>
@@ -708,18 +718,27 @@ export function ReportsView({ project, user }: ReportsViewProps) {
                       <div>
                         <h5 className="font-medium mb-2">Recommendations</h5>
                         <ul className="space-y-1 text-muted-foreground">
-                          {flowData?.recommendations ? (
-                            flowData.recommendations.map((rec, idx) => (
-                              <li key={idx}>• {rec}</li>
-                            ))
-                          ) : (
-                            <>
-                              <li>• {(flowData?.wip_count ?? metrics.wipCount) > 10 ? 'Reduce WIP to improve flow' : 'WIP is at a healthy level'}</li>
-                              <li>• {(flowData?.blocked_tasks ?? metrics.blockedTasks) > 0 ? `Address ${flowData?.blocked_tasks ?? metrics.blockedTasks} blocked tasks` : 'No blocked tasks'}</li>
-                              <li>• Focus on completing in-progress tasks</li>
-                              <li>• Monitor and optimize cycle times</li>
-                            </>
-                          )}
+                          {(() => {
+                            // Handle both array and object formats for recommendations
+                            const suggestions = flowData?.recommendations
+                              ? Array.isArray(flowData.recommendations)
+                                ? flowData.recommendations
+                                : flowData.recommendations?.suggestions || []
+                              : []
+
+                            return suggestions.length > 0 ? (
+                              suggestions.map((rec, idx) => (
+                                <li key={idx}>• {rec}</li>
+                              ))
+                            ) : (
+                              <>
+                                <li>• {(flowData?.metrics?.wip_count ?? flowData?.wip_count ?? metrics.wipCount) > 10 ? 'Reduce WIP to improve flow' : 'WIP is at a healthy level'}</li>
+                                <li>• {metrics.blockedTasks > 0 ? `Address ${metrics.blockedTasks} blocked tasks` : 'No blocked tasks'}</li>
+                                <li>• Focus on completing in-progress tasks</li>
+                                <li>• Monitor and optimize cycle times</li>
+                              </>
+                            )
+                          })()}
                         </ul>
                       </div>
                     </div>
@@ -737,21 +756,21 @@ export function ReportsView({ project, user }: ReportsViewProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <MetricCard
                   title="Average Cycle Time"
-                  value={cycleTimeData?.average_cycle_time ?? metrics.averageCycleTime}
+                  value={cycleTimeData?.metrics?.average_cycle_time ?? cycleTimeData?.average_cycle_time ?? metrics.averageCycleTime}
                   unit=" days"
                   icon={Clock}
                   description="Start to completion"
                 />
                 <MetricCard
                   title="Average Lead Time"
-                  value={cycleTimeData?.average_lead_time ?? metrics.averageLeadTime}
+                  value={cycleTimeData?.metrics?.average_lead_time ?? cycleTimeData?.average_lead_time ?? metrics.averageLeadTime}
                   unit=" days"
                   icon={Target}
                   description="Creation to completion"
                 />
                 <MetricCard
                   title="Time Efficiency"
-                  value={cycleTimeData?.time_efficiency ?? (
+                  value={cycleTimeData?.metrics?.time_efficiency ?? cycleTimeData?.time_efficiency ?? (
                     metrics.averageLeadTime > 0
                       ? Math.round((metrics.averageCycleTime / metrics.averageLeadTime) * 100)
                       : 0
@@ -828,19 +847,19 @@ export function ReportsView({ project, user }: ReportsViewProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <MetricCard
                   title="Current WIP"
-                  value={wipData?.current_wip ?? metrics.wipCount}
+                  value={wipData?.metrics?.current_wip ?? wipData?.current_wip ?? metrics.wipCount}
                   icon={Activity}
                   description="Tasks in progress"
                 />
                 <MetricCard
                   title="Aging WIP"
-                  value={wipData?.aging_wip_count ?? metrics.agingWIP.filter(t => t.isAging).length}
+                  value={wipData?.metrics?.aging_wip ?? wipData?.aging_wip_count ?? metrics.agingWIP.filter(t => t.isAging).length}
                   icon={AlertCircle}
                   description="Tasks over 7 days"
                 />
                 <MetricCard
                   title="WIP Health"
-                  value={wipData?.wip_health ?? (
+                  value={wipData?.metrics?.wip_health ?? wipData?.wip_health ?? (
                     metrics.wipCount === 0 ? 0 :
                     Math.round(((metrics.wipCount - metrics.agingWIP.filter(t => t.isAging).length) / metrics.wipCount) * 100)
                   )}
@@ -855,36 +874,37 @@ export function ReportsView({ project, user }: ReportsViewProps) {
                   <CardTitle className="text-lg">Work in Progress Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {(wipData?.wip_tasks ?? metrics.agingWIP).length === 0 ? (
+                  {((wipData?.work_in_progress_details ?? wipData?.wip_tasks ?? metrics.agingWIP).length === 0) ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
                       <p>No work in progress</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {(wipData?.wip_tasks ?? metrics.agingWIP).slice(0, 10).map((task: any) => (
+                      {(wipData?.work_in_progress_details ?? wipData?.wip_tasks ?? metrics.agingWIP).slice(0, 10).map((task: any) => (
                         <div
-                          key={task.id}
-                          className={`p-4 border rounded-lg ${task.is_aging || task.isAging ? 'border-red-300 bg-red-50 dark:bg-red-950' : 'border-gray-200'}`}
+                          key={task.id || task.task_id}
+                          className={`p-4 border rounded-lg ${(task.is_aging || task.isAging || task.days_in_progress > 7) ? 'border-red-300 bg-red-50 dark:bg-red-950' : 'border-gray-200'}`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-1">
                                 <span className="text-xs font-semibold text-blue-600">{task.task_id}</span>
-                                {(task.is_aging || task.isAging) && (
+                                {(task.is_aging || task.isAging || task.days_in_progress > 7) && (
                                   <Badge variant="outline" className="text-xs bg-red-100 text-red-800 border-red-300">
                                     Aging
                                   </Badge>
                                 )}
                               </div>
-                              <p className="font-medium text-sm">{task.title}</p>
+                              <p className="font-medium text-sm">{task.task_title || task.title}</p>
                               <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                                 <span>Status: {task.status}</span>
-                                {task.assignee && <span>Assigned to: {task.assignee.name}</span>}
+                                {(task.assignee_name || task.assignee?.name) && <span>Assigned to: {task.assignee_name || task.assignee.name}</span>}
+                                {task.priority && <span>Priority: {task.priority}</span>}
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className={`text-2xl font-bold ${task.is_aging || task.isAging ? 'text-red-600' : 'text-gray-900'}`}>
+                              <div className={`text-2xl font-bold ${(task.is_aging || task.isAging || task.days_in_progress > 7) ? 'text-red-600' : 'text-gray-900'}`}>
                                 {task.days_in_progress ?? task.daysInProgress}
                               </div>
                               <div className="text-xs text-muted-foreground">days</div>
@@ -914,18 +934,27 @@ export function ReportsView({ project, user }: ReportsViewProps) {
                       </div>
                     )}
                     <ul className="space-y-1 text-muted-foreground">
-                      {wipData?.recommendations ? (
-                        wipData.recommendations.map((rec, idx) => (
-                          <li key={idx}>• {rec}</li>
-                        ))
-                      ) : (
-                        <>
-                          <li>• {(wipData?.current_wip ?? metrics.wipCount) > 10 ? 'Consider limiting WIP to improve focus' : 'WIP is at a healthy level'}</li>
-                          <li>• Focus on completing tasks before starting new ones</li>
-                          <li>• Review aging tasks weekly to identify blockers</li>
-                          <li>• Maintain a balanced distribution across team members</li>
-                        </>
-                      )}
+                      {(() => {
+                        // Handle both array and object formats for recommendations
+                        const suggestions = wipData?.recommendations
+                          ? Array.isArray(wipData.recommendations)
+                            ? wipData.recommendations
+                            : wipData.recommendations?.suggestions || []
+                          : []
+
+                        return suggestions.length > 0 ? (
+                          suggestions.map((rec, idx) => (
+                            <li key={idx}>• {rec}</li>
+                          ))
+                        ) : (
+                          <>
+                            <li>• {(wipData?.metrics?.current_wip ?? wipData?.current_wip ?? metrics.wipCount) > 10 ? 'Consider limiting WIP to improve focus' : 'WIP is at a healthy level'}</li>
+                            <li>• Focus on completing tasks before starting new ones</li>
+                            <li>• Review aging tasks weekly to identify blockers</li>
+                            <li>• Maintain a balanced distribution across team members</li>
+                          </>
+                        )
+                      })()}
                     </ul>
                   </div>
                 </CardContent>
@@ -941,22 +970,22 @@ export function ReportsView({ project, user }: ReportsViewProps) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <MetricCard
                   title="Team Members"
-                  value={teamData?.team_size ?? metrics.teamPerformance.length}
+                  value={teamData?.team_metrics?.team_members_count ?? teamData?.team_size ?? metrics.teamPerformance.length}
                   icon={Users}
                 />
                 <MetricCard
                   title="Total Tasks"
-                  value={teamData?.total_tasks ?? metrics.totalTasks}
+                  value={teamData?.team_metrics?.total_tasks ?? teamData?.total_tasks ?? metrics.totalTasks}
                   icon={Layers}
                 />
                 <MetricCard
                   title="Completed"
-                  value={teamData?.completed_tasks ?? metrics.completedTasks}
+                  value={teamData?.team_metrics?.completed_tasks ?? teamData?.completed_tasks ?? metrics.completedTasks}
                   icon={CheckCircle}
                 />
                 <MetricCard
                   title="Avg Completion"
-                  value={teamData?.average_completion_rate ?? (
+                  value={teamData?.team_metrics?.average_completion_rate ?? teamData?.average_completion_rate ?? (
                     metrics.teamPerformance.length > 0
                       ? Math.round(metrics.teamPerformance.reduce((sum, m) => sum + m.completionRate, 0) / metrics.teamPerformance.length)
                       : 0
@@ -971,24 +1000,24 @@ export function ReportsView({ project, user }: ReportsViewProps) {
                   <CardTitle className="text-lg">Individual Performance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {(teamData?.team_members ?? metrics.teamPerformance).length === 0 ? (
+                  {((teamData?.individual_performance ?? teamData?.team_members ?? metrics.teamPerformance).length === 0) ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                       <p>No team members assigned</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {(teamData?.team_members ?? metrics.teamPerformance).map((member: any, index: number) => (
+                      {(teamData?.individual_performance ?? teamData?.team_members ?? metrics.teamPerformance).map((member: any, index: number) => (
                         <div key={member.member_id || index} className="p-4 border rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
                               <Avatar className="w-10 h-10">
                                 <AvatarFallback className="bg-[#28A745] text-white">
-                                  {member.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
+                                  {(member.member_name || member.name)?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-medium">{member.name}</p>
+                                <p className="font-medium">{member.member_name || member.name}</p>
                                 <p className="text-xs text-muted-foreground">{member.role}</p>
                               </div>
                             </div>

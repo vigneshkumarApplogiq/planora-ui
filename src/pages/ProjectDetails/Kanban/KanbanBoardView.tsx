@@ -28,12 +28,15 @@ import {
   Trash2,
   GripVertical,
   Calendar,
-  Layers
+  Layers,
+  Timer
 } from 'lucide-react'
 import { storiesApiService, Story } from '../../../services/storiesApi'
 import { toast } from 'sonner'
 import { projectApiService } from '../../../services/projectApi'
 import { TaskModal } from './Tasks/TaskModal'
+import { Textarea } from '../../../components/ui/textarea'
+import { timesheetApiService } from '../../../services/timesheetApi'
 
 interface KanbanBoardViewProps {
   project: any
@@ -69,7 +72,8 @@ const TaskCard: React.FC<{
   columnId: string
   onEdit: (task: KanbanTask) => void
   onDelete: (taskId: string) => void
-}> = ({ task, columnId, onEdit, onDelete }) => {
+  onLogTime: (task: KanbanTask) => void
+}> = ({ task, columnId, onEdit, onDelete, onLogTime }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.TASK,
     item: () => ({
@@ -268,24 +272,38 @@ const TaskCard: React.FC<{
               )}
             </div>
 
-            {task.assignee && (
-              <div className="flex items-center gap-1.5">
-                <Avatar className="w-6 h-6 border border-gray-200">
-                  {task.assignee.user_profile && (
-                    <AvatarImage
-                      src={task.assignee.user_profile}
-                      alt={task.assignee.name}
-                    />
-                  )}
-                  <AvatarFallback className="text-xs bg-blue-500 text-white font-medium">
-                    {task.assignee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-gray-700 font-medium max-w-[80px] truncate">
-                  {task.assignee.name.split(' ')[0]}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {task.assignee && (
+                <div className="flex items-center gap-1.5">
+                  <Avatar className="w-6 h-6 border border-gray-200">
+                    {task.assignee.user_profile && (
+                      <AvatarImage
+                        src={task.assignee.user_profile}
+                        alt={task.assignee.name}
+                      />
+                    )}
+                    <AvatarFallback className="text-xs bg-blue-500 text-white font-medium">
+                      {task.assignee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-gray-700 font-medium max-w-[80px] truncate">
+                    {task.assignee.name.split(' ')[0]}
+                  </span>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-green-100"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onLogTime(task)
+                }}
+                title="Log time"
+              >
+                <Timer className="w-3.5 h-3.5 text-green-600" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -298,7 +316,8 @@ const KanbanColumn: React.FC<{
   onTaskMove: (taskId: string, targetColumnId: string) => void
   onTaskEdit: (task: KanbanTask) => void
   onTaskDelete: (taskId: string) => void
-}> = ({ column, onTaskMove, onTaskEdit, onTaskDelete }) => {
+  onLogTime: (task: KanbanTask) => void
+}> = ({ column, onTaskMove, onTaskEdit, onTaskDelete, onLogTime }) => {
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.TASK,
     drop: (item: DragItem) => {
@@ -356,6 +375,7 @@ const KanbanColumn: React.FC<{
                 columnId={column.id}
                 onEdit={onTaskEdit}
                 onDelete={onTaskDelete}
+                onLogTime={onLogTime}
               />
             ))}
 
@@ -384,6 +404,13 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
   const [wipLimitsEnabled, setWipLimitsEnabled] = useState(true)
   const [tasks, setTasks] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
+  const [showLogTimeDialog, setShowLogTimeDialog] = useState(false)
+  const [selectedTaskForTimeLog, setSelectedTaskForTimeLog] = useState<KanbanTask | null>(null)
+  const [logTimeData, setLogTimeData] = useState({
+    hours: '',
+    description: '',
+    activityType: 'development' as 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fixing' | 'other'
+  })
 
   // Use master data from props (passed from parent)
   const masterData = propMasterData
@@ -603,6 +630,50 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
     }
   }
 
+  const handleLogTime = (task: KanbanTask) => {
+    setSelectedTaskForTimeLog(task)
+    setLogTimeData({
+      hours: '',
+      description: '',
+      activityType: 'development'
+    })
+    setShowLogTimeDialog(true)
+  }
+
+  const handleSubmitLogTime = async () => {
+    if (!selectedTaskForTimeLog || !logTimeData.hours) {
+      toast.error('Please enter hours')
+      return
+    }
+
+    const hours = parseFloat(logTimeData.hours)
+    if (isNaN(hours) || hours <= 0) {
+      toast.error('Please enter valid hours')
+      return
+    }
+
+    try {
+      await timesheetApiService.logTimeForTask(
+        selectedTaskForTimeLog.id,
+        hours,
+        logTimeData.description,
+        logTimeData.activityType
+      )
+
+      toast.success('Time logged successfully')
+      setShowLogTimeDialog(false)
+      setSelectedTaskForTimeLog(null)
+      setLogTimeData({
+        hours: '',
+        description: '',
+        activityType: 'development'
+      })
+    } catch (error) {
+      console.error('Failed to log time:', error)
+      toast.error('Failed to log time')
+    }
+  }
+
   const filteredColumns = columns.map(column => ({
     ...column,
     tasks: column.tasks.filter(task =>
@@ -669,6 +740,7 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
               onTaskMove={handleTaskMove}
               onTaskEdit={handleTaskEdit}
               onTaskDelete={handleTaskDelete}
+              onLogTime={handleLogTime}
             />
           ))}
         </div>
@@ -730,6 +802,80 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
             project={project}
           />
         )}
+
+        {/* Log Time Dialog */}
+        <Dialog open={showLogTimeDialog} onOpenChange={setShowLogTimeDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Log Time</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Task</Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedTaskForTimeLog?.task_id || selectedTaskForTimeLog?.id}: {selectedTaskForTimeLog?.title}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="hours">Hours *</Label>
+                <Input
+                  id="hours"
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  placeholder="Enter hours (e.g., 2.5)"
+                  value={logTimeData.hours}
+                  onChange={(e) => setLogTimeData({ ...logTimeData, hours: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="activityType">Activity Type *</Label>
+                <Select
+                  value={logTimeData.activityType}
+                  onValueChange={(value) => setLogTimeData({ ...logTimeData, activityType: value as any })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select activity type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="development">Development</SelectItem>
+                    <SelectItem value="testing">Testing</SelectItem>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="review">Review</SelectItem>
+                    <SelectItem value="meeting">Meeting</SelectItem>
+                    <SelectItem value="documentation">Documentation</SelectItem>
+                    <SelectItem value="bug_fixing">Bug Fixing</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Enter description of work done..."
+                  value={logTimeData.description}
+                  onChange={(e) => setLogTimeData({ ...logTimeData, description: e.target.value })}
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setShowLogTimeDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSubmitLogTime}>
+                  Log Time
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DndProvider>
   )

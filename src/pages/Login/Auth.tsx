@@ -342,7 +342,7 @@ export function Auth({ onLogin }: AuthProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFormData({ email: 'hariganesh@planora.com', password: 'planora@123' })
+                  setFormData({ email: 'grace.moore@planora.com', password: 'planora@123' })
                   setTimeout(() => {
                     const form = document.querySelector('form') as HTMLFormElement
                     form?.requestSubmit()

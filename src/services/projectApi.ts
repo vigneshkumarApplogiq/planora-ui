@@ -125,6 +125,53 @@ export interface ProjectMember {
 
 export type ProjectMembersResponse = ProjectMember[];
 
+export interface MyProjectPermissions {
+  public_project: boolean;
+  guest_access: boolean;
+  time_tracking: boolean;
+  file_sharing: boolean;
+  task_creation: boolean;
+}
+
+export interface MyProjectNotifications {
+  task_updates: boolean;
+  file_uploads: boolean;
+  comments: boolean;
+  mentions: boolean;
+  deadlines: boolean;
+  status_changes: boolean;
+}
+
+export interface MyProject {
+  name: string;
+  description: string;
+  status: string;
+  progress: number;
+  start_date: string;
+  end_date: string;
+  budget: number;
+  spent: number;
+  customer: string;
+  customer_id: string;
+  priority: string;
+  team_lead_id: string;
+  team_members: string[];
+  tags: string[];
+  color: string;
+  methodology: string;
+  project_type: string;
+  prefix: string;
+  permissions: MyProjectPermissions;
+  notifications: MyProjectNotifications;
+  id: string;
+  created_at: string;
+  updated_at: string;
+  team_lead_detail: ProjectMemberDetail;
+  team_members_detail: ProjectMemberDetail[];
+}
+
+export type MyProjectsResponse = MyProject[];
+
 
 export interface CreateProjectRequest {
   name: string;
@@ -336,6 +383,10 @@ export class ProjectApiService {
 
   async getActiveProjectsList(): Promise<Project[]> {
     return this.makeRequest<Project[]>('/api/v1/projects/active/list');
+  }
+
+  async getMyProjects(): Promise<MyProjectsResponse> {
+    return this.makeRequest<MyProjectsResponse>('/api/v1/projects/myprojects');
   }
 
   async getProjectMasters(): Promise<ProjectMastersResponse> {

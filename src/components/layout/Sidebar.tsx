@@ -13,6 +13,7 @@ import {
   Shield,
   UserCheck,
   Target,
+  Clock,
 } from 'lucide-react'
 
 
@@ -23,6 +24,8 @@ interface SidebarProps {
 
 // Define navigation items for each role
 const getNavigationItems = (userRole: string) => {
+  const isAdminOrSuperAdmin = userRole === 'admin' || userRole === 'super_admin'
+
   const baseItems = [
     {
       id: 'dashboard',
@@ -34,7 +37,7 @@ const getNavigationItems = (userRole: string) => {
     },
     {
       id: 'projects',
-      label: 'Projects',
+      label: isAdminOrSuperAdmin ? 'Projects' : 'My Projects', // Change label based on role
       icon: FolderOpen,
       badge: null,
       path: '/projects',
@@ -47,6 +50,14 @@ const getNavigationItems = (userRole: string) => {
       badge: null,
       path: '/customers',
       roles: ['admin', 'super_admin', 'project_manager'] // Admin, super admin and project manager
+    },
+    {
+      id: 'timesheet',
+      label: 'Timesheet',
+      icon: Clock,
+      badge: null,
+      path: '/timesheet',
+      roles: ['project_manager', 'developer', 'tester'] // Only non-admin users
     },
     {
       id: 'reports',

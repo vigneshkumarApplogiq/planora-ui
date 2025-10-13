@@ -23,7 +23,8 @@ import {
   Trash2,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Timer
 } from 'lucide-react'
 import { TaskModal } from './TaskModal'
 import { taskApiService, Task, CreateTaskRequest } from '../../../../services/taskApi'
@@ -46,6 +47,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../../../components/ui/dropdown-menu'
+import { timesheetApiService } from '../../../../services/timesheetApi'
 
 interface TasksViewProps {
   projectId?: string
@@ -105,6 +107,15 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const [perPage, setPerPage] = useState(10)
+
+  // Time logging state
+  const [showLogTimeDialog, setShowLogTimeDialog] = useState(false)
+  const [selectedTaskForTimeLog, setSelectedTaskForTimeLog] = useState<Task | null>(null)
+  const [logTimeData, setLogTimeData] = useState({
+    hours: '',
+    description: '',
+    activityType: 'development' as 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fixing' | 'other'
+  })
 
   // Load team members from project data when available (same as BacklogView)
   useEffect(() => {
@@ -438,6 +449,50 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     }
   }
 
+  const handleLogTime = (task: Task) => {
+    setSelectedTaskForTimeLog(task)
+    setLogTimeData({
+      hours: '',
+      description: '',
+      activityType: 'development'
+    })
+    setShowLogTimeDialog(true)
+  }
+
+  const handleSubmitLogTime = async () => {
+    if (!selectedTaskForTimeLog || !logTimeData.hours) {
+      toast.error('Please enter hours')
+      return
+    }
+
+    const hours = parseFloat(logTimeData.hours)
+    if (isNaN(hours) || hours <= 0) {
+      toast.error('Please enter valid hours')
+      return
+    }
+
+    try {
+      await timesheetApiService.logTimeForTask(
+        selectedTaskForTimeLog.id!,
+        hours,
+        logTimeData.description,
+        logTimeData.activityType
+      )
+
+      toast.success('Time logged successfully')
+      setShowLogTimeDialog(false)
+      setSelectedTaskForTimeLog(null)
+      setLogTimeData({
+        hours: '',
+        description: '',
+        activityType: 'development'
+      })
+    } catch (error) {
+      console.error('Failed to log time:', error)
+      toast.error('Failed to log time')
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'todo': return 'bg-gray-100 text-gray-800 border-gray-300'
@@ -589,6 +644,10 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Task
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleLogTime(task) }}>
+                        <Timer className="w-4 h-4 mr-2" />
+                        Log Time
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-red-600"
@@ -696,6 +755,10 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
                   <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedTask(task) }}>
                     <Edit className="w-4 h-4 mr-2" />
                     Edit Task
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleLogTime(task) }}>
+                    <Timer className="w-4 h-4 mr-2" />
+                    Log Time
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -1271,6 +1334,80 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Log Time Dialog */}
+      <Dialog open={showLogTimeDialog} onOpenChange={setShowLogTimeDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Log Time</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Task</Label>
+              <p className="text-sm text-gray-600 mt-1">
+                {selectedTaskForTimeLog?.task_id || selectedTaskForTimeLog?.id}: {selectedTaskForTimeLog?.title}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="hours">Hours *</Label>
+              <Input
+                id="hours"
+                type="number"
+                step="0.25"
+                min="0"
+                placeholder="Enter hours (e.g., 2.5)"
+                value={logTimeData.hours}
+                onChange={(e) => setLogTimeData({ ...logTimeData, hours: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="activityType">Activity Type *</Label>
+              <Select
+                value={logTimeData.activityType}
+                onValueChange={(value) => setLogTimeData({ ...logTimeData, activityType: value as any })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select activity type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="development">Development</SelectItem>
+                  <SelectItem value="testing">Testing</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                  <SelectItem value="review">Review</SelectItem>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="documentation">Documentation</SelectItem>
+                  <SelectItem value="bug_fixing">Bug Fixing</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Enter description of work done..."
+                value={logTimeData.description}
+                onChange={(e) => setLogTimeData({ ...logTimeData, description: e.target.value })}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowLogTimeDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitLogTime}>
+                Log Time
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

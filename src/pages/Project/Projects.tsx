@@ -140,9 +140,16 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
       return projects // Admins and PMs see all projects
     } else if (isDeveloperOrTester) {
       // Developers and testers only see projects they're assigned to
-      return projects.filter(project =>
-        (project.teamMembers?.includes(user?.name)) || project.teamLead === user?.name
-      )
+      // Check if user ID is in team_members array or if user is the team_lead_id
+      // Note: API uses snake_case (team_members, team_lead_id) while mock uses camelCase (teamMembers, teamLead)
+      // Check both formats for compatibility
+      return projects.filter(project => {
+        const projectAny = project as any
+        const teamMembers = projectAny.team_members || projectAny.teamMembers || []
+        const teamLeadId = projectAny.team_lead_id || projectAny.teamLeadId
+
+        return teamMembers.includes(user?.id) || teamLeadId === user?.id
+      })
     }
     return projects
   }

@@ -1,9 +1,18 @@
 import { authApiService } from './authApi';
 import { getApiUrl } from '../config/api';
 
+export interface TimeEntryAttachment {
+  id: string;
+  filename: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
+}
+
 export interface TimeEntry {
   id: string;
   user_id: string;
+  user_name?: string;
   project_id: string;
   task_id?: string;
   story_id?: string;
@@ -11,9 +20,15 @@ export interface TimeEntry {
   date: string;
   hours: number;
   description: string;
+  notes?: string;
   activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fixing' | 'other';
   billable: boolean;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
   approved: boolean;
+  approved_by?: string;
+  approved_at?: string;
+  rejected_reason?: string;
+  attachments: TimeEntryAttachment[];
   created_at: string;
   updated_at: string;
   project_name?: string;
@@ -28,8 +43,10 @@ export interface CreateTimeEntryRequest {
   date: string;
   hours: number;
   description: string;
+  notes?: string;
   activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fixing' | 'other';
   billable?: boolean;
+  status?: 'draft' | 'submitted';
 }
 
 export interface UpdateTimeEntryRequest extends Partial<CreateTimeEntryRequest> {
@@ -244,6 +261,98 @@ export class TimesheetApiService {
 
   async getTaskTimeEntries(taskId: string): Promise<TimeEntry[]> {
     return this.makeRequest<TimeEntry[]>(`/api/v1/tasks/${taskId}/time-entries`);
+  }
+
+  // Submit time entries for approval
+  async submitTimeEntry(id: string): Promise<TimeEntry> {
+    return this.makeRequest<TimeEntry>(`/api/v1/timesheet/entries/${id}/submit`, {
+      method: 'POST',
+    });
+  }
+
+  async submitMultipleEntries(ids: string[]): Promise<TimeEntry[]> {
+    return this.makeRequest<TimeEntry[]>('/api/v1/timesheet/entries/submit-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ entry_ids: ids }),
+    });
+  }
+
+  // Get pending approvals (for managers)
+  async getPendingApprovals(params: TimeEntriesQueryParams = {}): Promise<TimeEntriesResponse> {
+    const searchParams = new URLSearchParams();
+
+    if (params.project_id) searchParams.append('project_id', params.project_id);
+    if (params.start_date) searchParams.append('start_date', params.start_date);
+    if (params.end_date) searchParams.append('end_date', params.end_date);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/v1/timesheet/pending-approvals${queryString ? `?${queryString}` : ''}`;
+
+    return this.makeRequest<TimeEntriesResponse>(endpoint);
+  }
+
+  // Bulk approve/reject
+  async bulkApprove(ids: string[]): Promise<TimeEntry[]> {
+    return this.makeRequest<TimeEntry[]>('/api/v1/timesheet/entries/approve-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ entry_ids: ids }),
+    });
+  }
+
+  async bulkReject(ids: string[], reason?: string): Promise<TimeEntry[]> {
+    return this.makeRequest<TimeEntry[]>('/api/v1/timesheet/entries/reject-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ entry_ids: ids, reason }),
+    });
+  }
+
+  // File attachments
+  async uploadAttachment(entryId: string, file: File): Promise<TimeEntryAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const url = getApiUrl(`/api/v1/timesheet/entries/${entryId}/attachments`);
+    const token = authApiService.getAccessToken();
+    const tokenType = authApiService.getTokenType();
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `${tokenType} ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload attachment');
+    }
+
+    return response.json();
+  }
+
+  async deleteAttachment(entryId: string, attachmentId: string): Promise<void> {
+    return this.makeRequest<void>(`/api/v1/timesheet/entries/${entryId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get entries by status
+  async getEntriesByStatus(status: TimeEntry['status'], params: TimeEntriesQueryParams = {}): Promise<TimeEntriesResponse> {
+    const searchParams = new URLSearchParams();
+
+    searchParams.append('status', status);
+    if (params.project_id) searchParams.append('project_id', params.project_id);
+    if (params.start_date) searchParams.append('start_date', params.start_date);
+    if (params.end_date) searchParams.append('end_date', params.end_date);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/v1/timesheet/my-entries${queryString ? `?${queryString}` : ''}`;
+
+    return this.makeRequest<TimeEntriesResponse>(endpoint);
   }
 }
 

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { ProjectStatusItem, ProjectPriorityItem, ProjectMemberDetail } from '../../../../services/projectApi'
 import { toast } from 'sonner'
+import { LogHoursDialog } from '../../../../components/common/LogHoursDialog'
 
 interface TaskModalProps {
   task: any
@@ -66,6 +67,7 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
   const [comments, setComments] = useState<Array<{id: string, author_id: string, author_name: string, content: string, created_at: string}>>([])
   const [attachments, setAttachments] = useState<Array<{id: string, name: string, size: number, type: string, url?: string}>>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [showLogHoursDialog, setShowLogHoursDialog] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Update editedTask when task prop changes
@@ -636,13 +638,17 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-6 border-t">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Created 3 days ago</span>
-            <span>•</span>
-            <span>Updated 2 hours ago</span>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowLogHoursDialog(true)}
+              className="text-[#007BFF] border-[#007BFF] hover:bg-[#007BFF]/10"
+            >
+              <Clock className="w-4 h-4 mr-1" />
+              Log Hours
+            </Button>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <Button variant="outline" onClick={onClose}>
               <X className="w-4 h-4 mr-1" />
@@ -655,6 +661,18 @@ export function TaskModal({ task, isOpen, onClose, onUpdate, user, availableStat
           </div>
         </div>
       </DialogContent>
+
+      {/* Log Hours Dialog */}
+      <LogHoursDialog
+        open={showLogHoursDialog}
+        onOpenChange={setShowLogHoursDialog}
+        projectId={project?.id || editedTask.project_id}
+        taskId={editedTask.id || editedTask.task_id}
+        taskName={editedTask.title}
+        onSuccess={() => {
+          toast.success('Time logged successfully')
+        }}
+      />
     </Dialog>
   )
 }

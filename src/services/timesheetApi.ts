@@ -18,10 +18,12 @@ export interface TimeEntry {
   story_id?: string;
   bug_id?: string;
   date: string;
+  start_time: string;
+  end_time: string;
   hours: number;
   description: string;
   notes?: string;
-  activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fixing' | 'other';
+  activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fix' | 'research' | 'planning' | 'deployment';
   billable: boolean;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   approved: boolean;
@@ -41,10 +43,12 @@ export interface CreateTimeEntryRequest {
   story_id?: string;
   bug_id?: string;
   date: string;
+  start_time: string;
+  end_time: string;
   hours: number;
   description: string;
   notes?: string;
-  activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fixing' | 'other';
+  activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fix' | 'research' | 'planning' | 'deployment';
   billable?: boolean;
   status?: 'draft' | 'submitted';
 }

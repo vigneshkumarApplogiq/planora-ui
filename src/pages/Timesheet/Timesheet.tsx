@@ -64,11 +64,44 @@ export function Timesheet({ user }: TimesheetProps) {
   const [newEntry, setNewEntry] = useState<Partial<CreateTimeEntryRequest>>({
     project_id: '',
     date: format(new Date(), 'yyyy-MM-dd'),
-    hours: 0,
+    start_time: '09:00',
+    end_time: '17:00',
+    hours: 8,
     description: '',
     activity_type: 'development',
     billable: true,
   })
+
+  // Calculate hours based on start and end time
+  const calculateHours = (start: string, end: string): number => {
+    if (!start || !end) return 0
+
+    const [startHour, startMinute] = start.split(':').map(Number)
+    const [endHour, endMinute] = end.split(':').map(Number)
+
+    const startTotalMinutes = startHour * 60 + startMinute
+    const endTotalMinutes = endHour * 60 + endMinute
+
+    let diffMinutes = endTotalMinutes - startTotalMinutes
+
+    // Handle case where end time is on the next day
+    if (diffMinutes < 0) {
+      diffMinutes += 24 * 60
+    }
+
+    return Number((diffMinutes / 60).toFixed(2))
+  }
+
+  // Update hours when start or end time changes
+  const handleStartTimeChange = (time: string) => {
+    const hours = calculateHours(time, newEntry.end_time || '17:00')
+    setNewEntry({ ...newEntry, start_time: time, hours })
+  }
+
+  const handleEndTimeChange = (time: string) => {
+    const hours = calculateHours(newEntry.start_time || '09:00', time)
+    setNewEntry({ ...newEntry, end_time: time, hours })
+  }
 
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [myProjects, setMyProjects] = useState<any[]>([])
@@ -111,7 +144,9 @@ export function Timesheet({ user }: TimesheetProps) {
       setNewEntry({
         project_id: '',
         date: format(new Date(), 'yyyy-MM-dd'),
-        hours: 0,
+        start_time: '09:00',
+        end_time: '17:00',
+        hours: 8,
         description: '',
         activity_type: 'development',
         billable: true,
@@ -299,6 +334,7 @@ export function Timesheet({ user }: TimesheetProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
+              <TableHead>Time</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Task/Story</TableHead>
               <TableHead>Activity</TableHead>
@@ -311,13 +347,13 @@ export function Timesheet({ user }: TimesheetProps) {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   <div className="text-muted-foreground">Loading time entries...</div>
                 </TableCell>
               </TableRow>
             ) : entries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   <div className="text-muted-foreground">No time entries found for this period</div>
                 </TableCell>
               </TableRow>
@@ -325,6 +361,11 @@ export function Timesheet({ user }: TimesheetProps) {
               entries.map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell>{format(new Date(entry.date), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <div className="text-muted-foreground">{entry.start_time} - {entry.end_time}</div>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium">{entry.project_name || 'N/A'}</div>
                   </TableCell>
@@ -404,29 +445,43 @@ export function Timesheet({ user }: TimesheetProps) {
           </DialogHeader>
 
           <div className="space-y-4">
+            <div>
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={newEntry.date}
+                onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Date *</Label>
+                <Label>Start Time *</Label>
                 <Input
-                  type="date"
-                  value={newEntry.date}
-                  onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
+                  type="time"
+                  value={newEntry.start_time}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label>Hours *</Label>
+                <Label>End Time *</Label>
                 <Input
-                  type="number"
-                  step="0.25"
-                  min="0"
-                  max="24"
-                  value={newEntry.hours}
-                  onChange={(e) => setNewEntry({ ...newEntry, hours: parseFloat(e.target.value) || 0 })}
-                  placeholder="e.g., 8.5"
+                  type="time"
+                  value={newEntry.end_time}
+                  onChange={(e) => handleEndTimeChange(e.target.value)}
                   className="mt-1"
                 />
               </div>
+            </div>
+
+            <div className="flex items-center space-x-2 text-sm">
+              <Clock className="w-4 h-4 text-[#007BFF]" />
+              <span className="font-medium">Total Hours:</span>
+              <Badge variant="secondary" className="text-base">
+                {newEntry.hours?.toFixed(2) || '0.00'} hours
+              </Badge>
             </div>
 
             <div>
@@ -464,8 +519,10 @@ export function Timesheet({ user }: TimesheetProps) {
                   <SelectItem value="review">Code Review</SelectItem>
                   <SelectItem value="meeting">Meeting</SelectItem>
                   <SelectItem value="documentation">Documentation</SelectItem>
-                  <SelectItem value="bug_fixing">Bug Fixing</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="bug_fix">Bug Fix</SelectItem>
+                  <SelectItem value="research">Research</SelectItem>
+                  <SelectItem value="planning">Planning</SelectItem>
+                  <SelectItem value="deployment">Deployment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -547,8 +604,10 @@ export function Timesheet({ user }: TimesheetProps) {
                     <SelectItem value="review">Code Review</SelectItem>
                     <SelectItem value="meeting">Meeting</SelectItem>
                     <SelectItem value="documentation">Documentation</SelectItem>
-                    <SelectItem value="bug_fixing">Bug Fixing</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="bug_fix">Bug Fix</SelectItem>
+                    <SelectItem value="research">Research</SelectItem>
+                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="deployment">Deployment</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

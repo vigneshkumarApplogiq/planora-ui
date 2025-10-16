@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -44,6 +44,8 @@ export function LogHoursDialog({
     task_id: taskId,
     story_id: storyId,
     date: format(new Date(), 'yyyy-MM-dd'),
+    start_time: '09:00',
+    end_time: '17:00',
     hours: 0,
     description: '',
     notes: '',
@@ -51,6 +53,47 @@ export function LogHoursDialog({
     billable: true,
     status: 'draft'
   })
+
+  // Calculate hours based on start and end time
+  const calculateHours = (start: string, end: string): number => {
+    if (!start || !end) return 0
+
+    const [startHour, startMinute] = start.split(':').map(Number)
+    const [endHour, endMinute] = end.split(':').map(Number)
+
+    const startTotalMinutes = startHour * 60 + startMinute
+    const endTotalMinutes = endHour * 60 + endMinute
+
+    let diffMinutes = endTotalMinutes - startTotalMinutes
+
+    // Handle case where end time is on the next day
+    if (diffMinutes < 0) {
+      diffMinutes += 24 * 60
+    }
+
+    return Number((diffMinutes / 60).toFixed(2))
+  }
+
+  // Update hours when start or end time changes
+  const handleStartTimeChange = (time: string) => {
+    const hours = calculateHours(time, formData.end_time || '17:00')
+    setFormData({ ...formData, start_time: time, hours })
+  }
+
+  const handleEndTimeChange = (time: string) => {
+    const hours = calculateHours(formData.start_time || '09:00', time)
+    setFormData({ ...formData, end_time: time, hours })
+  }
+
+  // Calculate initial hours when component mounts or dialog opens
+  useEffect(() => {
+    if (open && formData.start_time && formData.end_time) {
+      const initialHours = calculateHours(formData.start_time, formData.end_time)
+      if (formData.hours !== initialHours) {
+        setFormData(prev => ({ ...prev, hours: initialHours }))
+      }
+    }
+  }, [open])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -149,7 +192,9 @@ export function LogHoursDialog({
       task_id: taskId,
       story_id: storyId,
       date: format(new Date(), 'yyyy-MM-dd'),
-      hours: 0,
+      start_time: '09:00',
+      end_time: '17:00',
+      hours: 8,
       description: '',
       notes: '',
       activity_type: 'development',
@@ -179,33 +224,50 @@ export function LogHoursDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Date and Hours */}
+          {/* Date */}
+          <div>
+            <Label htmlFor="date">Date *</Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="mt-1"
+              max={format(new Date(), 'yyyy-MM-dd')}
+            />
+          </div>
+
+          {/* Start Time and End Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="start_time">Start Time *</Label>
               <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                id="start_time"
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => handleStartTimeChange(e.target.value)}
                 className="mt-1"
-                max={format(new Date(), 'yyyy-MM-dd')}
               />
             </div>
             <div>
-              <Label htmlFor="hours">Hours *</Label>
+              <Label htmlFor="end_time">End Time *</Label>
               <Input
-                id="hours"
-                type="number"
-                step="0.25"
-                min="0.25"
-                max="24"
-                value={formData.hours || ''}
-                onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
-                placeholder="e.g., 8.5"
+                id="end_time"
+                type="time"
+                value={formData.end_time}
+                onChange={(e) => handleEndTimeChange(e.target.value)}
                 className="mt-1"
               />
             </div>
+          </div>
+
+          {/* Calculated Hours Display */}
+          <div className="flex items-center space-x-2 text-sm">
+            <Clock className="w-4 h-4 text-[#007BFF]" />
+            <span className="font-medium">Total Hours:</span>
+            <Badge variant="secondary" className="text-base">
+              {formData.hours?.toFixed(2) || '0.00'} hours
+            </Badge>
           </div>
 
           {/* Activity Type */}
@@ -225,8 +287,10 @@ export function LogHoursDialog({
                 <SelectItem value="review">Code Review</SelectItem>
                 <SelectItem value="meeting">Meeting</SelectItem>
                 <SelectItem value="documentation">Documentation</SelectItem>
-                <SelectItem value="bug_fixing">Bug Fixing</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="bug_fix">Bug Fix</SelectItem>
+                <SelectItem value="research">Research</SelectItem>
+                <SelectItem value="planning">Planning</SelectItem>
+                <SelectItem value="deployment">Deployment</SelectItem>
               </SelectContent>
             </Select>
           </div>

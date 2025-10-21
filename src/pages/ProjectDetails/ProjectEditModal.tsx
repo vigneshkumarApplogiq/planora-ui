@@ -46,64 +46,12 @@ interface ProjectEditModalProps {
   user?: any
 }
 
-// Mock customer data for selection
-const mockCustomers = [
-  { id: 'CUST-001', name: 'Internal', type: 'Internal', email: 'internal@planora.com' },
-  { id: 'CUST-002', name: 'TechCorp Inc', type: 'Enterprise', email: 'contact@techcorp.com' },
-  { id: 'CUST-003', name: 'StartupXYZ', type: 'Startup', email: 'hello@startupxyz.io' },
-  { id: 'CUST-004', name: 'MegaSoft Solutions', type: 'Enterprise', email: 'projects@megasoft.com' }
-]
-
-// Mock team member pool for assignment
-const mockTeamMembers = [
-  { id: 1, name: 'John Doe', role: 'Project Manager', avatar: 'JD', email: 'john@planora.com', department: 'Management' },
-  { id: 2, name: 'Jane Smith', role: 'UX Designer', avatar: 'JS', email: 'jane@planora.com', department: 'Design' },
-  { id: 3, name: 'Mike Johnson', role: 'Frontend Developer', avatar: 'MJ', email: 'mike@planora.com', department: 'Development' },
-  { id: 4, name: 'Sarah Wilson', role: 'Backend Developer', avatar: 'SW', email: 'sarah@planora.com', department: 'Development' },
-  { id: 5, name: 'Alex Chen', role: 'QA Engineer', avatar: 'AC', email: 'alex@planora.com', department: 'Quality Assurance' },
-  { id: 6, name: 'Lisa Brown', role: 'DevOps Engineer', avatar: 'LB', email: 'lisa@planora.com', department: 'Operations' },
-  { id: 7, name: 'Tom Davis', role: 'Technical Writer', avatar: 'TD', email: 'tom@planora.com', department: 'Documentation' },
-  { id: 8, name: 'Emma Wilson', role: 'Business Analyst', avatar: 'EW', email: 'emma@planora.com', department: 'Analysis' }
-]
-
-const projectTypes = [
-  'Software Development',
-  'Web Application',
-  'Mobile Application',
-  'Infrastructure',
-  'Research & Development',
-  'Marketing Campaign',
-  'Product Launch',
-  'Training & Development',
-  'Consulting',
-  'Maintenance'
-]
-
-const methodologies = [
-  'Scrum',
-  'Kanban',
-  'Waterfall',
-  'Hybrid',
-  'Lean',
-  'XP (Extreme Programming)',
-  'SAFe',
-  'Custom'
-]
-
-const priorities = [
-  { value: 'Low', color: 'bg-[#28A745] text-white' },
-  { value: 'Medium', color: 'bg-[#FFC107] text-white' },
-  { value: 'High', color: 'bg-[#DC3545] text-white' },
-  { value: 'Critical', color: 'bg-[#6F42C1] text-white' }
-]
-
-const statuses = [
-  { value: 'Planning', color: 'bg-gray-500 text-white' },
-  { value: 'Active', color: 'bg-[#28A745] text-white' },
-  { value: 'On Hold', color: 'bg-[#FFC107] text-white' },
-  { value: 'Completed', color: 'bg-[#007BFF] text-white' },
-  { value: 'Cancelled', color: 'bg-[#DC3545] text-white' }
-]
+// TODO: Replace with API data - customers should be fetched from customer API
+// TODO: Replace with API data - team members should be fetched from user/team API
+// TODO: Replace with API data - project types should be fetched from master data API
+// TODO: Replace with API data - methodologies should be fetched from master data API
+// TODO: Replace with API data - priorities should be fetched from master data API
+// TODO: Replace with API data - statuses should be fetched from master data API
 
 export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: ProjectEditModalProps) {
   const [activeTab, setActiveTab] = useState('general')
@@ -248,9 +196,8 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
     }
   }
 
-  const availableMembers = mockTeamMembers.filter(
-    member => !formData.team.find(teamMember => teamMember.id === member.id)
-  )
+  // TODO: Load available team members from API
+  const availableMembers: any[] = []
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -318,16 +265,8 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockCustomers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.name}>
-                          <div className="flex items-center space-x-2">
-                            <span>{customer.name}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {customer.type}
-                            </Badge>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {/* TODO: Load customers from API */}
+                      <SelectItem value="internal">Internal</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -352,14 +291,11 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-2 h-2 rounded-full ${status.color.split(' ')[0]}`} />
-                            <span>{status.value}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {/* TODO: Load statuses from master data API */}
+                      <SelectItem value="Planning">Planning</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="On Hold">On Hold</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -371,14 +307,11 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      {priorities.map((priority) => (
-                        <SelectItem key={priority.value} value={priority.value}>
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-2 h-2 rounded-full ${priority.color.split(' ')[0]}`} />
-                            <span>{priority.value}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {/* TODO: Load priorities from master data API */}
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Critical">Critical</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -390,11 +323,11 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       <SelectValue placeholder="Select methodology" />
                     </SelectTrigger>
                     <SelectContent>
-                      {methodologies.map((methodology) => (
-                        <SelectItem key={methodology} value={methodology}>
-                          {methodology}
-                        </SelectItem>
-                      ))}
+                      {/* TODO: Load methodologies from master data API */}
+                      <SelectItem value="Scrum">Scrum</SelectItem>
+                      <SelectItem value="Kanban">Kanban</SelectItem>
+                      <SelectItem value="Waterfall">Waterfall</SelectItem>
+                      <SelectItem value="Hybrid">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -406,11 +339,11 @@ export function ProjectEditModal({ isOpen, onClose, project, onSave, user }: Pro
                       <SelectValue placeholder="Select project type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projectTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
+                      {/* TODO: Load project types from master data API */}
+                      <SelectItem value="Software Development">Software Development</SelectItem>
+                      <SelectItem value="Web Application">Web Application</SelectItem>
+                      <SelectItem value="Mobile Application">Mobile Application</SelectItem>
+                      <SelectItem value="Infrastructure">Infrastructure</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

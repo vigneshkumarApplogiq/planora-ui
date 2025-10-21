@@ -289,6 +289,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit, phases, mil
 interface ColumnProps {
   title: string
   status: string
+  color: string
   tasks: Story[]
   onDrop: (taskId: string, newStatus: string) => void
   onEdit: (task: Story) => void
@@ -297,7 +298,7 @@ interface ColumnProps {
   deliverables: Deliverable[]
 }
 
-const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit, phases, milestones, deliverables }) => {
+const Column: React.FC<ColumnProps> = ({ title, status, color, tasks, onDrop, onEdit, phases, milestones, deliverables }) => {
   const [isDragOver, setIsDragOver] = useState(false)
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -338,14 +339,20 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit, p
     }
   }
 
-  const getColumnColor = (status: string) => {
-    switch (status) {
-      case 'todo': return 'bg-gray-500'
-      case 'in-progress': return 'bg-blue-500'
-      case 'review': return 'bg-yellow-500'
-      case 'done': return 'bg-green-500'
-      default: return 'bg-gray-500'
+  // Helper function to convert hex color to Tailwind class
+  const getColumnColor = (columnColor: string) => {
+    const colorMap: { [key: string]: string } = {
+      '#6B7280': 'bg-gray-500',
+      '#3B82F6': 'bg-blue-500',
+      '#EAB308': 'bg-yellow-500',
+      '#22C55E': 'bg-green-500',
+      '#EF4444': 'bg-red-500',
+      '#8B5CF6': 'bg-purple-500',
+      '#F59E0B': 'bg-amber-500',
+      '#10B981': 'bg-emerald-500',
+      '#06B6D4': 'bg-cyan-500',
     }
+    return colorMap[columnColor] || 'bg-gray-500'
   }
 
   return (
@@ -353,7 +360,7 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit, p
       <Card className="h-full flex flex-col">
         <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${getColumnColor(status)}`} />
+            <div className={`w-3 h-3 rounded-full ${getColumnColor(color)}`} />
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Badge variant="outline" className="text-xs">
               {tasks.length}
@@ -420,13 +427,28 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
   const [filterMilestone, setFilterMilestone] = useState<string>('all')
   const [filterDeliverable, setFilterDeliverable] = useState<string>('all')
 
-  // Columns configuration
-  const columns = React.useMemo(() => [
-    { id: 'todo', title: 'To Do', status: 'todo', color: '#6B7280' },
-    { id: 'in-progress', title: 'In Progress', status: 'in-progress', color: '#3B82F6' },
-    { id: 'review', title: 'Review', status: 'review', color: '#EAB308' },
-    { id: 'done', title: 'Done', status: 'done', color: '#22C55E' }
-  ], [])
+  // Columns configuration - dynamically generated from available task statuses
+  const columns = React.useMemo(() => {
+    if (!availableStatuses || availableStatuses.length === 0) {
+      // Fallback to default columns if no statuses are available
+      return [
+        { id: 'todo', title: 'To Do', status: 'todo', color: '#6B7280' },
+        { id: 'in-progress', title: 'In Progress', status: 'in-progress', color: '#3B82F6' },
+        { id: 'review', title: 'Review', status: 'review', color: '#EAB308' },
+        { id: 'done', title: 'Done', status: 'done', color: '#22C55E' }
+      ]
+    }
+
+    // Generate columns from available statuses, sorted by level
+    return availableStatuses
+      .sort((a: any, b: any) => (a.level || 0) - (b.level || 0))
+      .map((status: any) => ({
+        id: status.name.toLowerCase().replace(/\s+/g, '-'),
+        title: status.name,
+        status: status.name.toLowerCase().replace(/\s+/g, '-'),
+        color: status.color || '#6B7280'
+      }))
+  }, [availableStatuses])
 
   useEffect(() => {
     if (effectiveProjectId) {
@@ -465,7 +487,8 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
 
     try {
       const masters = await projectApiService.getProjectMasters()
-      setAvailableStatuses(masters.statuses || [])
+      // Use task_status for board columns (not general project statuses)
+      setAvailableStatuses(masters.task_status || [])
       setAvailablePriorities(masters.priorities || [])
     } catch (error) {
       console.error('Error fetching project masters:', error)
@@ -609,6 +632,22 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
 
       return matchesStatus && matchesSearch && matchesPriority && matchesType && matchesAssignee && matchesPhase && matchesMilestone && matchesDeliverable
     })
+  }
+
+  // Helper function to convert hex color to Tailwind class
+  const hexToTailwindColor = (hexColor: string) => {
+    const colorMap: { [key: string]: string} = {
+      '#6B7280': 'bg-gray-500',
+      '#3B82F6': 'bg-blue-500',
+      '#EAB308': 'bg-yellow-500',
+      '#22C55E': 'bg-green-500',
+      '#EF4444': 'bg-red-500',
+      '#8B5CF6': 'bg-purple-500',
+      '#F59E0B': 'bg-amber-500',
+      '#10B981': 'bg-emerald-500',
+      '#06B6D4': 'bg-cyan-500',
+    }
+    return colorMap[hexColor] || 'bg-gray-500'
   }
 
   if (loading) {
@@ -759,7 +798,7 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
           return (
             <Card key={column.id}>
               <CardContent className="p-4 text-center">
-                <div className={`w-3 h-3 rounded-full ${column.status === 'todo' ? 'bg-gray-500' : column.status === 'in-progress' ? 'bg-blue-500' : column.status === 'review' ? 'bg-yellow-500' : 'bg-green-500'} mx-auto mb-2`} />
+                <div className={`w-3 h-3 rounded-full ${hexToTailwindColor(column.color)} mx-auto mb-2`} />
                 <div className="text-2xl font-semibold">{columnTasks.length}</div>
                 <div className="text-xs text-muted-foreground">{column.title}</div>
               </CardContent>
@@ -775,6 +814,7 @@ export function BoardView({ projectId: propProjectId, user, project }: BoardView
             key={column.id}
             title={column.title}
             status={column.status}
+            color={column.color}
             tasks={getTasksForColumn(column.status)}
             onDrop={handleTaskMove}
             onEdit={handleTaskEdit}

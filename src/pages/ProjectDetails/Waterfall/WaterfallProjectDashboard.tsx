@@ -28,151 +28,38 @@ interface WaterfallProjectDashboardProps {
   user: any
 }
 
-// Enhanced mock Waterfall-specific data with comprehensive metrics
+// TODO: Replace with Waterfall project data from API
 const mockWaterfallData = {
   summary: {
-    overallProgress: 56,
-    phasesCompleted: 2,
-    totalPhases: 5,
-    milestonesAchieved: 7,
-    totalMilestones: 12,
-    deliverablesCompleted: 14,
-    totalDeliverables: 25,
-    tasksCompleted: 142,
-    totalTasks: 265,
-    teamMembers: 8,
-    daysElapsed: 98,
-    totalDays: 180,
-    daysRemaining: 82,
-    budgetUsed: 245000,
-    totalBudget: 500000,
-    scheduleStatus: 'on-track', // 'on-track', 'at-risk', 'delayed'
+    overallProgress: 0,
+    phasesCompleted: 0,
+    totalPhases: 0,
+    milestonesAchieved: 0,
+    totalMilestones: 0,
+    deliverablesCompleted: 0,
+    totalDeliverables: 0,
+    tasksCompleted: 0,
+    totalTasks: 0,
+    teamMembers: 0,
+    daysElapsed: 0,
+    totalDays: 0,
+    daysRemaining: 0,
+    budgetUsed: 0,
+    totalBudget: 0,
+    scheduleStatus: 'on-track',
     budgetStatus: 'on-track'
   },
-  phases: [
-    {
-      id: 'requirements',
-      name: 'Requirements Analysis',
-      status: 'completed',
-      progress: 100,
-      startDate: '2024-01-15',
-      endDate: '2024-02-15',
-      duration: 31,
-      tasksCompleted: 28,
-      totalTasks: 28,
-      deliverables: ['Requirements Document', 'Use Cases', 'Acceptance Criteria'],
-      budget: 50000,
-      spent: 48000,
-      team: 5
-    },
-    {
-      id: 'design',
-      name: 'System Design',
-      status: 'completed',
-      progress: 100,
-      startDate: '2024-02-16',
-      endDate: '2024-03-15',
-      duration: 28,
-      tasksCompleted: 35,
-      totalTasks: 35,
-      deliverables: ['System Architecture', 'Database Design', 'UI Mockups', 'API Specification'],
-      budget: 75000,
-      spent: 72000,
-      team: 6
-    },
-    {
-      id: 'implementation',
-      name: 'Implementation',
-      status: 'in-progress',
-      progress: 65,
-      startDate: '2024-03-16',
-      endDate: '2024-05-15',
-      duration: 60,
-      tasksCompleted: 58,
-      totalTasks: 120,
-      deliverables: ['Core Features', 'API Implementation', 'Frontend Development', 'Backend Services', 'Integration'],
-      budget: 200000,
-      spent: 125000,
-      team: 8
-    },
-    {
-      id: 'testing',
-      name: 'Testing & QA',
-      status: 'planned',
-      progress: 0,
-      startDate: '2024-05-16',
-      endDate: '2024-06-15',
-      duration: 30,
-      tasksCompleted: 0,
-      totalTasks: 52,
-      deliverables: ['Test Cases', 'Bug Reports', 'Test Results', 'Performance Testing'],
-      budget: 100000,
-      spent: 0,
-      team: 6
-    },
-    {
-      id: 'deployment',
-      name: 'Deployment & Go-Live',
-      status: 'planned',
-      progress: 0,
-      startDate: '2024-06-16',
-      endDate: '2024-06-30',
-      duration: 14,
-      tasksCompleted: 0,
-      totalTasks: 30,
-      deliverables: ['Production Deployment', 'User Training', 'Documentation', 'Go-Live'],
-      budget: 75000,
-      spent: 0,
-      team: 5
-    }
-  ],
-  milestones: [
-    { id: 1, name: 'Requirements Sign-off', date: '2024-02-15', status: 'completed', critical: true, phase: 'Requirements Analysis' },
-    { id: 2, name: 'Stakeholder Approval', date: '2024-02-20', status: 'completed', critical: true, phase: 'Requirements Analysis' },
-    { id: 3, name: 'Design Approval', date: '2024-03-15', status: 'completed', critical: true, phase: 'System Design' },
-    { id: 4, name: 'Architecture Review', date: '2024-03-25', status: 'completed', critical: false, phase: 'System Design' },
-    { id: 5, name: 'Alpha Release', date: '2024-04-15', status: 'completed', critical: false, phase: 'Implementation' },
-    { id: 6, name: 'Core Features Complete', date: '2024-04-30', status: 'completed', critical: true, phase: 'Implementation' },
-    { id: 7, name: 'API Integration Done', date: '2024-05-10', status: 'completed', critical: true, phase: 'Implementation' },
-    { id: 8, name: 'Beta Release', date: '2024-05-31', status: 'at-risk', critical: true, phase: 'Implementation' },
-    { id: 9, name: 'Testing Phase Start', date: '2024-05-16', status: 'planned', critical: true, phase: 'Testing & QA' },
-    { id: 10, name: 'UAT Complete', date: '2024-06-10', status: 'planned', critical: true, phase: 'Testing & QA' },
-    { id: 11, name: 'Production Deployment', date: '2024-06-25', status: 'planned', critical: true, phase: 'Deployment & Go-Live' },
-    { id: 12, name: 'Project Go-Live', date: '2024-06-30', status: 'planned', critical: true, phase: 'Deployment & Go-Live' }
-  ],
+  phases: [],
+  milestones: [],
   deliverables: {
-    completed: 14,
-    inProgress: 8,
-    pending: 3,
-    byPhase: [
-      { phase: 'Requirements', completed: 3, total: 3, percentage: 100 },
-      { phase: 'Design', completed: 4, total: 4, percentage: 100 },
-      { phase: 'Implementation', completed: 7, total: 12, percentage: 58 },
-      { phase: 'Testing', completed: 0, total: 4, percentage: 0 },
-      { phase: 'Deployment', completed: 0, total: 2, percentage: 0 }
-    ]
+    completed: 0,
+    inProgress: 0,
+    pending: 0,
+    byPhase: []
   },
-  team: [
-    { id: 1, name: 'Sarah Chen', role: 'Project Manager', tasksCompleted: 25, tasksInProgress: 3, efficiency: 95 },
-    { id: 2, name: 'Mike Johnson', role: 'Lead Developer', tasksCompleted: 32, tasksInProgress: 5, efficiency: 92 },
-    { id: 3, name: 'Emily Davis', role: 'Senior Developer', tasksCompleted: 28, tasksInProgress: 4, efficiency: 90 },
-    { id: 4, name: 'James Wilson', role: 'Frontend Developer', tasksCompleted: 24, tasksInProgress: 3, efficiency: 88 },
-    { id: 5, name: 'Lisa Anderson', role: 'Backend Developer', tasksCompleted: 19, tasksInProgress: 2, efficiency: 87 },
-    { id: 6, name: 'Tom Brown', role: 'QA Engineer', tasksCompleted: 14, tasksInProgress: 2, efficiency: 91 },
-    { id: 7, name: 'Anna Martinez', role: 'UI/UX Designer', tasksCompleted: 18, tasksInProgress: 1, efficiency: 89 },
-    { id: 8, name: 'David Lee', role: 'DevOps Engineer', tasksCompleted: 12, tasksInProgress: 2, efficiency: 93 }
-  ],
-  risks: [
-    { id: 1, title: 'Beta Release Delay', severity: 'high', impact: 'Schedule delay by 1 week', mitigation: 'Added 2 developers', status: 'active' },
-    { id: 2, title: 'Third-party API Integration', severity: 'medium', impact: 'Potential functionality gap', mitigation: 'Alternative API identified', status: 'monitoring' },
-    { id: 3, title: 'Resource Availability', severity: 'low', impact: 'Minor capacity issue', mitigation: 'Backup resources allocated', status: 'resolved' }
-  ],
-  recentActivity: [
-    { id: 1, type: 'milestone', title: 'API Integration Done milestone achieved', time: '2 hours ago', user: 'Mike Johnson' },
-    { id: 2, type: 'task', title: 'Core Features implementation completed', time: '5 hours ago', user: 'Emily Davis' },
-    { id: 3, type: 'deliverable', title: 'Frontend Development deliverable submitted', time: '1 day ago', user: 'James Wilson' },
-    { id: 4, type: 'phase', title: 'System Design phase completed', time: '2 days ago', user: 'Sarah Chen' }
-  ]
+  team: [],
+  risks: [],
+  recentActivity: []
 }
 
 export function WaterfallProjectDashboard({ project, user }: WaterfallProjectDashboardProps) {

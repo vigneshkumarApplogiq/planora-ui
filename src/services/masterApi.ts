@@ -111,8 +111,8 @@ export class MasterApiService {
         return [];
       }
     } catch (error) {
-      // Return some default departments as fallback
-      return [];
+      console.error('Failed to fetch departments:', error);
+      throw error;
     }
   }
 
@@ -127,8 +127,8 @@ export class MasterApiService {
         return [];
       }
     } catch (error) {
-      // Return empty array as fallback
-      return [];
+      console.error('Failed to fetch industries:', error);
+      throw error;
     }
   }
 

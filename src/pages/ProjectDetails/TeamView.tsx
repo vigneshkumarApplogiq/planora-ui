@@ -49,100 +49,7 @@ interface TeamMember extends User {
   joinDate?: string
 }
 
-// Extended team data with more details
-const mockTeamMembers = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    avatar: 'AJ',
-    role: 'Scrum Master',
-    email: 'alice.johnson@company.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    joinDate: '2024-01-15',
-    workload: 85,
-    availability: 'available',
-    skills: ['Agile', 'Project Management', 'Scrum', 'Leadership'],
-    currentTasks: 3,
-    completedTasks: 28,
-    hoursLogged: 156,
-    teamLead: true,
-    permissions: ['manage_team', 'edit_project', 'view_reports']
-  },
-  {
-    id: '2',
-    name: 'Bob Chen',
-    avatar: 'BC',
-    role: 'Lead Developer',
-    email: 'bob.chen@company.com',
-    phone: '+1 (555) 234-5678',
-    location: 'Seattle, WA',
-    joinDate: '2024-01-20',
-    workload: 92,
-    availability: 'busy',
-    skills: ['React', 'Node.js', 'TypeScript', 'GraphQL', 'AWS'],
-    currentTasks: 5,
-    completedTasks: 42,
-    hoursLogged: 189,
-    teamLead: false,
-    permissions: ['edit_code', 'review_code', 'view_reports']
-  },
-  {
-    id: '3',
-    name: 'Carol Davis',
-    avatar: 'CD',
-    role: 'UI/UX Designer',
-    email: 'carol.davis@company.com',
-    phone: '+1 (555) 345-6789',
-    location: 'Austin, TX',
-    joinDate: '2024-02-01',
-    workload: 78,
-    availability: 'available',
-    skills: ['Figma', 'Adobe XD', 'User Research', 'Prototyping', 'Design Systems'],
-    currentTasks: 2,
-    completedTasks: 19,
-    hoursLogged: 134,
-    teamLead: false,
-    permissions: ['edit_design', 'view_reports']
-  },
-  {
-    id: '4',
-    name: 'David Wilson',
-    avatar: 'DW',
-    role: 'QA Engineer',
-    email: 'david.wilson@company.com',
-    phone: '+1 (555) 456-7890',
-    location: 'Denver, CO',
-    joinDate: '2024-02-10',
-    workload: 65,
-    availability: 'available',
-    skills: ['Test Automation', 'Selenium', 'Jest', 'Quality Assurance', 'Bug Tracking'],
-    currentTasks: 4,
-    completedTasks: 31,
-    hoursLogged: 98,
-    teamLead: false,
-    permissions: ['create_bugs', 'view_reports']
-  },
-  {
-    id: '5',
-    name: 'Emma Rodriguez',
-    avatar: 'ER',
-    role: 'Product Owner',
-    email: 'emma.rodriguez@company.com',
-    phone: '+1 (555) 567-8901',
-    location: 'New York, NY',
-    joinDate: '2024-01-10',
-    workload: 70,
-    availability: 'available',
-    skills: ['Product Strategy', 'User Stories', 'Stakeholder Management', 'Analytics'],
-    currentTasks: 2,
-    completedTasks: 15,
-    hoursLogged: 89,
-    teamLead: false,
-    permissions: ['manage_backlog', 'edit_project', 'view_reports']
-  }
-]
-
+// TODO: All team data is now fetched from API - no mock data needed
 export function TeamView({ project, user, projectId: propProjectId }: TeamViewProps) {
   // Get effective project ID from props or session storage
   const effectiveProjectId = SessionStorageService.getEffectiveProjectId(propProjectId)
@@ -237,26 +144,10 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
       setTeamMembers(members)
       toast.success(`Loaded ${members.length} project team members`)
     } catch (error) {
-      // Use mock data as fallback
-      const mockMembers = mockTeamMembers.map(member => ({
-        ...member,
-        role: { name: member.role, description: '', permissions: [], is_active: true, id: '', created_at: '', updated_at: '' },
-        email: member.email,
-        role_id: member.id,
-        user_profile: '',
-        is_active: true,
-        department: member.location.split(',')[0],
-        skills: member.skills,
-        phone: member.phone,
-        timezone: 'UTC',
-        id: member.id,
-        last_login: '',
-        created_at: member.joinDate,
-        updated_at: ''
-      } as TeamMember))
-
-      setTeamMembers(mockMembers)
-      toast.success('Using demo team data (API not available)')
+      // TODO: Handle error properly - show error message to user
+      console.error('Error fetching team members:', error)
+      toast.error('Failed to load team members')
+      setTeamMembers([])
     } finally {
       setLoading(false)
     }

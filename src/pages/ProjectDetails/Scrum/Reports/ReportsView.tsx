@@ -42,72 +42,17 @@ interface ReportsViewProps {
   user: any
 }
 
-// Mock report data
-const mockReportData = {
-  velocity: {
-    current: 28,
-    previous: 24,
-    trend: 'up',
-    sprints: [
-      { name: 'Sprint 1', velocity: 18, planned: 20 },
-      { name: 'Sprint 2', velocity: 24, planned: 22 },
-      { name: 'Sprint 3', velocity: 28, planned: 25 },
-      { name: 'Sprint 4', velocity: 0, planned: 26 }
-    ]
-  },
-  burndown: {
-    totalStoryPoints: 120,
-    completedStoryPoints: 85,
-    remainingStoryPoints: 35,
-    burndownData: [
-      { day: 1, ideal: 120, actual: 120 },
-      { day: 2, ideal: 115, actual: 118 },
-      { day: 3, ideal: 110, actual: 115 },
-      { day: 4, ideal: 105, actual: 110 },
-      { day: 5, ideal: 100, actual: 105 },
-      { day: 6, ideal: 95, actual: 98 },
-      { day: 7, ideal: 90, actual: 95 },
-      { day: 8, ideal: 85, actual: 88 },
-      { day: 9, ideal: 80, actual: 85 },
-      { day: 10, ideal: 75, actual: 85 }
-    ]
-  },
-  taskCompletion: {
-    completed: 45,
-    inProgress: 12,
-    todo: 23,
-    blocked: 3,
-    completionRate: 78
-  },
-  teamPerformance: [
-    { name: 'Alice Johnson', tasksCompleted: 28, hoursLogged: 156, efficiency: 92 },
-    { name: 'Bob Chen', tasksCompleted: 42, hoursLogged: 189, efficiency: 88 },
-    { name: 'Carol Davis', tasksCompleted: 19, hoursLogged: 134, efficiency: 85 },
-    { name: 'David Wilson', tasksCompleted: 31, hoursLogged: 98, efficiency: 95 },
-    { name: 'Emma Rodriguez', tasksCompleted: 15, hoursLogged: 89, efficiency: 87 }
-  ],
-  timeTracking: {
-    totalHours: 666,
-    billableHours: 598,
-    avgHoursPerDay: 6.8,
-    overtime: 24,
-    weeklyData: [
-      { week: 'Week 1', hours: 168, planned: 160 },
-      { week: 'Week 2', hours: 172, planned: 160 },
-      { week: 'Week 3', hours: 158, planned: 160 },
-      { week: 'Week 4', hours: 168, planned: 160 }
-    ]
-  },
-  qualityMetrics: {
-    bugsFound: 23,
-    bugsFixed: 20,
-    bugResolutionTime: 2.4,
-    codeReviews: 56,
-    testCoverage: 87
-  }
-}
-
+// TODO: All report data should be fetched from API - no mock data needed
 export function ReportsView({ projectId, user }: ReportsViewProps) {
+  // TODO: Fetch actual report data from API
+  const mockReportData = {
+    velocity: { current: 0, previous: 0, trend: 'stable', sprints: [] },
+    burndown: { totalStoryPoints: 0, completedStoryPoints: 0, remainingStoryPoints: 0, burndownData: [] },
+    taskCompletion: { completed: 0, inProgress: 0, todo: 0, blocked: 0, completionRate: 0 },
+    teamPerformance: [],
+    timeTracking: { totalHours: 0, billableHours: 0, avgHoursPerDay: 0, overtime: 0, weeklyData: [] },
+    qualityMetrics: { bugsFound: 0, bugsFixed: 0, bugResolutionTime: 0, codeReviews: 0, testCoverage: 0 }
+  }
   const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({
     from: new Date(2024, 2, 1), // March 1, 2024
     to: new Date(2024, 2, 31)   // March 31, 2024

@@ -101,192 +101,52 @@ const DEFAULT_WIDGETS = {
   ]
 }
 
-// Sample data
+// TODO: Replace with dashboard data from API based on user role
 const mockData = {
   admin: {
-    stats: [
-      { label: 'Total Projects', value: '24', subtext: '3 new this month', icon: FolderOpen, color: 'bg-[#007BFF]/10', iconColor: 'text-[#007BFF]', trend: '+12%', trendUp: true },
-      { label: 'Active Users', value: '156', subtext: '12 online now', icon: Users, color: 'bg-[#28A745]/10', iconColor: 'text-[#28A745]', trend: '+8%', trendUp: true },
-      { label: 'System Load', value: '32%', subtext: 'CPU utilization', icon: Cpu, color: 'bg-[#FFC107]/10', iconColor: 'text-[#FFC107]', trend: '-5%', trendUp: false },
-      { label: 'Critical Alerts', value: '7', subtext: '2 unresolved', icon: AlertTriangle, color: 'bg-[#DC3545]/10', iconColor: 'text-[#DC3545]', trend: '+2', trendUp: true }
-    ],
-    tasks: [
-      { id: 'TASK-001', title: 'OAuth2 Authentication Flow Implementation', priority: 'High', dueDate: 'Today', status: 'In Progress', project: 'E-commerce Platform', assignee: 'Rajesh Kumar' },
-      { id: 'TASK-002', title: 'User Profile Dashboard UI Development', priority: 'Medium', dueDate: 'Tomorrow', status: 'Todo', project: 'E-commerce Platform', assignee: 'Lisa Park' },
-      { id: 'TASK-003', title: 'API Rate Limiting Implementation', priority: 'High', dueDate: 'Tomorrow', status: 'In Review', project: 'Mobile Banking App', assignee: 'Mike Johnson' },
-      { id: 'TASK-004', title: 'Mobile Navigation Redesign Testing', priority: 'Medium', dueDate: 'This Week', status: 'Testing', project: 'Mobile Banking App', assignee: 'Praveen Kumar' },
-      { id: 'TASK-005', title: 'Database Performance Optimization', priority: 'High', dueDate: 'Completed', status: 'Done', project: 'CRM System', assignee: 'Alex Chen' },
-      { id: 'TASK-006', title: 'Security Vulnerability Assessment', priority: 'Critical', dueDate: 'Next Week', status: 'In Progress', project: 'Security Audit', assignee: 'Alex Chen' },
-      { id: 'TASK-007', title: 'Real-time Notifications System', priority: 'Medium', dueDate: 'Next Month', status: 'Backlog', project: 'Analytics Dashboard', assignee: 'Rajesh Kumar' },
-      { id: 'TASK-008', title: 'API Documentation Update', priority: 'Low', dueDate: 'This Week', status: 'Todo', project: 'Mobile Banking App', assignee: 'Mike Johnson' }
-    ]
+    stats: [],
+    tasks: []
   },
   project_manager: {
-    stats: [
-      { label: 'My Projects', value: '8', subtext: '2 behind schedule', icon: Target, color: 'bg-[#007BFF]/10', iconColor: 'text-[#007BFF]', trend: '+1', trendUp: true },
-      { label: 'Team Tasks', value: '89', subtext: '15 in review', icon: CheckCircle, color: 'bg-[#28A745]/10', iconColor: 'text-[#28A745]', trend: '+12%', trendUp: true },
-      { label: 'Team Hours', value: '240h', subtext: 'This week', icon: Timer, color: 'bg-[#FFC107]/10', iconColor: 'text-[#FFC107]', trend: '+8%', trendUp: true },
-      { label: 'Budget Used', value: '75%', subtext: '$85k of $113k', icon: DollarSign, color: 'bg-[#DC3545]/10', iconColor: 'text-[#DC3545]', trend: '+5%', trendUp: true }
-    ],
-    tasks: [
-      { id: 'PM-001', title: 'Sprint planning meeting', priority: 'High', dueDate: 'Today', status: 'In Progress', project: 'Web App Redesign', assignee: 'PM Team' },
-      { id: 'PM-002', title: 'Client presentation prep', priority: 'High', dueDate: 'Tomorrow', status: 'Todo', project: 'Mobile App', assignee: 'PM Team' },
-      { id: 'PM-003', title: 'Resource allocation review', priority: 'Medium', dueDate: 'This week', status: 'Todo', project: 'API Integration', assignee: 'PM Team' },
-      { id: 'PM-004', title: 'Stakeholder meeting', priority: 'Medium', dueDate: 'Next week', status: 'Todo', project: 'Dashboard Update', assignee: 'PM Team' }
-    ]
+    stats: [],
+    tasks: []
   },
   developer: {
-    stats: [
-      { label: 'My Tasks', value: '12', subtext: '4 in progress', icon: CheckCircle, color: 'bg-[#28A745]/10', iconColor: 'text-[#28A745]', trend: '+3', trendUp: true },
-      { label: 'Hours Today', value: '6.5h', subtext: '1.5h remaining', icon: Timer, color: 'bg-[#007BFF]/10', iconColor: 'text-[#007BFF]', trend: '+0.5h', trendUp: true },
-      { label: 'Active Projects', value: '3', subtext: '2 on track', icon: Target, color: 'bg-[#FFC107]/10', iconColor: 'text-[#FFC107]', trend: '+1', trendUp: true },
-      { label: 'Completed Today', value: '5', subtext: 'Tasks finished', icon: CheckCircle, color: 'bg-[#28A745]/10', iconColor: 'text-[#28A745]', trend: '+2', trendUp: true }
-    ],
-    tasks: [
-      { id: 'DEV-001', title: 'Authentication API implementation', priority: 'High', dueDate: 'Today', status: 'In Progress', project: 'Web App Redesign', assignee: 'Rajesh Kumar' },
-      { id: 'DEV-002', title: 'Frontend component optimization', priority: 'Medium', dueDate: 'Tomorrow', status: 'Todo', project: 'Mobile App', assignee: 'Rajesh Kumar' },
-      { id: 'DEV-003', title: 'Bug fix #247 - Login issues', priority: 'High', dueDate: 'Overdue', status: 'Todo', project: 'API Integration', assignee: 'Rajesh Kumar' },
-      { id: 'DEV-004', title: 'Database migration script', priority: 'Medium', dueDate: 'This week', status: 'Todo', project: 'Backend Upgrade', assignee: 'Rajesh Kumar' }
-    ]
+    stats: [],
+    tasks: []
   },
   tester: {
-    stats: [
-      { label: 'Test Cases', value: '45', subtext: '12 pending', icon: CheckCircle, color: 'bg-[#28A745]/10', iconColor: 'text-[#28A745]', trend: '+8', trendUp: true },
-      { label: 'Bugs Found', value: '18', subtext: '6 critical', icon: Bug, color: 'bg-[#DC3545]/10', iconColor: 'text-[#DC3545]', trend: '+3', trendUp: true },
-      { label: 'Test Hours', value: '32h', subtext: 'This week', icon: Timer, color: 'bg-[#007BFF]/10', iconColor: 'text-[#007BFF]', trend: '+4h', trendUp: true },
-      { label: 'Pass Rate', value: '94%', subtext: 'Above target', icon: Target, color: 'bg-[#FFC107]/10', iconColor: 'text-[#FFC107]', trend: '+2%', trendUp: true }
-    ],
-    tasks: [
-      { id: 'TEST-001', title: 'API endpoint testing suite', priority: 'High', dueDate: 'Today', status: 'In Progress', project: 'Web App Redesign', assignee: 'Praveen Kumar' },
-      { id: 'TEST-002', title: 'Mobile UI testing scenarios', priority: 'Medium', dueDate: 'Tomorrow', status: 'Todo', project: 'Mobile App', assignee: 'Praveen Kumar' },
-      { id: 'TEST-003', title: 'Regression testing batch', priority: 'Low', dueDate: 'This week', status: 'Todo', project: 'API Integration', assignee: 'Praveen Kumar' },
-      { id: 'TEST-004', title: 'Performance testing setup', priority: 'High', dueDate: 'Next week', status: 'Todo', project: 'Load Testing', assignee: 'Praveen Kumar' }
-    ]
+    stats: [],
+    tasks: []
   }
 }
 
-// Additional sample data for widgets
-const teamWorkload = [
-  { name: 'Rajesh Kumar', tasks: 8, capacity: 10, utilization: 80, role: 'Developer', efficiency: 92, avatar: 'RK' },
-  { name: 'Praveen Kumar', tasks: 6, capacity: 10, utilization: 60, role: 'Tester', efficiency: 88, avatar: 'PK' },
-  { name: 'Jane Smith', tasks: 12, capacity: 10, utilization: 120, role: 'Designer', efficiency: 95, avatar: 'JS' },
-  { name: 'Sarah Wilson', tasks: 9, capacity: 10, utilization: 90, role: 'PM', efficiency: 89, avatar: 'SW' },
-  { name: 'Mike Johnson', tasks: 7, capacity: 10, utilization: 70, role: 'DevOps', efficiency: 91, avatar: 'MJ' },
-  { name: 'Alex Chen', tasks: 11, capacity: 10, utilization: 110, role: 'Developer', efficiency: 94, avatar: 'AC' }
-]
+// TODO: Replace with team workload data from API
+const teamWorkload: any[] = []
 
-const systemHealthData = [
-  { component: 'Web Server', status: 'healthy', uptime: '99.9%', responseTime: '120ms' },
-  { component: 'Database', status: 'healthy', uptime: '99.8%', responseTime: '45ms' },
-  { component: 'API Gateway', status: 'warning', uptime: '98.5%', responseTime: '250ms' },
-  { component: 'File Storage', status: 'critical', uptime: '95.2%', responseTime: '500ms' },
-  { component: 'Cache Server', status: 'healthy', uptime: '99.9%', responseTime: '15ms' },
-  { component: 'Load Balancer', status: 'healthy', uptime: '100%', responseTime: '10ms' }
-]
+// TODO: Replace with system health data from monitoring API
+const systemHealthData: any[] = []
 
-const recentActivities = [
-  { id: 1, user: 'Rajesh Kumar', action: 'completed task', target: 'Authentication API', time: '2 minutes ago', type: 'task' },
-  { id: 2, user: 'Praveen Kumar', action: 'found bug in', target: 'Mobile App Login', time: '15 minutes ago', type: 'bug' },
-  { id: 3, user: 'Jane Smith', action: 'uploaded design for', target: 'Dashboard UI', time: '1 hour ago', type: 'design' },
-  { id: 4, user: 'Sarah Wilson', action: 'scheduled meeting for', target: 'Sprint Planning', time: '2 hours ago', type: 'meeting' },
-  { id: 5, user: 'Mike Johnson', action: 'deployed code to', target: 'Staging Environment', time: '3 hours ago', type: 'deployment' },
-  { id: 6, user: 'Alex Chen', action: 'reviewed task for', target: 'Payment Integration', time: '4 hours ago', type: 'review' }
-]
+// TODO: Replace with recent activities from activity feed API
+const recentActivities: any[] = []
 
-const upcomingDeadlines = [
-  { task: 'Sprint 15 Demo', date: '2025-01-15', project: 'Web App Redesign', priority: 'High', daysLeft: 2 },
-  { task: 'Client Presentation', date: '2025-01-16', project: 'Mobile App', priority: 'Critical', daysLeft: 3 },
-  { task: 'Security Audit', date: '2025-01-18', project: 'System Security', priority: 'High', daysLeft: 5 },
-  { task: 'Release v2.1', date: '2025-01-20', project: 'Platform Update', priority: 'Medium', daysLeft: 7 },
-  { task: 'Performance Review', date: '2025-01-22', project: 'Team Management', priority: 'Medium', daysLeft: 9 }
-]
+// TODO: Replace with upcoming deadlines from tasks/milestones API
+const upcomingDeadlines: any[] = []
 
-// Chart data
-const weeklyProductivityData = [
-  { day: 'Mon', tasks: 12, hours: 8.5, velocity: 45 },
-  { day: 'Tue', tasks: 15, hours: 9.2, velocity: 52 },
-  { day: 'Wed', tasks: 8, hours: 7.8, velocity: 38 },
-  { day: 'Thu', tasks: 18, hours: 8.9, velocity: 58 },
-  { day: 'Fri', tasks: 14, hours: 8.1, velocity: 48 },
-  { day: 'Sat', tasks: 6, hours: 4.5, velocity: 25 },
-  { day: 'Sun', tasks: 3, hours: 2.3, velocity: 15 }
-]
+// TODO: Replace with productivity data from time tracking API
+const weeklyProductivityData: any[] = []
 
-const budgetUtilizationData = [
-  { month: 'Jan', budget: 45000, spent: 38000, remaining: 7000 },
-  { month: 'Feb', budget: 52000, spent: 48000, remaining: 4000 },
-  { month: 'Mar', budget: 48000, spent: 45000, remaining: 3000 },
-  { month: 'Apr', budget: 55000, spent: 51000, remaining: 4000 },
-  { month: 'May', budget: 60000, spent: 52000, remaining: 8000 },
-  { month: 'Jun', budget: 58000, spent: 55000, remaining: 3000 }
-]
+// TODO: Replace with budget data from financial API
+const budgetUtilizationData: any[] = []
 
-const projectHealthData = [
-  { name: 'E-commerce Platform', status: 'On Track', progress: 75, budget: 85000, spent: 62000, team: 6 },
-  { name: 'Mobile Banking App', status: 'At Risk', progress: 45, budget: 120000, spent: 89000, team: 8 },
-  { name: 'CRM Integration', status: 'On Track', progress: 92, budget: 65000, spent: 58000, team: 4 },
-  { name: 'Analytics Dashboard', status: 'Delayed', progress: 23, budget: 45000, spent: 32000, team: 3 }
-]
+// TODO: Replace with project health data from projects API
+const projectHealthData: any[] = []
 
-const sprintVelocityData = [
-  { sprint: 'Sprint 20', planned: 42, completed: 38, velocity: 90 },
-  { sprint: 'Sprint 21', planned: 45, completed: 45, velocity: 100 },
-  { sprint: 'Sprint 22', planned: 40, completed: 35, velocity: 87 },
-  { sprint: 'Sprint 23', planned: 48, completed: 32, velocity: 67 }
-]
+// TODO: Replace with sprint velocity data from sprint API
+const sprintVelocityData: any[] = []
 
-const sprintProgressData = [
-  { 
-    sprint: 'Sprint 19', 
-    planned: 35, 
-    completed: 33, 
-    inProgress: 0, 
-    todo: 0, 
-    velocity: 94,
-    startDate: '2024-12-02',
-    endDate: '2024-12-16'
-  },
-  { 
-    sprint: 'Sprint 20', 
-    planned: 42, 
-    completed: 38, 
-    inProgress: 0, 
-    todo: 0, 
-    velocity: 90,
-    startDate: '2024-12-16',
-    endDate: '2024-12-30'
-  },
-  { 
-    sprint: 'Sprint 21', 
-    planned: 45, 
-    completed: 45, 
-    inProgress: 0, 
-    todo: 0, 
-    velocity: 100,
-    startDate: '2024-12-30',
-    endDate: '2025-01-13'
-  },
-  { 
-    sprint: 'Sprint 22', 
-    planned: 40, 
-    completed: 35, 
-    inProgress: 3, 
-    todo: 2, 
-    velocity: 87,
-    startDate: '2025-01-06',
-    endDate: '2025-01-20'
-  },
-  { 
-    sprint: 'Sprint 23', 
-    planned: 48, 
-    completed: 32, 
-    inProgress: 8, 
-    todo: 8, 
-    velocity: 67,
-    startDate: '2025-01-08',
-    endDate: '2025-01-22'
-  }
-]
+// TODO: Replace with sprint progress data from sprint API
+const sprintProgressData: any[] = []
 
 const COLORS = {
   primary: '#28A745',

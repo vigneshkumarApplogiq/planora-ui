@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { methodologyData, MethodologyType } from '../mock-data/methodology'
 import { projectApiService } from '../services/projectApi'
+
+export type MethodologyType = 'scrum' | 'kanban' | 'waterfall'
 
 export const useMethodologyData = (projectId: string, methodology: MethodologyType) => {
   const [data, setData] = useState<any>(null)
@@ -13,21 +14,18 @@ export const useMethodologyData = (projectId: string, methodology: MethodologyTy
       setError(null)
 
       try {
-        // Try to fetch from API first
         const response = await projectApiService.getMethodologyData(projectId, methodology.toLowerCase())
 
         if (response.success && response.data) {
           setData(response.data)
         } else {
-          // Fallback to mock data
-          const mockData = methodologyData[methodology.toLowerCase() as keyof typeof methodologyData]
-          setData(mockData)
+          setError('Failed to fetch methodology data')
+          setData(null)
         }
       } catch (err) {
-        console.warn('API call failed, using mock data:', err)
-        // Fallback to mock data
-        const mockData = methodologyData[methodology.toLowerCase() as keyof typeof methodologyData]
-        setData(mockData)
+        console.error('API call failed:', err)
+        setError('Failed to fetch methodology data')
+        setData(null)
       } finally {
         setLoading(false)
       }
@@ -70,15 +68,9 @@ export const useTimeTracking = (projectId: string, userId?: string) => {
           setTodaysEntries(entriesResponse.data.filter((entry: any) => entry.date === today))
         }
       } catch (err) {
-        console.warn('Time tracking API call failed, using mock data:', err)
-        // Time tracking mock data removed - module no longer available
-        setSummary({
-          totalHours: 0,
-          billableHours: 0,
-          activeTasks: 0,
-          weeklyTarget: 40,
-          completionRate: 0
-        })
+        console.error('Time tracking API call failed:', err)
+        setError('Failed to fetch time tracking data')
+        setSummary(null)
         setAllEntries([])
         setTodaysEntries([])
       } finally {

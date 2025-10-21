@@ -360,83 +360,92 @@ export function FilesView({ project, user }: FilesViewProps) {
     return matchesSearch && matchesFolder && matchesCategory
   })
 
-  const FileCard = ({ file }: { file: FileItem }) => (
-    <Card className="hover:shadow-lg transition-all border-0 shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-4">
-          <div className="p-3 bg-red-50 rounded-lg">
-            {getFileIcon(file.content_type)}
-          </div>
-          <div className="relative group">
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-            <div className="absolute right-0 mt-1 hidden group-hover:block bg-white shadow-lg rounded-md border z-10 min-w-[120px]">
-              <button
-                onClick={() => handleEditFile(file)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center text-sm"
-              >
-                <Edit className="w-3 h-3 mr-2" />
-                Edit
-              </button>
-              <button
-                onClick={() => {
-                  setDeletingItem({ type: 'file', id: file.id, name: file.original_filename })
-                  setShowDeleteConfirm(true)
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center text-sm text-red-600"
-              >
-                <Trash2 className="w-3 h-3 mr-2" />
-                Delete
-              </button>
+  const FileCard = ({ file }: { file: FileItem }) => {
+    const fileExtension = file.content_type.split('/')[1]?.toUpperCase() || 'FILE'
+    const iconBgColor = file.content_type.includes('pdf') ? 'bg-red-50' :
+                        file.content_type.startsWith('image/') ? 'bg-green-50' :
+                        'bg-blue-50'
+
+    return (
+      <Card className="hover:shadow-lg transition-all duration-200 border">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className={`p-2.5 ${iconBgColor} rounded-lg`}>
+              {getFileIcon(file.content_type)}
+            </div>
+            <div className="relative group">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+              <div className="absolute right-0 mt-1 hidden group-hover:block bg-white shadow-lg rounded-md border z-10 min-w-[120px]">
+                <button
+                  onClick={() => handleEditFile(file)}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center text-sm"
+                >
+                  <Edit className="w-3.5 h-3.5 mr-2" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setDeletingItem({ type: 'file', id: file.id, name: file.original_filename })
+                    setShowDeleteConfirm(true)
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center text-sm text-red-600"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <h4 className="font-medium text-sm mb-2 line-clamp-2 text-gray-900">{file.original_filename}</h4>
+          <h4 className="font-semibold text-sm mb-2 line-clamp-2 text-gray-900 min-h-[2.5rem]">
+            {file.original_filename}
+          </h4>
 
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <Badge variant="secondary" className="text-xs font-medium px-2 py-0.5 bg-red-100 text-red-700 border-0">
-            {file.content_type.split('/')[1]?.toUpperCase() || 'FILE'}
-          </Badge>
-          <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-600 border-gray-300">
-            {formatFileSize(file.file_size)}
-          </Badge>
-          {file.category && (
-            <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-600 border-gray-300">
-              {file.category}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <Badge variant="secondary" className={`text-xs font-medium px-2 py-0.5 ${getFileTypeColor(file.content_type)} border-0`}>
+              {fileExtension}
             </Badge>
-          )}
-        </div>
+            <Badge variant="outline" className="text-xs px-2 py-0.5">
+              {formatFileSize(file.file_size)}
+            </Badge>
+            {file.category && (
+              <Badge variant="outline" className="text-xs px-2 py-0.5">
+                {file.category}
+              </Badge>
+            )}
+          </div>
 
-        <div className="flex items-center text-xs text-gray-600 mb-1">
-          <Avatar className="w-5 h-5 mr-1.5">
-            <AvatarFallback className="bg-green-600 text-white text-xs">
-              {file.uploaded_by_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium">{file.uploaded_by_name || 'Unknown'}</span>
-        </div>
+          <div className="flex items-center text-xs text-gray-600 mb-1">
+            <Avatar className="w-5 h-5 mr-2">
+              <AvatarFallback className="bg-blue-600 text-white text-[10px]">
+                {file.uploaded_by_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-medium truncate">{file.uploaded_by_name || 'Unknown'}</span>
+          </div>
 
-        <div className="text-xs text-gray-500 mb-4">
-          {formatDate(file.created_at || file.uploaded_at || '')}
-        </div>
+          <div className="text-xs text-gray-500 mb-3">
+            {formatDate(file.created_at || file.uploaded_at || '')}
+          </div>
 
-        <div className="flex items-center gap-2 pt-2 border-t">
-          <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs">
-            <Eye className="w-3.5 h-3.5 mr-1" />
-            View
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownloadFile(file)}>
-            <Download className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <Share2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
+          <div className="flex items-center gap-1.5 pt-3 border-t">
+            <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs hover:bg-gray-100">
+              <Eye className="w-3.5 h-3.5 mr-1.5" />
+              View
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100" onClick={() => handleDownloadFile(file)}>
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+              <Share2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const FileListItem = ({ file }: { file: FileItem }) => (
     <Card className="hover:shadow-md transition-shadow mb-3">
@@ -545,103 +554,119 @@ export function FilesView({ project, user }: FilesViewProps) {
 
       <div className="flex gap-6">
         {/* Left Sidebar */}
-        <div className="w-72 flex-shrink-0 space-y-4">
+        <div className="w-64 flex-shrink-0 space-y-4">
           {/* Folders Card */}
-          <Card className="border-gray-200">
-            <CardHeader className="pb-3 px-4 pt-4">
-              <CardTitle className="text-sm font-semibold text-gray-900">Folders</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1 px-2 pb-4">
-              <button
-                className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedFolder === undefined
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                onClick={() => setSelectedFolder(undefined)}
-              >
-                <FolderOpen className="w-4 h-4 mr-2.5" />
-                <span>All Files</span>
-              </button>
-              {folders.map((folder) => (
-                <div
-                  key={folder.id}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all group ${
-                    selectedFolder === folder.id
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+          <Card className="border shadow-sm">
+            <CardHeader className="pb-3 px-4 pt-4 border-b bg-gray-50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-gray-900">Folders</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setShowCreateFolderModal(true)}
                 >
-                  <button
-                    className="flex items-center flex-1 text-left font-medium"
-                    onClick={() => setSelectedFolder(folder.id)}
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-2 max-h-64 overflow-y-auto">
+              <div className="space-y-0.5">
+                <button
+                  className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    selectedFolder === undefined
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  onClick={() => setSelectedFolder(undefined)}
+                >
+                  <FolderOpen className="w-4 h-4 mr-2.5 flex-shrink-0" />
+                  <span className="truncate">All Files</span>
+                </button>
+                {folders.map((folder) => (
+                  <div
+                    key={folder.id}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-all group ${
+                      selectedFolder === folder.id
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
                   >
-                    <Folder className="w-4 h-4 mr-2.5" />
-                    <span className="truncate">{folder.name}</span>
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50"
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation()
-                      setDeletingItem({ type: 'folder', id: folder.id, name: folder.name })
-                      setShowDeleteConfirm(true)
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
+                    <button
+                      className="flex items-center flex-1 text-left font-medium min-w-0"
+                      onClick={() => setSelectedFolder(folder.id)}
+                    >
+                      <Folder className="w-4 h-4 mr-2.5 flex-shrink-0" />
+                      <span className="truncate">{folder.name}</span>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50 flex-shrink-0"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation()
+                        setDeletingItem({ type: 'folder', id: folder.id, name: folder.name })
+                        setShowDeleteConfirm(true)
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
           {/* Categories Card */}
-          <Card className="border-gray-200">
-            <CardHeader className="pb-3 px-4 pt-4">
+          <Card className="border shadow-sm">
+            <CardHeader className="pb-3 px-4 pt-4 border-b bg-gray-50">
               <CardTitle className="text-sm font-semibold text-gray-900">Categories</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1 px-2 pb-4">
-              <button
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedCategory === 'all'
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                onClick={() => setSelectedCategory('all')}
-              >
-                <span>All Categories</span>
-                <span className="text-xs font-semibold">
-                  {fileCategories.reduce((sum, cat) => sum + cat.count, 0)}
-                </span>
-              </button>
-              {fileCategories.map((categoryItem) => (
+            <CardContent className="p-2 max-h-64 overflow-y-auto">
+              <div className="space-y-0.5">
                 <button
-                  key={categoryItem.category}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedCategory === categoryItem.category
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    selectedCategory === 'all'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-gray-700 hover:bg-gray-100'
                   }`}
-                  onClick={() => setSelectedCategory(categoryItem.category)}
+                  onClick={() => setSelectedCategory('all')}
                 >
-                  <span>{categoryItem.category}</span>
-                  <span className="text-xs font-semibold text-gray-400">{categoryItem.count}</span>
+                  <span className="truncate">All Categories</span>
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {fileCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                  </Badge>
                 </button>
-              ))}
+                {fileCategories.map((categoryItem) => (
+                  <button
+                    key={categoryItem.category}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                      selectedCategory === categoryItem.category
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setSelectedCategory(categoryItem.category)}
+                  >
+                    <span className="truncate">{categoryItem.category}</span>
+                    <Badge variant="outline" className="ml-2 text-xs">
+                      {categoryItem.count}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
           {/* Quick Actions Card */}
-          <Card className="border-gray-200">
-            <CardHeader className="pb-3 px-4 pt-4">
+          <Card className="border shadow-sm">
+            <CardHeader className="pb-3 px-4 pt-4 border-b bg-gray-50">
               <CardTitle className="text-sm font-semibold text-gray-900">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 px-2 pb-4">
+            <CardContent className="p-3 space-y-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start text-sm h-9 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                className="w-full justify-start text-sm h-9"
                 onClick={() => setShowCreateFolderModal(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -650,7 +675,7 @@ export function FilesView({ project, user }: FilesViewProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start text-sm h-9 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                className="w-full justify-start text-sm h-9"
                 onClick={() => setShowUploadModal(true)}
               >
                 <Upload className="w-4 h-4 mr-2" />

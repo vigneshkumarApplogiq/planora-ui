@@ -26,102 +26,14 @@ interface TimeTrackingViewProps {
   user: any
 }
 
-// Mock time tracking data
-const mockTimeEntries = [
-  {
-    id: '1',
-    user: { name: 'Alice Johnson', avatar: 'AJ' },
-    task: 'OAuth 2.0 Authentication Implementation',
-    taskId: 'T-123',
-    date: '2024-03-05',
-    startTime: '09:00',
-    endTime: '12:30',
-    duration: 3.5,
-    description: 'Implementing Google OAuth provider integration',
-    billable: true,
-    status: 'completed'
-  },
-  {
-    id: '2',
-    user: { name: 'Bob Chen', avatar: 'BC' },
-    task: 'Database Schema Design',
-    taskId: 'T-124',
-    date: '2024-03-05',
-    startTime: '10:00',
-    endTime: '11:45',
-    duration: 1.75,
-    description: 'Designing user authentication tables',
-    billable: true,
-    status: 'completed'
-  },
-  {
-    id: '3',
-    user: { name: 'Carol Davis', avatar: 'CD' },
-    task: 'UI/UX Design Review',
-    taskId: 'T-125',
-    date: '2024-03-05',
-    startTime: '14:00',
-    endTime: '16:30',
-    duration: 2.5,
-    description: 'Reviewing user profile mockups',
-    billable: true,
-    status: 'completed'
-  },
-  {
-    id: '4',
-    user: { name: 'David Wilson', avatar: 'DW' },
-    task: 'API Testing',
-    taskId: 'T-126',
-    date: '2024-03-05',
-    startTime: '13:15',
-    endTime: null,
-    duration: 2.25,
-    description: 'Testing authentication endpoints',
-    billable: false,
-    status: 'in-progress'
-  }
-]
+// TODO: Replace with time tracking API integration
+const mockTimeEntries: any[] = []
 
-const mockWeeklyData = [
-  { day: 'Mon', hours: 8.5, target: 8 },
-  { day: 'Tue', hours: 7.25, target: 8 },
-  { day: 'Wed', hours: 8.75, target: 8 },
-  { day: 'Thu', hours: 6.5, target: 8 },
-  { day: 'Fri', hours: 4.0, target: 8 },
-  { day: 'Sat', hours: 0, target: 0 },
-  { day: 'Sun', hours: 0, target: 0 }
-]
+// TODO: Replace with weekly data from time tracking API
+const mockWeeklyData: any[] = []
 
-const mockTeamStats = [
-  {
-    user: { name: 'Alice Johnson', avatar: 'AJ' },
-    totalHours: 32.5,
-    billableHours: 28.0,
-    efficiency: 86,
-    tasksCompleted: 8
-  },
-  {
-    user: { name: 'Bob Chen', avatar: 'BC' },
-    totalHours: 30.25,
-    billableHours: 27.5,
-    efficiency: 91,
-    tasksCompleted: 6
-  },
-  {
-    user: { name: 'Carol Davis', avatar: 'CD' },
-    totalHours: 28.75,
-    billableHours: 25.0,
-    efficiency: 87,
-    tasksCompleted: 7
-  },
-  {
-    user: { name: 'David Wilson', avatar: 'DW' },
-    totalHours: 25.5,
-    billableHours: 22.0,
-    efficiency: 86,
-    tasksCompleted: 5
-  }
-]
+// TODO: Replace with team statistics from time tracking API
+const mockTeamStats: any[] = []
 
 export function TimeTrackingView({ projectId, user }: TimeTrackingViewProps) {
   const [activeTimer, setActiveTimer] = useState<string | null>(null)

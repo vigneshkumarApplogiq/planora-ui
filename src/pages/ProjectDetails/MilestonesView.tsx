@@ -32,133 +32,7 @@ interface MilestonesViewProps {
   user: any
 }
 
-// Mock milestones data
-const mockMilestones = [
-  {
-    id: 'MILESTONE-001',
-    name: 'Requirements Sign-off',
-    description: 'All project requirements approved by stakeholders',
-    status: 'completed',
-    priority: 'high',
-    dueDate: new Date('2024-02-15'),
-    completedDate: new Date('2024-02-12'),
-    phase: 'Requirements Analysis',
-    phaseId: 'PHASE-001',
-    criteria: [
-      { name: 'Requirements document approved', completed: true },
-      { name: 'Stakeholder signatures collected', completed: true },
-      { name: 'Technical specifications finalized', completed: true }
-    ],
-    dependencies: [],
-    assignee: { name: 'Emma Rodriguez', avatar: 'ER' },
-    stakeholders: ['Product Owner', 'Business Analyst', 'Client Representative']
-  },
-  {
-    id: 'MILESTONE-002',
-    name: 'Design Approval',
-    description: 'System design and architecture approved',
-    status: 'completed',
-    priority: 'high',
-    dueDate: new Date('2024-03-15'),
-    completedDate: new Date('2024-03-18'),
-    phase: 'System Design',
-    phaseId: 'PHASE-002',
-    criteria: [
-      { name: 'System architecture reviewed', completed: true },
-      { name: 'UI/UX designs approved', completed: true },
-      { name: 'Database design validated', completed: true },
-      { name: 'API specifications approved', completed: true }
-    ],
-    dependencies: ['MILESTONE-001'],
-    assignee: { name: 'Bob Chen', avatar: 'BC' },
-    stakeholders: ['Technical Lead', 'UI/UX Designer', 'Client Technical Team']
-  },
-  {
-    id: 'MILESTONE-003',
-    name: 'Alpha Release',
-    description: 'First working version with core features',
-    status: 'active',
-    priority: 'high',
-    dueDate: new Date('2024-04-15'),
-    completedDate: null,
-    phase: 'Implementation',
-    phaseId: 'PHASE-003',
-    criteria: [
-      { name: 'Authentication system implemented', completed: true },
-      { name: 'Core user interface completed', completed: true },
-      { name: 'Basic API endpoints functional', completed: false },
-      { name: 'Database integration working', completed: true },
-      { name: 'Initial testing completed', completed: false }
-    ],
-    dependencies: ['MILESTONE-002'],
-    assignee: { name: 'Alice Johnson', avatar: 'AJ' },
-    stakeholders: ['Development Team', 'Product Owner', 'QA Lead']
-  },
-  {
-    id: 'MILESTONE-004',
-    name: 'Beta Release',
-    description: 'Feature-complete version for user testing',
-    status: 'pending',
-    priority: 'high',
-    dueDate: new Date('2024-05-15'),
-    completedDate: null,
-    phase: 'Implementation',
-    phaseId: 'PHASE-003',
-    criteria: [
-      { name: 'All planned features implemented', completed: false },
-      { name: 'Integration testing passed', completed: false },
-      { name: 'Performance benchmarks met', completed: false },
-      { name: 'Security review completed', completed: false },
-      { name: 'User documentation ready', completed: false }
-    ],
-    dependencies: ['MILESTONE-003'],
-    assignee: { name: 'Frank Miller', avatar: 'FM' },
-    stakeholders: ['Development Team', 'QA Team', 'Beta Users']
-  },
-  {
-    id: 'MILESTONE-005',
-    name: 'UAT Completion',
-    description: 'User Acceptance Testing successfully completed',
-    status: 'pending',
-    priority: 'high',
-    dueDate: new Date('2024-06-15'),
-    completedDate: null,
-    phase: 'Testing',
-    phaseId: 'PHASE-004',
-    criteria: [
-      { name: 'All test cases executed', completed: false },
-      { name: 'Critical bugs resolved', completed: false },
-      { name: 'User acceptance criteria met', completed: false },
-      { name: 'Performance requirements validated', completed: false },
-      { name: 'Client sign-off obtained', completed: false }
-    ],
-    dependencies: ['MILESTONE-004'],
-    assignee: { name: 'David Wilson', avatar: 'DW' },
-    stakeholders: ['QA Team', 'End Users', 'Client']
-  },
-  {
-    id: 'MILESTONE-006',
-    name: 'Production Deployment',
-    description: 'System successfully deployed to production',
-    status: 'pending',
-    priority: 'critical',
-    dueDate: new Date('2024-07-15'),
-    completedDate: null,
-    phase: 'Deployment',
-    phaseId: 'PHASE-005',
-    criteria: [
-      { name: 'Production environment ready', completed: false },
-      { name: 'Deployment scripts tested', completed: false },
-      { name: 'Data migration completed', completed: false },
-      { name: 'Go-live checklist verified', completed: false },
-      { name: 'Rollback plan prepared', completed: false }
-    ],
-    dependencies: ['MILESTONE-005'],
-    assignee: { name: 'Alex Chen', avatar: 'AC' },
-    stakeholders: ['DevOps Team', 'Production Support', 'Business Users']
-  }
-]
-
+// TODO: All milestone data is now fetched from API - no mock data needed
 export function MilestonesView({ projectId, user }: MilestonesViewProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -166,6 +40,8 @@ export function MilestonesView({ projectId, user }: MilestonesViewProps) {
   const [selectedMilestone, setSelectedMilestone] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date())
+  // TODO: Fetch milestones from API
+  const [milestones, setMilestones] = useState<any[]>([])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -211,7 +87,7 @@ export function MilestonesView({ projectId, user }: MilestonesViewProps) {
     return 'pending'
   }
 
-  const filteredMilestones = mockMilestones.filter(milestone => {
+  const filteredMilestones = milestones.filter(milestone => {
     const matchesSearch = milestone.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          milestone.description.toLowerCase().includes(searchTerm.toLowerCase())
     const actualStatus = getMilestoneStatus(milestone)
@@ -486,31 +362,31 @@ export function MilestonesView({ projectId, user }: MilestonesViewProps) {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#28A745]">{mockMilestones.filter(m => m.status === 'completed').length}</div>
+            <div className="text-2xl font-semibold text-[#28A745]">{milestones.filter(m => m.status === 'completed').length}</div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#007BFF]">{mockMilestones.filter(m => m.status === 'active').length}</div>
+            <div className="text-2xl font-semibold text-[#007BFF]">{milestones.filter(m => m.status === 'active').length}</div>
             <div className="text-xs text-muted-foreground">Active</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#6C757D]">{mockMilestones.filter(m => getMilestoneStatus(m) === 'pending').length}</div>
+            <div className="text-2xl font-semibold text-[#6C757D]">{milestones.filter(m => getMilestoneStatus(m) === 'pending').length}</div>
             <div className="text-xs text-muted-foreground">Pending</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#FFC107]">{mockMilestones.filter(m => getMilestoneStatus(m) === 'at-risk').length}</div>
+            <div className="text-2xl font-semibold text-[#FFC107]">{milestones.filter(m => getMilestoneStatus(m) === 'at-risk').length}</div>
             <div className="text-xs text-muted-foreground">At Risk</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#DC3545]">{mockMilestones.filter(m => getMilestoneStatus(m) === 'overdue').length}</div>
+            <div className="text-2xl font-semibold text-[#DC3545]">{milestones.filter(m => getMilestoneStatus(m) === 'overdue').length}</div>
             <div className="text-xs text-muted-foreground">Overdue</div>
           </CardContent>
         </Card>

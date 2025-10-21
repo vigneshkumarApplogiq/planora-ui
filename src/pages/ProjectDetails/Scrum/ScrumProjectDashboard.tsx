@@ -23,45 +23,40 @@ interface ScrumProjectDashboardProps {
   user: any
 }
 
-// Mock Scrum-specific data
+// TODO: Replace with Scrum data from project API
 const mockScrumData = {
   currentSprint: {
-    name: 'Sprint 5',
-    number: 5,
-    startDate: '2024-03-01',
-    endDate: '2024-03-14',
-    goal: 'Complete user authentication and profile management features',
-    progress: 65,
-    totalStoryPoints: 42,
-    completedStoryPoints: 27,
+    name: '',
+    number: 0,
+    startDate: '',
+    endDate: '',
+    goal: '',
+    progress: 0,
+    totalStoryPoints: 0,
+    completedStoryPoints: 0,
     burndownTrend: 'on-track',
-    daysRemaining: 6
+    daysRemaining: 0
   },
   backlog: {
-    totalItems: 87,
-    readyItems: 23,
-    inProgressItems: 8,
-    doneItems: 56,
-    totalStoryPoints: 234,
-    averageVelocity: 38
+    totalItems: 0,
+    readyItems: 0,
+    inProgressItems: 0,
+    doneItems: 0,
+    totalStoryPoints: 0,
+    averageVelocity: 0
   },
   team: {
-    velocity: [32, 35, 38, 41, 39], // Last 5 sprints
-    currentCapacity: 42,
-    utilization: 85
+    velocity: [],
+    currentCapacity: 0,
+    utilization: 0
   },
   sprintMetrics: {
-    sprintsCompleted: 4,
-    averageVelocity: 37,
-    predictability: 92, // % of committed stories completed
-    teamSatisfaction: 4.2
+    sprintsCompleted: 0,
+    averageVelocity: 0,
+    predictability: 0,
+    teamSatisfaction: 0
   },
-  upcomingEvents: [
-    { type: 'Daily Standup', time: '09:00 AM', today: true },
-    { type: 'Sprint Review', time: '02:00 PM', date: '2024-03-14' },
-    { type: 'Sprint Retrospective', time: '03:30 PM', date: '2024-03-14' },
-    { type: 'Sprint Planning', time: '10:00 AM', date: '2024-03-15' }
-  ]
+  upcomingEvents: []
 }
 
 export function ScrumProjectDashboard({ project, user }: ScrumProjectDashboardProps) {

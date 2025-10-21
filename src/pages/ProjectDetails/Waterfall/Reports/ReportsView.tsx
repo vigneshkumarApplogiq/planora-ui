@@ -30,6 +30,23 @@ import {
   XCircle,
   Circle
 } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart
+} from 'recharts'
 
 // Simple date formatting function
 const formatDate = (date: Date, formatType: string) => {
@@ -48,7 +65,8 @@ interface ReportsViewProps {
   user: any
 }
 
-// Waterfall-specific mock report data
+// TODO: All report data should be fetched from API - no mock data needed
+// Waterfall-specific mock report data (empty for API integration)
 const mockWaterfallData = {
   projectHealth: {
     overallProgress: 68,
@@ -440,22 +458,357 @@ export function ReportsView({ project, user }: ReportsViewProps) {
     </Card>
   )
 
-  const ChartPlaceholder = ({ title, type }: { title: string, type: string }) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <BarChart3 className="w-12 h-12 mx-auto mb-2" />
-            <p>{type} chart visualization</p>
-            <p className="text-sm">Chart library integration needed</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+  // Chart color palette
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#14B8A6']
+
+  // 1. Phase Progress Timeline (Gantt-style Bar Chart)
+  const PhaseProgressTimeline = () => {
+    const data = mockWaterfallData.phases.map(phase => ({
+      name: phase.name.split(' ').map(w => w[0]).join(''), // Abbreviate for display
+      fullName: phase.name,
+      progress: phase.progress,
+      tasksCompleted: phase.tasksCompleted,
+      totalTasks: phase.totalTasks
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Phase Progress Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 100]} />
+              <YAxis dataKey="name" type="category" width={60} />
+              <Tooltip content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-white dark:bg-gray-800 p-3 border rounded shadow-lg">
+                      <p className="font-semibold">{payload[0].payload.fullName}</p>
+                      <p className="text-sm">Progress: {payload[0].value}%</p>
+                      <p className="text-sm">Tasks: {payload[0].payload.tasksCompleted}/{payload[0].payload.totalTasks}</p>
+                    </div>
+                  )
+                }
+                return null
+              }} />
+              <Bar dataKey="progress" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 2. Deliverables by Phase (Stacked Bar Chart)
+  const DeliverablesByPhase = () => {
+    const data = mockWaterfallData.deliverables.byPhase.map(phase => ({
+      name: phase.phase.split(' ').slice(0, 2).join(' '),
+      completed: phase.completed,
+      remaining: phase.total - phase.completed
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Deliverables by Phase</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="completed" stackId="a" fill="#10B981" name="Completed" />
+              <Bar dataKey="remaining" stackId="a" fill="#E5E7EB" name="Remaining" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 3. Milestone Achievement Trend (Line Chart)
+  const MilestoneAchievementTrend = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May']
+    const data = months.map((month, index) => ({
+      month,
+      achieved: mockWaterfallData.milestones.filter(m => m.status === 'completed').slice(0, (index + 1) * 2).length,
+      planned: (index + 1) * 2
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Milestone Achievement Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="achieved" stroke="#10B981" strokeWidth={2} name="Achieved" />
+              <Line type="monotone" dataKey="planned" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" name="Planned" />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 4. Task Distribution by Phase (Pie Chart)
+  const TaskDistributionByPhase = () => {
+    const data = mockWaterfallData.phases.map(phase => ({
+      name: phase.name,
+      value: phase.totalTasks
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Task Distribution by Phase</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 5. Phase Timeline Gantt Chart (simplified as horizontal bars)
+  const PhaseTimelineGantt = () => {
+    const data = mockWaterfallData.phases.map((phase, index) => {
+      const start = new Date(phase.startDate || phase.plannedEndDate)
+      const end = new Date(phase.endDate || phase.plannedEndDate)
+      return {
+        name: phase.name,
+        startDay: index * 30,
+        duration: 30,
+        status: phase.status
+      }
+    })
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Phase Timeline Gantt Chart</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="name" type="category" width={120} />
+              <Tooltip />
+              <Bar dataKey="duration" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 6. Milestone Achievement Timeline
+  const MilestoneAchievementTimeline = () => {
+    const data = mockWaterfallData.milestones.slice(0, 8).map((milestone, index) => ({
+      name: `M${index + 1}`,
+      fullName: milestone.name,
+      planned: 100,
+      actual: milestone.status === 'completed' ? 100 : milestone.status === 'in-progress' ? 50 : 0
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Milestone Achievement Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis domain={[0, 100]} />
+              <Tooltip content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-white dark:bg-gray-800 p-3 border rounded shadow-lg">
+                      <p className="font-semibold text-sm">{payload[0].payload.fullName}</p>
+                      <p className="text-sm">Status: {payload[0].payload.actual}%</p>
+                    </div>
+                  )
+                }
+                return null
+              }} />
+              <Legend />
+              <Bar dataKey="planned" fill="#E5E7EB" name="Planned" />
+              <Bar dataKey="actual" fill="#10B981" name="Actual" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 7. Deliverables Status Distribution (Donut Chart)
+  const DeliverablesStatusDistribution = () => {
+    const data = [
+      { name: 'Completed', value: mockWaterfallData.deliverables.completed },
+      { name: 'In Progress', value: mockWaterfallData.deliverables.inProgress },
+      { name: 'Not Started', value: mockWaterfallData.deliverables.notStarted }
+    ]
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Deliverables Status Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                fill="#8884d8"
+                paddingAngle={5}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 8. Delivery Timeline vs Planned (Bar Chart)
+  const DeliveryTimelineVsPlanned = () => {
+    const data = mockWaterfallData.deliverables.byPhase.map(phase => ({
+      phase: phase.phase.split(' ').slice(0, 2).join(' '),
+      planned: phase.total,
+      delivered: phase.completed
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Delivery Timeline vs Planned</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="phase" angle={-45} textAnchor="end" height={80} />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="planned" fill="#3B82F6" name="Planned" />
+              <Bar dataKey="delivered" fill="#10B981" name="Delivered" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 9. Task Completion by Team Member (Bar Chart)
+  const TaskCompletionByTeamMember = () => {
+    const data = mockWaterfallData.teamPerformance.map(member => ({
+      name: member.name.split(' ')[0],
+      completed: member.tasksCompleted,
+      inProgress: member.tasksInProgress
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Task Completion by Team Member</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="completed" fill="#10B981" name="Completed" />
+              <Bar dataKey="inProgress" fill="#F59E0B" name="In Progress" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // 10. Hours Distribution (Pie Chart)
+  const HoursDistribution = () => {
+    const data = mockWaterfallData.teamPerformance.map(member => ({
+      name: member.name.split(' ')[0],
+      hours: member.hoursLogged
+    }))
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Hours Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="hours"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -636,10 +989,10 @@ export function ReportsView({ project, user }: ReportsViewProps) {
 
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartPlaceholder title="Phase Progress Timeline" type="Gantt" />
-            <ChartPlaceholder title="Deliverables by Phase" type="Stacked Bar" />
-            <ChartPlaceholder title="Milestone Achievement Trend" type="Line" />
-            <ChartPlaceholder title="Task Distribution by Phase" type="Pie" />
+            <PhaseProgressTimeline />
+            <DeliverablesByPhase />
+            <MilestoneAchievementTrend />
+            <TaskDistributionByPhase />
           </div>
         </TabsContent>
 
@@ -716,7 +1069,7 @@ export function ReportsView({ project, user }: ReportsViewProps) {
             </CardContent>
           </Card>
 
-          <ChartPlaceholder title="Phase Timeline Gantt Chart" type="Gantt" />
+          <PhaseTimelineGantt />
         </TabsContent>
 
         {/* Milestones Tab */}
@@ -785,7 +1138,7 @@ export function ReportsView({ project, user }: ReportsViewProps) {
             </CardContent>
           </Card>
 
-          <ChartPlaceholder title="Milestone Achievement Timeline" type="Timeline" />
+          <MilestoneAchievementTimeline />
         </TabsContent>
 
         {/* Deliverables Tab */}
@@ -837,8 +1190,8 @@ export function ReportsView({ project, user }: ReportsViewProps) {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartPlaceholder title="Deliverables Status Distribution" type="Donut" />
-            <ChartPlaceholder title="Delivery Timeline vs Planned" type="Bar" />
+            <DeliverablesStatusDistribution />
+            <DeliveryTimelineVsPlanned />
           </div>
         </TabsContent>
 
@@ -913,8 +1266,8 @@ export function ReportsView({ project, user }: ReportsViewProps) {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartPlaceholder title="Task Completion by Team Member" type="Bar" />
-            <ChartPlaceholder title="Hours Distribution" type="Pie" />
+            <TaskCompletionByTeamMember />
+            <HoursDistribution />
           </div>
         </TabsContent>
       </Tabs>

@@ -19,59 +19,6 @@ interface GlobalSearchProps {
   user?: any
 }
 
-const mockSearchResults = {
-  tasks: [
-    {
-      id: 'TASK-001',
-      title: 'Design system implementation',
-      project: 'Web App Redesign',
-      assignee: 'John Doe',
-      status: 'In Progress',
-      dueDate: '2025-09-15'
-    },
-    {
-      id: 'TASK-002',
-      title: 'API endpoint optimization',
-      project: 'Backend Service',
-      assignee: 'Jane Smith',
-      status: 'Todo',
-      dueDate: '2025-09-18'
-    }
-  ],
-  projects: [
-    {
-      id: 'PROJ-001',
-      name: 'Web App Redesign',
-      status: 'In Progress',
-      progress: 75,
-      customer: 'Internal'
-    },
-    {
-      id: 'PROJ-002',
-      name: 'Mobile App Development',
-      status: 'Planning',
-      progress: 25,
-      customer: 'Acme Corp'
-    }
-  ],
-  users: [
-    {
-      id: 'USER-001',
-      name: 'John Doe',
-      role: 'Project Manager',
-      email: 'john.doe@company.com',
-      status: 'Active'
-    },
-    {
-      id: 'USER-002',
-      name: 'Jane Smith',
-      role: 'Developer',
-      email: 'jane.smith@company.com',
-      status: 'Active'
-    }
-  ]
-}
-
 export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredResults, setFilteredResults] = useState({
@@ -86,28 +33,8 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
       return
     }
 
-    const term = searchTerm.toLowerCase()
-    
-    const tasks = mockSearchResults.tasks.filter(task =>
-      task.title.toLowerCase().includes(term) ||
-      task.project.toLowerCase().includes(term) ||
-      task.assignee.toLowerCase().includes(term) ||
-      task.id.toLowerCase().includes(term)
-    )
-
-    const projects = mockSearchResults.projects.filter(project =>
-      project.name.toLowerCase().includes(term) ||
-      project.customer.toLowerCase().includes(term) ||
-      project.id.toLowerCase().includes(term)
-    )
-
-    const users = mockSearchResults.users.filter(user =>
-      user.name.toLowerCase().includes(term) ||
-      user.email.toLowerCase().includes(term) ||
-      user.role.toLowerCase().includes(term)
-    )
-
-    setFilteredResults({ tasks, projects, users })
+    // TODO: Implement actual API search
+    setFilteredResults({ tasks: [], projects: [], users: [] })
   }, [searchTerm])
 
   const getStatusColor = (status: string) => {

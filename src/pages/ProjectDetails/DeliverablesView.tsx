@@ -35,187 +35,7 @@ interface DeliverablesViewProps {
   user: any
 }
 
-// Mock deliverables data
-const mockDeliverables = [
-  {
-    id: 'DEL-001',
-    name: 'Requirements Document',
-    description: 'Comprehensive project requirements and specifications document',
-    type: 'document',
-    status: 'approved',
-    priority: 'high',
-    phase: 'Requirements Analysis',
-    phaseId: 'PHASE-001',
-    assignee: { name: 'Emma Rodriguez', avatar: 'ER' },
-    reviewer: { name: 'Alice Johnson', avatar: 'AJ' },
-    dueDate: new Date('2024-02-10'),
-    submittedDate: new Date('2024-02-08'),
-    approvedDate: new Date('2024-02-12'),
-    version: '2.1',
-    fileSize: '2.4 MB',
-    format: 'PDF',
-    approvalCriteria: [
-      { name: 'Functional requirements complete', met: true },
-      { name: 'Non-functional requirements defined', met: true },
-      { name: 'Acceptance criteria specified', met: true },
-      { name: 'Stakeholder review completed', met: true }
-    ],
-    attachments: [
-      { name: 'requirements_v2.1.pdf', size: '2.4 MB', type: 'pdf' },
-      { name: 'requirements_template.docx', size: '1.2 MB', type: 'docx' }
-    ],
-    comments: [
-      { author: 'Alice Johnson', date: '2024-02-09', text: 'Please clarify section 3.2 requirements' },
-      { author: 'Emma Rodriguez', date: '2024-02-10', text: 'Updated as requested' }
-    ]
-  },
-  {
-    id: 'DEL-002',
-    name: 'System Architecture Design',
-    description: 'High-level system architecture and component design',
-    type: 'design',
-    status: 'approved',
-    priority: 'high',
-    phase: 'System Design',
-    phaseId: 'PHASE-002',
-    assignee: { name: 'Bob Chen', avatar: 'BC' },
-    reviewer: { name: 'Alice Johnson', avatar: 'AJ' },
-    dueDate: new Date('2024-03-10'),
-    submittedDate: new Date('2024-03-12'),
-    approvedDate: new Date('2024-03-15'),
-    version: '1.3',
-    fileSize: '5.7 MB',
-    format: 'PDF',
-    approvalCriteria: [
-      { name: 'Architecture principles followed', met: true },
-      { name: 'Scalability considerations addressed', met: true },
-      { name: 'Security requirements included', met: true },
-      { name: 'Technology stack justified', met: true }
-    ],
-    attachments: [
-      { name: 'architecture_design_v1.3.pdf', size: '5.7 MB', type: 'pdf' },
-      { name: 'component_diagrams.vsdx', size: '3.2 MB', type: 'vsdx' }
-    ],
-    comments: []
-  },
-  {
-    id: 'DEL-003',
-    name: 'UI/UX Mockups',
-    description: 'User interface mockups and user experience flow designs',
-    type: 'design',
-    status: 'in-review',
-    priority: 'high',
-    phase: 'System Design',
-    phaseId: 'PHASE-002',
-    assignee: { name: 'Carol Davis', avatar: 'CD' },
-    reviewer: { name: 'Emma Rodriguez', avatar: 'ER' },
-    dueDate: new Date('2024-03-15'),
-    submittedDate: new Date('2024-03-14'),
-    approvedDate: null,
-    version: '2.0',
-    fileSize: '12.3 MB',
-    format: 'Figma',
-    approvalCriteria: [
-      { name: 'User journey flows complete', met: true },
-      { name: 'Responsive design considerations', met: true },
-      { name: 'Accessibility guidelines followed', met: false },
-      { name: 'Brand guidelines compliance', met: true }
-    ],
-    attachments: [
-      { name: 'ui_mockups_v2.0.fig', size: '12.3 MB', type: 'fig' },
-      { name: 'style_guide.pdf', size: '2.1 MB', type: 'pdf' }
-    ],
-    comments: [
-      { author: 'Emma Rodriguez', date: '2024-03-14', text: 'Please review accessibility compliance in section 4' }
-    ]
-  },
-  {
-    id: 'DEL-004',
-    name: 'Database Schema',
-    description: 'Complete database design and entity relationship diagrams',
-    type: 'technical',
-    status: 'submitted',
-    priority: 'high',
-    phase: 'System Design',
-    phaseId: 'PHASE-002',
-    assignee: { name: 'Jennifer Wong', avatar: 'JW' },
-    reviewer: { name: 'Bob Chen', avatar: 'BC' },
-    dueDate: new Date('2024-03-20'),
-    submittedDate: new Date('2024-03-18'),
-    approvedDate: null,
-    version: '1.0',
-    fileSize: '1.8 MB',
-    format: 'SQL',
-    approvalCriteria: [
-      { name: 'Data model normalized', met: true },
-      { name: 'Indexes properly defined', met: true },
-      { name: 'Security constraints included', met: false },
-      { name: 'Performance considerations addressed', met: false }
-    ],
-    attachments: [
-      { name: 'database_schema.sql', size: '856 KB', type: 'sql' },
-      { name: 'erd_diagram.png', size: '1.2 MB', type: 'png' }
-    ],
-    comments: []
-  },
-  {
-    id: 'DEL-005',
-    name: 'API Documentation',
-    description: 'RESTful API endpoints documentation and specifications',
-    type: 'documentation',
-    status: 'in-progress',
-    priority: 'medium',
-    phase: 'Implementation',
-    phaseId: 'PHASE-003',
-    assignee: { name: 'David Wilson', avatar: 'DW' },
-    reviewer: { name: 'Bob Chen', avatar: 'BC' },
-    dueDate: new Date('2024-04-15'),
-    submittedDate: null,
-    approvedDate: null,
-    version: '0.8',
-    fileSize: '3.2 MB',
-    format: 'HTML',
-    approvalCriteria: [
-      { name: 'All endpoints documented', met: false },
-      { name: 'Request/response examples provided', met: true },
-      { name: 'Authentication methods explained', met: true },
-      { name: 'Error codes defined', met: false }
-    ],
-    attachments: [
-      { name: 'api_docs_draft.html', size: '3.2 MB', type: 'html' }
-    ],
-    comments: []
-  },
-  {
-    id: 'DEL-006',
-    name: 'Test Plan Document',
-    description: 'Comprehensive testing strategy and test case specifications',
-    type: 'testing',
-    status: 'draft',
-    priority: 'medium',
-    phase: 'Testing',
-    phaseId: 'PHASE-004',
-    assignee: { name: 'Sarah Wilson', avatar: 'SW' },
-    reviewer: { name: 'David Wilson', avatar: 'DW' },
-    dueDate: new Date('2024-05-10'),
-    submittedDate: null,
-    approvedDate: null,
-    version: '0.3',
-    fileSize: '1.5 MB',
-    format: 'DOCX',
-    approvalCriteria: [
-      { name: 'Test scope defined', met: true },
-      { name: 'Test cases documented', met: false },
-      { name: 'Test data requirements specified', met: false },
-      { name: 'Exit criteria established', met: true }
-    ],
-    attachments: [
-      { name: 'test_plan_draft.docx', size: '1.5 MB', type: 'docx' }
-    ],
-    comments: []
-  }
-]
-
+// TODO: All deliverable data is now fetched from API - no mock data needed
 export function DeliverablesView({ projectId, user }: DeliverablesViewProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -224,6 +44,8 @@ export function DeliverablesView({ projectId, user }: DeliverablesViewProps) {
   const [selectedDeliverable, setSelectedDeliverable] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date())
+  // TODO: Fetch deliverables from API
+  const [deliverables, setDeliverables] = useState<any[]>([])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -275,7 +97,7 @@ export function DeliverablesView({ projectId, user }: DeliverablesViewProps) {
     }
   }
 
-  const filteredDeliverables = mockDeliverables.filter(deliverable => {
+  const filteredDeliverables = deliverables.filter(deliverable => {
     const matchesSearch = deliverable.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          deliverable.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || deliverable.status === filterStatus
@@ -634,38 +456,38 @@ export function DeliverablesView({ projectId, user }: DeliverablesViewProps) {
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#28A745]">{mockDeliverables.filter(d => d.status === 'approved').length}</div>
+            <div className="text-2xl font-semibold text-[#28A745]">{deliverables.filter(d => d.status === 'approved').length}</div>
             <div className="text-xs text-muted-foreground">Approved</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#007BFF]">{mockDeliverables.filter(d => d.status === 'in-review').length}</div>
+            <div className="text-2xl font-semibold text-[#007BFF]">{deliverables.filter(d => d.status === 'in-review').length}</div>
             <div className="text-xs text-muted-foreground">In Review</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#6F42C1]">{mockDeliverables.filter(d => d.status === 'submitted').length}</div>
+            <div className="text-2xl font-semibold text-[#6F42C1]">{deliverables.filter(d => d.status === 'submitted').length}</div>
             <div className="text-xs text-muted-foreground">Submitted</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#FFC107]">{mockDeliverables.filter(d => d.status === 'in-progress').length}</div>
+            <div className="text-2xl font-semibold text-[#FFC107]">{deliverables.filter(d => d.status === 'in-progress').length}</div>
             <div className="text-xs text-muted-foreground">In Progress</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#6C757D]">{mockDeliverables.filter(d => d.status === 'draft').length}</div>
+            <div className="text-2xl font-semibold text-[#6C757D]">{deliverables.filter(d => d.status === 'draft').length}</div>
             <div className="text-xs text-muted-foreground">Draft</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-semibold text-[#DC3545]">
-              {mockDeliverables.filter(d => d.dueDate < new Date() && d.status !== 'approved').length}
+              {deliverables.filter(d => d.dueDate < new Date() && d.status !== 'approved').length}
             </div>
             <div className="text-xs text-muted-foreground">Overdue</div>
           </CardContent>

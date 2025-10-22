@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner@2.0.3'
 import logoImage from 'figma:asset/6748e9361ee0546a59b88c4fb2d8d612f9260020.png'
 import { authApiService } from '../../services/authApi'
+import { APP_VERSION } from '../../config/api'
 
 interface AuthProps {
   onLogin: (user: any) => void
@@ -371,7 +372,22 @@ export function Auth({ onLogin }: AuthProps) {
             </div>
           </div>
 
-
+          {/* Version Information */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="text-center space-y-1">
+              <p className="text-xs text-gray-500">
+                Planora Project Management System
+              </p>
+              <p className="text-xs text-gray-400">
+                Version {APP_VERSION.version} • Build: {APP_VERSION.buildDate}
+              </p>
+              {APP_VERSION.environment !== 'production' && (
+                <p className="text-xs text-orange-500 font-medium">
+                  Environment: {APP_VERSION.environment.toUpperCase()}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

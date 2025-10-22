@@ -257,10 +257,8 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
         }
       }
 
-      console.log('Sending update payload:', updateData)
-
       const updatedProject = await projectApiService.updateProject(project.id, updateData)
-      toast.success('Project settings updated successfully')
+      
 
       // Notify parent component about the update
       if (updatedProject && onProjectUpdate) {
@@ -269,7 +267,7 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
 
       // Update local state with the response from API
       if (updatedProject) {
-        console.log('Project updated successfully:', updatedProject)
+        toast.success('Project settings updated successfully')
       }
     } catch (error: any) {
       console.error('Failed to update project:', error)

@@ -85,15 +85,27 @@ export function LogHoursDialog({
     setFormData({ ...formData, end_time: time, hours })
   }
 
-  // Calculate initial hours when component mounts or dialog opens
+  // Update form data when dialog opens or IDs change
   useEffect(() => {
-    if (open && formData.start_time && formData.end_time) {
-      const initialHours = calculateHours(formData.start_time, formData.end_time)
-      if (formData.hours !== initialHours) {
-        setFormData(prev => ({ ...prev, hours: initialHours }))
-      }
+    if (open) {
+      const initialHours = calculateHours('09:00', '17:00')
+      setFormData({
+        project_id: projectId,
+        task_id: taskId,
+        story_id: storyId,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        start_time: '09:00',
+        end_time: '17:00',
+        hours: initialHours,
+        description: '',
+        notes: '',
+        activity_type: 'development',
+        billable: true,
+        status: 'draft'
+      })
+      setAttachments([])
     }
-  }, [open])
+  }, [open, projectId, taskId, storyId, taskName])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -119,27 +131,29 @@ export function LogHoursDialog({
 
     setLoading(true)
     try {
-      // Create entry as draft
+
+      // Create entry as draft (API will handle auth and token refresh)
       const entry = await dispatch(createTimeEntry({
         ...formData as CreateTimeEntryRequest,
         status: 'draft'
       })).unwrap()
 
+
       // Upload attachments if any
       if (attachments.length > 0) {
         setUploadingFile(true)
-        for (const file of attachments) {
+       for (const file of attachments) {
           await timesheetApiService.uploadAttachment(entry.id, file)
         }
         setUploadingFile(false)
       }
-
       toast.success('Time entry saved as draft')
       resetForm()
       onOpenChange(false)
       onSuccess?.()
     } catch (error) {
-      toast.error(`Failed to save: ${error}`)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      toast.error(`Failed to save: ${errorMessage}`)
     } finally {
       setLoading(false)
       setUploadingFile(false)
@@ -159,7 +173,7 @@ export function LogHoursDialog({
 
     setSubmitting(true)
     try {
-      // Create entry as submitted
+      // Create entry as submitted (API will handle auth and token refresh)
       const entry = await dispatch(createTimeEntry({
         ...formData as CreateTimeEntryRequest,
         status: 'submitted'
@@ -172,14 +186,16 @@ export function LogHoursDialog({
           await timesheetApiService.uploadAttachment(entry.id, file)
         }
         setUploadingFile(false)
-      }
+    }
 
       toast.success('Time entry submitted for approval')
       resetForm()
       onOpenChange(false)
       onSuccess?.()
     } catch (error) {
-      toast.error(`Failed to submit: ${error}`)
+      console.error('❌ [LogHours] Submit error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      toast.error(`Failed to submit: ${errorMessage}`)
     } finally {
       setSubmitting(false)
       setUploadingFile(false)

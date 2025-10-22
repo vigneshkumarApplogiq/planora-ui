@@ -185,7 +185,6 @@ const TaskCard: React.FC<{
         className="mb-3 hover:shadow-md transition-shadow bg-white cursor-pointer border border-gray-200 rounded-lg"
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation()
-          console.log('Card clicked:', task.task_id || task.id)
           onEdit(task)
         }}
       >
@@ -447,8 +446,6 @@ export function KanbanBoardView({ project, user, boardType = 'kanban', masterDat
       try {
         setLoading(true)
         const response = await storiesApiService.getStories(projectId, 1, 100)
-        console.log('📋 [Kanban] Loaded tasks:', response.items)
-        console.log('📋 [Kanban] Sample task data:', response.items[0])
         setTasks(response.items)
       } catch (error) {
         console.error('Failed to load tasks:', error)

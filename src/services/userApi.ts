@@ -79,10 +79,11 @@ export class UserApiService {
 
     // Get the access token for authorization
     const token = authApiService.getAccessToken();
+    const tokenType = authApiService.getTokenType();
 
     const defaultHeaders = {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` })
+      ...(token && { Authorization: `${tokenType} ${token}` })
     };
 
     const response = await fetch(url, {
@@ -98,14 +99,29 @@ export class UserApiService {
       if (response.status === 401 || response.status === 403) {
         // Token might be expired, try to refresh
         try {
+          // First check if we have a refresh token
+          const refreshToken = authApiService.getRefreshToken();
+          if (!refreshToken) {
+            console.warn('⚠️ [UserAPI] No refresh token available, skipping refresh attempt');
+            throw new Error('No refresh token available');
+          }
+
           await authApiService.refreshToken();
+
           // Retry the request with new token
           const newToken = authApiService.getAccessToken();
+          const newTokenType = authApiService.getTokenType();
+
+          if (!newToken) {
+            console.error('❌ [UserAPI] Token refresh succeeded but no new token found');
+            throw new Error('Token refresh failed');
+          }
+
           const retryResponse = await fetch(url, {
             ...options,
             headers: {
               ...defaultHeaders,
-              ...(newToken && { Authorization: `Bearer ${newToken}` }),
+              ...(newToken && { Authorization: `${newTokenType} ${newToken}` }),
               ...options?.headers,
             },
           });
@@ -113,17 +129,32 @@ export class UserApiService {
           if (retryResponse.ok) {
             return retryResponse.json();
           }
+
+          // Retry also failed
+          console.error('❌ [UserAPI] Retry request failed after token refresh');
+          throw new Error('Request failed after token refresh');
         } catch (refreshError) {
-          // Refresh failed, user needs to login again
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          // Could dispatch a logout action here or redirect to login
-          throw new Error('Authentication failed. Please login again.');
+          // Only clear tokens if refresh explicitly failed (not just network error)
+          console.error('❌ [UserAPI] Token refresh error:', refreshError);
+
+          // Check if this is a genuine auth failure vs network/other error
+          const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
+          if (errorMessage.includes('refresh') || errorMessage.includes('token') || errorMessage.includes('Authentication')) {
+            console.warn('⚠️ [UserAPI] Clearing tokens due to authentication failure');
+            authApiService.clearTokens();
+            authApiService.clearUserProfile();
+            throw new Error('Authentication failed. Please login again.');
+          }
+
+          // For other errors, don't clear tokens
+          console.warn('⚠️ [UserAPI] Request failed but keeping tokens (might be network/server error)');
+          throw new Error(errorMessage || 'Request failed');
         }
       }
 
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
+
+      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
@@ -153,14 +184,28 @@ export class UserApiService {
       if (response.status === 401 || response.status === 403) {
         // Token might be expired, try to refresh
         try {
+          // First check if we have a refresh token
+          const refreshToken = authApiService.getRefreshToken();
+          if (!refreshToken) {
+            console.warn('⚠️ [UserAPI-FormData] No refresh token available, skipping refresh attempt');
+            throw new Error('No refresh token available');
+          }
+
           await authApiService.refreshToken();
+
           // Retry the request with new token
           const newToken = authApiService.getAccessToken();
+          const newTokenType = authApiService.getTokenType();
+
+          if (!newToken) {
+            console.error('❌ [UserAPI-FormData] Token refresh succeeded but no new token found');
+            throw new Error('Token refresh failed');
+          }
           const retryResponse = await fetch(url, {
             ...options,
             headers: {
               ...defaultHeaders,
-              ...(newToken && { Authorization: `Bearer ${newToken}` }),
+              ...(newToken && { Authorization: `${newTokenType} ${newToken}` }),
               ...options?.headers,
             },
           });
@@ -168,22 +213,110 @@ export class UserApiService {
           if (retryResponse.ok) {
             return retryResponse.json();
           }
+
+          // Retry also failed
+          console.error('❌ [UserAPI-FormData] Retry request failed after token refresh');
+          throw new Error('Request failed after token refresh');
         } catch (refreshError) {
-          // Refresh failed, user needs to login again
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
+          // Only clear tokens if refresh explicitly failed (not just network error)
+          console.error('❌ [UserAPI-FormData] Token refresh error:', refreshError);
+
+          // Check if this is a genuine auth failure vs network/other error
+          const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
+          if (errorMessage.includes('refresh') || errorMessage.includes('token') || errorMessage.includes('Authentication')) {
+            console.warn('⚠️ [UserAPI-FormData] Clearing tokens due to authentication failure');
+            authApiService.clearTokens();
+            authApiService.clearUserProfile();
+            throw new Error('Authentication failed. Please login again.');
+          }
+
+          // For other errors, don't clear tokens
+          console.warn('⚠️ [UserAPI-FormData] Request failed but keeping tokens (might be network/server error)');
+          throw new Error(errorMessage || 'Request failed');
         }
       }
 
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
+      console.error('❌ [UserAPI] API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        endpoint: url
+      });
+      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
   }
 
   async getUsers(params: UsersQueryParams = {}): Promise<UsersResponse> {
+    const searchParams = new URLSearchParams();
+
+    if (params.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params.per_page !== undefined) searchParams.append('per_page', params.per_page.toString());
+    if (params.search) searchParams.append('search', params.search);
+    if (params.role_id) searchParams.append('role_id', params.role_id);
+    if (params.is_active !== undefined) searchParams.append('is_active', params.is_active.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/v1/users/${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const response = await this.makeRequest<UsersResponse>(endpoint);
+
+      // Ensure the response has the expected structure
+      if (response && Array.isArray(response.items)) {
+        return response;
+      }
+
+      // If the response doesn't have the expected structure, transform it
+      console.warn('[UserAPI] Response does not have expected structure, transforming...');
+      return {
+        items: Array.isArray(response) ? response as unknown as User[] : [],
+        total: Array.isArray(response) ? (response as unknown as User[]).length : 0,
+        page: params.page || 1,
+        per_page: params.per_page || 10,
+        total_pages: 1,
+        has_next: false,
+        has_prev: false
+      };
+    } catch (error) {
+      // If 403 error, it means user doesn't have permission - this is expected for non-admin users
+      if (error instanceof Error && error.message.includes('403')) {
+        console.warn('⚠️ [UserAPI] User does not have permission to access users list. This is expected for non-admin users.');
+        // Return empty response instead of throwing
+        return {
+          items: [],
+          total: 0,
+          page: params.page || 1,
+          per_page: params.per_page || 10,
+          total_pages: 0,
+          has_next: false,
+          has_prev: false
+        };
+      }
+      throw error;
+    }
+  }
+
+  // Alternative method for getting team members (project-specific, doesn't require admin permissions)
+  async getProjectTeamMembers(projectId: string): Promise<User[]> {
+    try {
+      const response = await this.makeRequest<{ members: User[] }>(`/api/v1/projects/${projectId}/members`);
+      return response.members || [];
+    } catch (error) {
+      console.error('❌ [UserAPI] Failed to fetch project team members:', error);
+      return [];
+    }
+  }
+
+  // Get current user's info (doesn't require admin permissions)
+  async getCurrentUser(): Promise<User> {
+    return this.makeRequest<User>('/api/v1/users/me');
+  }
+
+  // Original getUsers method (keeping for backward compatibility)
+  private async getUsersOriginal(params: UsersQueryParams = {}): Promise<UsersResponse> {
     const searchParams = new URLSearchParams();
 
     if (params.page !== undefined) searchParams.append('page', params.page.toString());

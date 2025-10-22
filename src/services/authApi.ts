@@ -35,17 +35,19 @@ export class AuthApiService {
       'Content-Type': 'application/json',
     };
 
+    const mergedHeaders = {
+      ...defaultHeaders,
+      ...options?.headers,
+    };
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
+      headers: mergedHeaders,
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
+      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
@@ -60,19 +62,23 @@ export class AuthApiService {
 
   async getCurrentUser(): Promise<UserProfile> {
     const token = this.getAccessToken();
+    const tokenType = this.getTokenType();
+
     if (!token) {
       throw new Error('No access token available');
     }
 
     return this.makeRequest<UserProfile>('/api/v1/auth/me', {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `${tokenType} ${token}`,
       },
     });
   }
 
   async refreshToken(): Promise<LoginResponse> {
     const refreshToken = this.getRefreshToken();
+    const tokenType = this.getTokenType();
+
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -80,22 +86,25 @@ export class AuthApiService {
     return this.makeRequest<LoginResponse>('/api/v1/auth/refresh', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${refreshToken}`,
+        Authorization: `${tokenType} ${refreshToken}`,
       },
     });
   }
 
   async logout(): Promise<void> {
     const token = this.getAccessToken();
+    const tokenType = this.getTokenType();
+
     if (token) {
       try {
         await this.makeRequest<void>('/api/v1/auth/logout', {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `${tokenType} ${token}`,
           },
         });
       } catch (error) {
+        console.warn('⚠️ [AuthAPI] Logout API call failed:', error);
         // Logout API call failed - ignore error and continue with cleanup
       }
     }
@@ -104,17 +113,36 @@ export class AuthApiService {
 
   // Token management
   setTokens(tokens: LoginResponse): void {
+    
     localStorage.setItem('access_token', tokens.access_token);
     localStorage.setItem('refresh_token', tokens.refresh_token);
     localStorage.setItem('token_type', tokens.token_type);
+
+    // Verify tokens were saved
+    const savedAccessToken = localStorage.getItem('access_token');
+    const savedRefreshToken = localStorage.getItem('refresh_token');
+    const savedTokenType = localStorage.getItem('token_type');
+
+    if (!savedAccessToken || savedAccessToken !== tokens.access_token) {
+      console.error('❌ [AuthAPI] CRITICAL: Token was NOT saved correctly to localStorage!');
+      console.error('❌ [AuthAPI] This could be a browser storage issue or localStorage is disabled');
+    }
   }
 
   getAccessToken(): string | null {
-    return localStorage.getItem('access_token');
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.warn('⚠️ [AuthAPI] getAccessToken() called but no token found in localStorage');
+    }
+    return token;
   }
 
   getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token');
+    const token = localStorage.getItem('refresh_token');
+    if (!token) {
+      console.warn('⚠️ [AuthAPI] getRefreshToken() called but no token found in localStorage');
+    }
+    return token;
   }
 
   getTokenType(): string | null {

@@ -90,40 +90,70 @@ export interface TimeEntriesQueryParams {
 }
 
 export class TimesheetApiService {
+  // Helper method to verify token before making requests
+  private verifyAuth(): { token: string; tokenType: string } | null {
+    const token = authApiService.getAccessToken();
+    const tokenType = authApiService.getTokenType();
+
+    if (!token) {
+      console.error('❌ [TimesheetAPI] Authentication required - no token found');
+      return null;
+    }
+
+    return { token, tokenType: tokenType || 'bearer' };
+  }
+
   private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = getApiUrl(endpoint);
 
     const token = authApiService.getAccessToken();
     const tokenType = authApiService.getTokenType();
 
+    // Ensure we always have token for authenticated endpoints
     if (!token) {
-      throw new Error('Authentication required. Please login again.');
+      console.error('❌ [TimesheetAPI] No access token found in localStorage!');
     }
 
-    const defaultHeaders = {
+    const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${token}`
+    };
+
+    // Add authorization header if token exists
+    if (token) {
+      defaultHeaders['Authorization'] = `${tokenType} ${token}`;
+    } else {
+      console.warn('⚠️ [TimesheetAPI] Making request WITHOUT authorization token!');
+    }
+
+    const finalHeaders: HeadersInit = {
+      ...defaultHeaders,
+      ...options?.headers,
     };
 
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
+      headers: finalHeaders,
     });
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         try {
+          // First check if we have a refresh token
+          const refreshToken = authApiService.getRefreshToken();
+          if (!refreshToken) {
+            console.warn('⚠️ [TimesheetAPI] No refresh token available, skipping refresh attempt');
+            throw new Error('No refresh token available');
+          }
+
           await authApiService.refreshToken();
+
           const newToken = authApiService.getAccessToken();
           const newTokenType = authApiService.getTokenType();
 
           if (!newToken) {
+            console.error('❌ [TimesheetAPI] Token refresh succeeded but no new token found');
             throw new Error('Failed to get new token after refresh');
           }
-
           const retryResponse = await fetch(url, {
             ...options,
             headers: {
@@ -138,16 +168,35 @@ export class TimesheetApiService {
           }
 
           const retryErrorData = await retryResponse.json().catch(() => ({}));
+          console.error('❌ [TimesheetAPI] Retry request failed after token refresh');
           throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status}`);
         } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
+          // Only clear tokens if refresh explicitly failed (not just network error)
+          console.error('❌ [TimesheetAPI] Token refresh error:', refreshError);
+
+          // Check if this is a genuine auth failure vs network/other error
+          const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
+          if (errorMessage.includes('refresh') || errorMessage.includes('token') || errorMessage.includes('Authentication')) {
+            console.warn('⚠️ [TimesheetAPI] Clearing tokens due to authentication failure');
+            authApiService.clearTokens();
+            authApiService.clearUserProfile();
+            throw new Error('Authentication failed. Please login again.');
+          }
+
+          // For other errors, don't clear tokens
+          console.warn('⚠️ [TimesheetAPI] Request failed but keeping tokens (might be network/server error)');
+          throw new Error(errorMessage || 'Request failed');
         }
       }
 
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
+      console.error('❌ [TimesheetAPI] API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        endpoint: url
+      });
+      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
@@ -191,7 +240,8 @@ export class TimesheetApiService {
   }
 
   async createTimeEntry(data: CreateTimeEntryRequest): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>('/api/v1/timesheet/entries', {
+
+    return this.makeRequest<TimeEntry>('/api/v1/timesheet/my-entries/', {
       method: 'POST',
       body: JSON.stringify(data),
     });

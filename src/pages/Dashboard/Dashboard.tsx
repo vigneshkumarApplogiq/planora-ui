@@ -104,49 +104,136 @@ const DEFAULT_WIDGETS = {
 // TODO: Replace with dashboard data from API based on user role
 const mockData = {
   admin: {
-    stats: [],
-    tasks: []
+    stats: [
+      { label: 'Total Projects', value: '24', icon: FolderOpen, trend: '+12%', trendUp: true },
+      { label: 'Active Users', value: '156', icon: Users, trend: '+8%', trendUp: true },
+      { label: 'Total Tasks', value: '847', icon: CheckCircle, trend: '+15%', trendUp: true },
+      { label: 'System Health', value: '98%', icon: Server, trend: '+2%', trendUp: true }
+    ],
+    tasks: [
+      { id: 1, title: 'Review system logs', project: 'Infrastructure', status: 'pending', priority: 'high', dueDate: '2024-01-15', assignee: 'Admin' },
+      { id: 2, title: 'User access audit', project: 'Security', status: 'in_progress', priority: 'high', dueDate: '2024-01-16', assignee: 'Admin' },
+      { id: 3, title: 'Backup verification', project: 'Infrastructure', status: 'pending', priority: 'medium', dueDate: '2024-01-17', assignee: 'Admin' }
+    ]
   },
   project_manager: {
-    stats: [],
-    tasks: []
+    stats: [
+      { label: 'Active Projects', value: '8', icon: FolderOpen, trend: '+2', trendUp: true },
+      { label: 'Team Members', value: '24', icon: Users, trend: '+3', trendUp: true },
+      { label: 'Open Tasks', value: '142', icon: CheckCircle, trend: '-8', trendUp: false },
+      { label: 'Budget Used', value: '67%', icon: DollarSign, trend: '+5%', trendUp: false }
+    ],
+    tasks: [
+      { id: 1, title: 'Sprint planning meeting', project: 'E-Commerce App', status: 'pending', priority: 'high', dueDate: '2024-01-15', assignee: 'Manager' },
+      { id: 2, title: 'Review budget allocation', project: 'Mobile App', status: 'in_progress', priority: 'medium', dueDate: '2024-01-16', assignee: 'Manager' },
+      { id: 3, title: 'Client presentation prep', project: 'Web Platform', status: 'pending', priority: 'high', dueDate: '2024-01-17', assignee: 'Manager' }
+    ]
   },
   developer: {
-    stats: [],
-    tasks: []
+    stats: [
+      { label: 'My Tasks', value: '12', icon: CheckCircle, trend: '-3', trendUp: true },
+      { label: 'Completed', value: '8', icon: Target, trend: '+5', trendUp: true },
+      { label: 'In Progress', value: '4', icon: Clock, trend: '-2', trendUp: true },
+      { label: 'Code Reviews', value: '3', icon: FileText, trend: '+1', trendUp: true }
+    ],
+    tasks: [
+      { id: 1, title: 'Implement user authentication', project: 'E-Commerce App', status: 'in_progress', priority: 'high', dueDate: '2024-01-15', assignee: 'John Doe' },
+      { id: 2, title: 'Fix payment gateway bug', project: 'E-Commerce App', status: 'pending', priority: 'critical', dueDate: '2024-01-14', assignee: 'John Doe' },
+      { id: 3, title: 'Code review for PR #234', project: 'Mobile App', status: 'pending', priority: 'medium', dueDate: '2024-01-16', assignee: 'Jane Smith' },
+      { id: 4, title: 'Update API documentation', project: 'Web Platform', status: 'in_progress', priority: 'low', dueDate: '2024-01-18', assignee: 'John Doe' }
+    ]
   },
   tester: {
-    stats: [],
-    tasks: []
+    stats: [
+      { label: 'Tests Pending', value: '18', icon: Activity, trend: '+5', trendUp: false },
+      { label: 'Tests Passed', value: '142', icon: CheckCircle, trend: '+12', trendUp: true },
+      { label: 'Bugs Found', value: '23', icon: Bug, trend: '+7', trendUp: false },
+      { label: 'Test Coverage', value: '87%', icon: Target, trend: '+3%', trendUp: true }
+    ],
+    tasks: [
+      { id: 1, title: 'Test checkout flow', project: 'E-Commerce App', status: 'in_progress', priority: 'high', dueDate: '2024-01-15', assignee: 'Tester' },
+      { id: 2, title: 'Regression testing', project: 'Mobile App', status: 'pending', priority: 'high', dueDate: '2024-01-16', assignee: 'Tester' },
+      { id: 3, title: 'API integration tests', project: 'Web Platform', status: 'pending', priority: 'medium', dueDate: '2024-01-17', assignee: 'Tester' }
+    ]
   }
 }
 
 // TODO: Replace with team workload data from API
-const teamWorkload: any[] = []
+const teamWorkload = [
+  { name: 'John Doe', tasks: 12, hours: 32, utilization: 85, avatar: 'JD', role: 'Developer', efficiency: 92, capacity: 15 },
+  { name: 'Jane Smith', tasks: 15, hours: 38, utilization: 95, avatar: 'JS', role: 'Developer', efficiency: 88, capacity: 18 },
+  { name: 'Bob Johnson', tasks: 8, hours: 28, utilization: 70, avatar: 'BJ', role: 'Tester', efficiency: 85, capacity: 12 },
+  { name: 'Alice Williams', tasks: 10, hours: 30, utilization: 75, avatar: 'AW', role: 'Designer', efficiency: 90, capacity: 14 }
+]
 
 // TODO: Replace with system health data from monitoring API
-const systemHealthData: any[] = []
+const systemHealthData = [
+  { metric: 'CPU Usage', value: 45, status: 'healthy', component: 'Web Server', uptime: '99.9%', responseTime: '45ms' },
+  { metric: 'Memory', value: 67, status: 'warning', component: 'Database', uptime: '99.5%', responseTime: '120ms' },
+  { metric: 'Disk Space', value: 78, status: 'warning', component: 'Storage', uptime: '100%', responseTime: '15ms' },
+  { metric: 'Network', value: 23, status: 'healthy', component: 'API Gateway', uptime: '99.8%', responseTime: '32ms' }
+]
 
 // TODO: Replace with recent activities from activity feed API
-const recentActivities: any[] = []
+const recentActivities = [
+  { id: 1, type: 'task', user: 'John Doe', action: 'completed', item: 'User Authentication', project: 'E-Commerce App', time: '2 hours ago', target: 'Login Module' },
+  { id: 2, type: 'bug', user: 'Jane Smith', action: 'reported', item: 'Payment Gateway Issue', project: 'E-Commerce App', time: '3 hours ago', target: 'Checkout Process' },
+  { id: 3, type: 'review', user: 'Bob Johnson', action: 'reviewed', item: 'PR #234', project: 'Mobile App', time: '5 hours ago', target: 'Feature Branch' },
+  { id: 4, type: 'deployment', user: 'Alice Williams', action: 'deployed', item: 'v2.1.0', project: 'Web Platform', time: '1 day ago', target: 'Production' },
+  { id: 5, type: 'meeting', user: 'System', action: 'scheduled', item: 'Sprint Planning', project: 'General', time: '1 day ago', target: 'Conference Room' }
+]
 
 // TODO: Replace with upcoming deadlines from tasks/milestones API
-const upcomingDeadlines: any[] = []
+const upcomingDeadlines = [
+  { task: 'Payment Gateway Integration', project: 'E-Commerce App', dueDate: '2024-01-14', priority: 'critical', assignee: 'John Doe', daysLeft: 1 },
+  { task: 'Mobile App UI Redesign', project: 'Mobile App', dueDate: '2024-01-15', priority: 'high', assignee: 'Jane Smith', daysLeft: 2 },
+  { task: 'API Documentation Update', project: 'Web Platform', dueDate: '2024-01-16', priority: 'medium', assignee: 'Bob Johnson', daysLeft: 3 },
+  { task: 'Security Audit', project: 'Infrastructure', dueDate: '2024-01-17', priority: 'high', assignee: 'Alice Williams', daysLeft: 4 }
+]
 
 // TODO: Replace with productivity data from time tracking API
-const weeklyProductivityData: any[] = []
+const weeklyProductivityData = [
+  { day: 'Mon', hours: 7.5, tasks: 8 },
+  { day: 'Tue', hours: 8.2, tasks: 10 },
+  { day: 'Wed', hours: 6.8, tasks: 7 },
+  { day: 'Thu', hours: 8.5, tasks: 11 },
+  { day: 'Fri', hours: 7.0, tasks: 9 },
+  { day: 'Sat', hours: 2.0, tasks: 3 },
+  { day: 'Sun', hours: 0, tasks: 0 }
+]
 
 // TODO: Replace with budget data from financial API
-const budgetUtilizationData: any[] = []
+const budgetUtilizationData = [
+  { month: 'Jan', budget: 50000, spent: 33500 },
+  { month: 'Feb', budget: 50000, spent: 42000 },
+  { month: 'Mar', budget: 50000, spent: 38500 },
+  { month: 'Apr', budget: 50000, spent: 45000 }
+]
 
 // TODO: Replace with project health data from projects API
-const projectHealthData: any[] = []
+const projectHealthData = [
+  { name: 'E-Commerce App', status: 'On Track', completion: 78, budget: 85000, team: 8, progress: 78, spent: 42500 },
+  { name: 'Mobile App', status: 'At Risk', completion: 45, budget: 92000, team: 6, progress: 45, spent: 55200 },
+  { name: 'Web Platform', status: 'On Track', completion: 92, budget: 67000, team: 10, progress: 92, spent: 33500 },
+  { name: 'Infrastructure', status: 'Delayed', completion: 34, budget: 45000, team: 4, progress: 34, spent: 27000 }
+]
 
 // TODO: Replace with sprint velocity data from sprint API
-const sprintVelocityData: any[] = []
+const sprintVelocityData = [
+  { sprint: 'Sprint 1', planned: 45, completed: 42, velocity: 93 },
+  { sprint: 'Sprint 2', planned: 50, completed: 48, velocity: 96 },
+  { sprint: 'Sprint 3', planned: 48, completed: 45, velocity: 94 },
+  { sprint: 'Sprint 4', planned: 52, completed: 50, velocity: 96 },
+  { sprint: 'Sprint 5', planned: 50, completed: 47, velocity: 94 }
+]
 
 // TODO: Replace with sprint progress data from sprint API
-const sprintProgressData: any[] = []
+const sprintProgressData = [
+  { week: 'Week 1', planned: 20, actual: 18 },
+  { week: 'Week 2', planned: 40, actual: 38 },
+  { week: 'Week 3', planned: 60, actual: 62 },
+  { week: 'Week 4', planned: 80, actual: 75 }
+]
 
 const COLORS = {
   primary: '#28A745',
@@ -255,10 +342,9 @@ export function Dashboard({ user }: DashboardProps) {
                             <span>{stat.trend}</span>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{stat.subtext}</p>
                       </div>
-                      <div className={`p-3 ${stat.color} rounded-full`}>
-                        <Icon className={`w-6 h-6 ${stat.iconColor}`} />
+                      <div className="p-3 bg-muted rounded-full">
+                        <Icon className="w-6 h-6 text-muted-foreground" />
                       </div>
                     </div>
                   </Card>

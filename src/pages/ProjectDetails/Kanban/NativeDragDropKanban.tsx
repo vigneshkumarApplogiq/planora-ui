@@ -45,7 +45,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
   }
 
   const handleDragEnd = (e: React.DragEvent) => {
-    console.log(`🏁 Drag ended for task: ${task.title}`)
     // Reset any visual states if needed
   }
 
@@ -147,7 +146,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
         className="mb-3 hover:shadow-lg transition-all duration-200 bg-white cursor-pointer border border-gray-200 rounded-xl hover:border-blue-300 group"
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation()
-          console.log('Card clicked:', task.task_id || task.id)
           onEdit(task)
         }}
       >
@@ -278,7 +276,6 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit })
     e.dataTransfer.dropEffect = 'move'
     if (!isDragOver) {
       setIsDragOver(true)
-      console.log(`👆 Hovering over ${title}`)
     }
   }
 
@@ -432,7 +429,6 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
   }
 
   const handleTaskEdit = (task: Story) => {
-    console.log('Opening modal for task:', task.task_id || task.id)
     setSelectedTask(task)
     setShowTaskDialog(true)
   }
@@ -474,8 +470,6 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
   }
 
   const handleTaskMove = async (taskId: string, newStatus: string) => {
-    console.log('🚀 Moving task:', taskId, 'to status:', newStatus)
-
     try {
       // Check if the target status is 'done' to automatically set progress to 100%
       const isDoneStatus = newStatus === 'done' || newStatus.toLowerCase().includes('done') || newStatus.toLowerCase().includes('completed')
@@ -495,9 +489,7 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
 
       // Update via API
       await storiesApiService.updateStory(taskId, updateData)
-
       toast.success(isDoneStatus ? 'Task completed successfully' : 'Task moved successfully')
-      console.log('✅ Task moved successfully')
     } catch (error) {
       console.error('❌ Failed to move task:', error)
       toast.error('Failed to move task')

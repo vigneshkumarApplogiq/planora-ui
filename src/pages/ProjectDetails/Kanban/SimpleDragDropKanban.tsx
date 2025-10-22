@@ -141,7 +141,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
         className="mb-3 hover:shadow-lg transition-all duration-200 bg-white cursor-pointer border border-gray-200 rounded-xl hover:border-blue-300 group"
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation()
-          console.log('Card clicked:', task.task_id || task.id)
           onEdit(task)
         }}
       >

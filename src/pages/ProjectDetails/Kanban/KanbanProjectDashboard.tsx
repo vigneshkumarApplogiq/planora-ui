@@ -94,10 +94,7 @@ export function KanbanProjectDashboard({ project, user, masterData: propMasterDa
               })))
             }
 
-            console.log('✅ [Kanban Dashboard] Dashboard data loaded:', dashboard)
           } catch (apiError) {
-            console.warn('⚠️ [Kanban Dashboard] Could not load dashboard API data:', apiError)
-
             // Fallback to old logic if new API fails
             const tasksResponse = await storiesApiService.getStories(project.id, 1, 100)
             setTasks(tasksResponse.items || [])
@@ -120,14 +117,12 @@ export function KanbanProjectDashboard({ project, user, masterData: propMasterDa
                   }
                 })
               setColumns(columnsData)
-              console.log('✅ [Kanban Dashboard] Columns created (fallback):', columnsData)
             }
 
             // Load Kanban metrics (old API)
             try {
               const metrics = await kanbanReportsApiService.getComprehensiveReport(project.id)
               setKanbanMetrics(metrics)
-              console.log('✅ [Kanban Dashboard] Metrics loaded (fallback):', metrics)
             } catch (metricsError) {
               console.warn('⚠️ [Kanban Dashboard] Could not load metrics:', metricsError)
             }

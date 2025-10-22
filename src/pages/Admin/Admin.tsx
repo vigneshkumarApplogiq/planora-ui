@@ -43,6 +43,190 @@ interface AdminProps {
   user?: any
 }
 
+// Mock data for roles
+const mockRoles = [
+  {
+    id: 1,
+    name: 'Super Admin',
+    description: 'Full system access and control',
+    userCount: 2,
+    permissions: ['manage_users', 'manage_roles', 'manage_settings', 'view_audit_logs', 'manage_projects']
+  },
+  {
+    id: 2,
+    name: 'Admin',
+    description: 'Administrative access with some restrictions',
+    userCount: 5,
+    permissions: ['manage_users', 'view_audit_logs', 'manage_projects']
+  },
+  {
+    id: 3,
+    name: 'Project Manager',
+    description: 'Manage projects and teams',
+    userCount: 12,
+    permissions: ['manage_projects', 'manage_teams', 'view_reports']
+  },
+  {
+    id: 4,
+    name: 'Developer',
+    description: 'Development access to assigned projects',
+    userCount: 45,
+    permissions: ['view_projects', 'manage_tasks', 'update_status']
+  }
+]
+
+// Mock data for system settings
+const systemSettings = [
+  {
+    category: 'General',
+    settings: [
+      { key: 'site_name', label: 'Site Name', value: 'Planora', type: 'text' },
+      { key: 'timezone', label: 'Default Timezone', value: 'UTC', type: 'select' },
+      { key: 'maintenance_mode', label: 'Maintenance Mode', value: false, type: 'boolean' }
+    ]
+  },
+  {
+    category: 'Security',
+    settings: [
+      { key: 'require_2fa', label: 'Require Two-Factor Authentication', value: false, type: 'boolean' },
+      { key: 'session_timeout', label: 'Session Timeout (minutes)', value: '30', type: 'number' },
+      { key: 'password_min_length', label: 'Minimum Password Length', value: '8', type: 'number' }
+    ]
+  },
+  {
+    category: 'Email',
+    settings: [
+      { key: 'smtp_host', label: 'SMTP Host', value: 'smtp.example.com', type: 'text' },
+      { key: 'smtp_port', label: 'SMTP Port', value: '587', type: 'number' },
+      { key: 'email_notifications', label: 'Enable Email Notifications', value: true, type: 'boolean' }
+    ]
+  }
+]
+
+// Mock data for audit logs
+const mockAuditLogs = [
+  {
+    id: 1,
+    timestamp: '2025-01-14 10:30:25',
+    user: 'John Doe (john@example.com)',
+    action: 'User Login',
+    category: 'Authentication',
+    severity: 'info',
+    details: 'Successful login from Chrome browser',
+    ipAddress: '192.168.1.100'
+  },
+  {
+    id: 2,
+    timestamp: '2025-01-14 10:15:10',
+    user: 'Admin User (admin@example.com)',
+    action: 'Role Updated',
+    category: 'User Management',
+    severity: 'warning',
+    details: 'Updated permissions for Developer role',
+    ipAddress: '192.168.1.50'
+  },
+  {
+    id: 3,
+    timestamp: '2025-01-14 09:45:30',
+    user: 'System',
+    action: 'Configuration Change',
+    category: 'System Configuration',
+    severity: 'info',
+    details: 'Updated SMTP settings',
+    ipAddress: '127.0.0.1'
+  },
+  {
+    id: 4,
+    timestamp: '2025-01-14 09:30:15',
+    user: 'Jane Smith (jane@example.com)',
+    action: 'Failed Login',
+    category: 'Authentication',
+    severity: 'critical',
+    details: 'Multiple failed login attempts detected',
+    ipAddress: '203.0.113.42'
+  },
+  {
+    id: 5,
+    timestamp: '2025-01-14 09:00:00',
+    user: 'Admin User (admin@example.com)',
+    action: 'User Created',
+    category: 'User Management',
+    severity: 'info',
+    details: 'Created new user account for developer@example.com',
+    ipAddress: '192.168.1.50'
+  },
+  {
+    id: 6,
+    timestamp: '2025-01-13 16:45:22',
+    user: 'System',
+    action: 'Backup Completed',
+    category: 'System Maintenance',
+    severity: 'info',
+    details: 'Daily database backup completed successfully',
+    ipAddress: '127.0.0.1'
+  },
+  {
+    id: 7,
+    timestamp: '2025-01-13 15:20:10',
+    user: 'Admin User (admin@example.com)',
+    action: 'Permission Modified',
+    category: 'Permission Management',
+    severity: 'warning',
+    details: 'Modified project access permissions for team lead',
+    ipAddress: '192.168.1.50'
+  },
+  {
+    id: 8,
+    timestamp: '2025-01-13 14:30:45',
+    user: 'Project Manager (pm@example.com)',
+    action: 'Project Created',
+    category: 'Project Management',
+    severity: 'info',
+    details: 'Created new project: E-Commerce Platform',
+    ipAddress: '192.168.1.75'
+  },
+  {
+    id: 9,
+    timestamp: '2025-01-13 13:15:30',
+    user: 'Security System',
+    action: 'Security Scan',
+    category: 'Security',
+    severity: 'warning',
+    details: 'Detected unusual access pattern from IP 203.0.113.42',
+    ipAddress: '127.0.0.1'
+  },
+  {
+    id: 10,
+    timestamp: '2025-01-13 12:00:00',
+    user: 'System',
+    action: 'Session Cleanup',
+    category: 'System Maintenance',
+    severity: 'info',
+    details: 'Cleaned up expired user sessions',
+    ipAddress: '127.0.0.1'
+  },
+  {
+    id: 11,
+    timestamp: '2025-01-13 11:30:20',
+    user: 'Admin User (admin@example.com)',
+    action: 'Settings Updated',
+    category: 'System Configuration',
+    severity: 'info',
+    details: 'Updated session timeout to 30 minutes',
+    ipAddress: '192.168.1.50'
+  },
+  {
+    id: 12,
+    timestamp: '2025-01-13 10:45:15',
+    user: 'Developer (dev@example.com)',
+    action: 'API Key Generated',
+    category: 'Security',
+    severity: 'info',
+    details: 'Generated new API key for external integration',
+    ipAddress: '192.168.1.120'
+  }
+]
+
 export function Admin({ user }: AdminProps) {
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddRole, setShowAddRole] = useState(false)

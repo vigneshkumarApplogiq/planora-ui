@@ -52,12 +52,18 @@ interface TasksViewProps {
   project?: any
 }
 
-const statusColumns = [
-  { id: 'todo', title: 'To Do', color: 'bg-gray-100 text-gray-800' },
-  { id: 'in-progress', title: 'In Progress', color: 'bg-blue-100 text-blue-800' },
-  { id: 'review', title: 'In Review', color: 'bg-yellow-100 text-yellow-800' },
-  { id: 'done', title: 'Done', color: 'bg-green-100 text-green-800' }
-]
+// Helper function to convert hex color to Tailwind-compatible bg class
+const getColorClass = (hexColor: string | null | undefined, isText: boolean = false): string => {
+  if (!hexColor) return isText ? 'text-gray-800 dark:text-gray-200' : 'bg-gray-100 dark:bg-gray-800'
+
+  // Remove # if present
+  const color = hexColor.replace('#', '')
+
+  if (isText) {
+    return `text-[#${color}]`
+  }
+  return `bg-[#${color}]/10 dark:bg-[#${color}]/20`
+}
 
 export function TasksView({ projectId: propProjectId, user, project }: TasksViewProps) {
   // Get effective project ID from props or session storage
@@ -107,6 +113,14 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
   // Project Master Data
   const [projectMasters, setProjectMasters] = useState<ProjectMastersResponse | null>(null)
   const [availableStatuses, setAvailableStatuses] = useState<ProjectStatusItem[]>([])
+
+  // Dynamic status columns based on project master data
+  const [statusColumns, setStatusColumns] = useState<Array<{ id: string; title: string; color: string }>>([
+    { id: 'todo', title: 'To Do', color: 'bg-gray-100 text-gray-800' },
+    { id: 'in-progress', title: 'In Progress', color: 'bg-blue-100 text-blue-800' },
+    { id: 'review', title: 'In Review', color: 'bg-yellow-100 text-yellow-800' },
+    { id: 'done', title: 'Done', color: 'bg-green-100 text-green-800' }
+  ])
   const [availablePriorities, setAvailablePriorities] = useState<ProjectPriorityItem[]>([])
   const [projectTeamMembers, setProjectTeamMembers] = useState<ProjectMemberDetail[]>([])
   const [projectTeamLead, setProjectTeamLead] = useState<ProjectMemberDetail | null>(null)
@@ -192,9 +206,27 @@ export function TasksView({ projectId: propProjectId, user, project }: TasksView
     try {
       const masters = await projectApiService.getProjectMasters()
       setProjectMasters(masters)
+
       // Only set if data is available - use task_status for task-specific statuses
       if (masters.task_status && masters.task_status.length > 0) {
-        setAvailableStatuses(masters.task_status.filter(s => s.is_active).sort((a, b) => a.sort_order - b.sort_order))
+        const activeStatuses = masters.task_status
+          .filter(s => s.is_active)
+          .sort((a, b) => a.sort_order - b.sort_order)
+
+        setAvailableStatuses(activeStatuses)
+
+        // Update status columns dynamically based on project master data
+        const dynamicColumns = activeStatuses.map((status) => {
+          const statusId = status.name.toLowerCase().replace(/\s+/g, '-')
+          return {
+            id: statusId,
+            title: status.name,
+            color: `${getColorClass(status.color)} ${getColorClass(status.color, true)}`
+          }
+        })
+
+        setStatusColumns(dynamicColumns)
+        console.log('✅ [Kanban Tasks] Dynamic status columns created:', dynamicColumns)
       } else {
         console.warn('⚠️ [Kanban Tasks] No task statuses found in master data')
         setAvailableStatuses([])

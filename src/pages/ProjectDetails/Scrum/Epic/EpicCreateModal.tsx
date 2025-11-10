@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Button } from '../../../../components/ui/button'
-import { Input } from '../../../../components/ui/input'
-import { Textarea } from '../../../../components/ui/textarea'
-import { Label } from '../../../../components/ui/label'
+import { useState, useEffect } from "react";
+import { Button } from "../../../../components/ui/button";
+import { Input } from "../../../../components/ui/input";
+import { Textarea } from "../../../../components/ui/textarea";
+import { Label } from "../../../../components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -10,29 +10,35 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../../../components/ui/dialog'
+} from "../../../../components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../components/ui/select'
-import { Badge } from '../../../../components/ui/badge'
-import { CalendarIcon, X, Plus } from 'lucide-react'
-import { epicApiService, CreateEpicRequest } from '../../../../services/epicApi'
-import { ProjectStatusItem, ProjectPriorityItem } from '../../../../services/projectApi'
-import { toast } from 'sonner'
+} from "../../../../components/ui/select";
+import { Badge } from "../../../../components/ui/badge";
+import { CalendarIcon, X, Plus } from "lucide-react";
+import {
+  epicApiService,
+  CreateEpicRequest,
+} from "../../../../services/epicApi";
+import {
+  ProjectStatusItem,
+  ProjectPriorityItem,
+} from "../../../../services/projectApi";
+import { toast } from "sonner";
 
 interface EpicCreateModalProps {
-  projectId: string
-  isOpen: boolean
-  onClose: () => void
-  onSuccess: () => void
-  user: any
-  teamMembers?: any[]
-  availableStatuses?: ProjectStatusItem[]
-  availablePriorities?: ProjectPriorityItem[]
+  projectId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  user: any;
+  teamMembers?: any[];
+  availableStatuses?: ProjectStatusItem[];
+  availablePriorities?: ProjectPriorityItem[];
 }
 
 export function EpicCreateModal({
@@ -43,119 +49,119 @@ export function EpicCreateModal({
   user,
   teamMembers = [],
   availableStatuses,
-  availablePriorities
+  availablePriorities,
 }: EpicCreateModalProps) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateEpicRequest>({
-    title: '',
-    description: '',
-    priority: 'Medium',
-    status: 'Not Started',
+    title: "",
+    description: "",
+    priority: "Medium",
+    status: "Not Started",
     project_id: projectId,
-    assignee_id: '',
-    due_date: '',
+    assignee_id: "",
+    due_date: "",
     total_story_points: 0,
     completed_story_points: 0,
     total_tasks: 0,
     completed_tasks: 0,
     labels: [],
-    business_value: ''
-  })
+    business_value: "",
+  });
 
-  const [newLabel, setNewLabel] = useState('')
+  const [newLabel, setNewLabel] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       // Reset form when modal opens
       setFormData({
-        title: '',
-        description: '',
-        priority: 'Medium',
-        status: 'Not Started',
+        title: "",
+        description: "",
+        priority: "Medium",
+        status: "Not Started",
         project_id: projectId,
-        assignee_id: '',
-        due_date: '',
+        assignee_id: "",
+        due_date: "",
         total_story_points: 0,
         completed_story_points: 0,
         total_tasks: 0,
         completed_tasks: 0,
         labels: [],
-        business_value: ''
-      })
-      setNewLabel('')
+        business_value: "",
+      });
+      setNewLabel("");
     }
-  }, [isOpen, projectId])
+  }, [isOpen, projectId]);
 
   const handleInputChange = (field: keyof CreateEpicRequest, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   const handleAddLabel = () => {
     if (newLabel.trim() && !formData.labels.includes(newLabel.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        labels: [...prev.labels, newLabel.trim()]
-      }))
-      setNewLabel('')
+        labels: [...prev.labels, newLabel.trim()],
+      }));
+      setNewLabel("");
     }
-  }
+  };
 
   const handleRemoveLabel = (labelToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      labels: prev.labels.filter(label => label !== labelToRemove)
-    }))
-  }
+      labels: prev.labels.filter((label) => label !== labelToRemove),
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!formData.title.trim()) {
-      toast.error('Epic title is required')
-      return
+      toast.error("Epic title is required");
+      return;
     }
 
     if (!formData.description.trim()) {
-      toast.error('Epic description is required')
-      return
+      toast.error("Epic description is required");
+      return;
     }
 
     if (!formData.due_date) {
-      toast.error('Due date is required')
-      return
+      toast.error("Due date is required");
+      return;
     }
 
     try {
-      setLoading(true)
-      await epicApiService.createEpic(formData)
-      toast.success('Epic created successfully')
-      onSuccess()
+      setLoading(true);
+      await epicApiService.createEpic(formData);
+      toast.success("Epic created successfully");
+      onSuccess();
     } catch (error) {
-      console.error('Error creating epic:', error)
-      toast.error('Failed to create epic. Please try again.')
+      console.error("Error creating epic:", error);
+      toast.error("Failed to create epic. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const formatDateForInput = (dateString: string) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toISOString().split('T')[0]
-  }
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dateValue = e.target.value
+    const dateValue = e.target.value;
     if (dateValue) {
-      const isoDate = new Date(dateValue).toISOString()
-      handleInputChange('due_date', isoDate)
+      const isoDate = new Date(dateValue).toISOString();
+      handleInputChange("due_date", isoDate);
     } else {
-      handleInputChange('due_date', '')
+      handleInputChange("due_date", "");
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -163,7 +169,8 @@ export function EpicCreateModal({
         <DialogHeader>
           <DialogTitle>Create New Epic</DialogTitle>
           <DialogDescription>
-            Create a new epic to organize and track related user stories and tasks.
+            Create a new epic to organize and track related user stories and
+            tasks.
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +182,7 @@ export function EpicCreateModal({
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 placeholder="Enter epic title"
                 className="mt-1"
                 required
@@ -188,7 +195,9 @@ export function EpicCreateModal({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 placeholder="Describe the epic and its goals"
                 className="mt-1 min-h-[100px]"
                 required
@@ -200,7 +209,9 @@ export function EpicCreateModal({
               <Label htmlFor="priority">Priority</Label>
               <Select
                 value={formData.priority}
-                onValueChange={(value) => handleInputChange('priority', value)}
+                onValueChange={(value: any) =>
+                  handleInputChange("priority", value)
+                }
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select priority" />
@@ -229,7 +240,9 @@ export function EpicCreateModal({
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => handleInputChange('status', value)}
+                onValueChange={(value: any) =>
+                  handleInputChange("status", value)
+                }
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select status" />
@@ -258,8 +271,13 @@ export function EpicCreateModal({
             <div>
               <Label htmlFor="assignee">Assignee</Label>
               <Select
-                value={formData.assignee_id || 'unassigned'}
-                onValueChange={(value) => handleInputChange('assignee_id', value === 'unassigned' ? '' : value)}
+                value={formData.assignee_id || "unassigned"}
+                onValueChange={(value: any) =>
+                  handleInputChange(
+                    "assignee_id",
+                    value === "unassigned" ? "" : value
+                  )
+                }
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select assignee..." />
@@ -270,7 +288,7 @@ export function EpicCreateModal({
                     <SelectItem key={member.id} value={member.id}>
                       <div className="flex items-center space-x-2">
                         <div className="w-6 h-6 rounded-full bg-[#28A745] flex items-center justify-center text-white text-xs font-medium">
-                          {member.name?.charAt(0) || 'U'}
+                          {member.name?.charAt(0) || "U"}
                         </div>
                         <span>{member.name}</span>
                       </div>
@@ -304,7 +322,12 @@ export function EpicCreateModal({
                 type="number"
                 min="0"
                 value={formData.total_story_points}
-                onChange={(e) => handleInputChange('total_story_points', parseInt(e.target.value) || 0)}
+                onChange={(e) =>
+                  handleInputChange(
+                    "total_story_points",
+                    parseInt(e.target.value) || 0
+                  )
+                }
                 placeholder="0"
                 className="mt-1"
               />
@@ -316,7 +339,9 @@ export function EpicCreateModal({
               <Textarea
                 id="business_value"
                 value={formData.business_value}
-                onChange={(e) => handleInputChange('business_value', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("business_value", e.target.value)
+                }
                 placeholder="Describe the business value this epic provides"
                 className="mt-1"
                 rows={3}
@@ -333,9 +358,9 @@ export function EpicCreateModal({
                     onChange={(e) => setNewLabel(e.target.value)}
                     placeholder="Add a label"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAddLabel()
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddLabel();
                       }
                     }}
                   />
@@ -383,11 +408,11 @@ export function EpicCreateModal({
               disabled={loading}
               className="bg-[#28A745] hover:bg-[#218838]"
             >
-              {loading ? 'Creating...' : 'Create Epic'}
+              {loading ? "Creating..." : "Create Epic"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

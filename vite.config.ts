@@ -57,7 +57,8 @@
     },
     server: {
       port: 3000,
-      open: true,
+      host: true,
+      open: false,
       proxy: {
         '/api': {
           target: 'http://localhost:8000',

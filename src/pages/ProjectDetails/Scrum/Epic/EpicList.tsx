@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react'
-import { Button } from '../../../../components/ui/button'
-import { Card, CardContent } from '../../../../components/ui/card'
-import { Badge } from '../../../../components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar'
-import { Input } from '../../../../components/ui/input'
+import React, { useState, useEffect } from "react";
+import { Button } from "../../../../components/ui/button";
+import { Card, CardContent } from "../../../../components/ui/card";
+import { Badge } from "../../../../components/ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../../components/ui/avatar";
+import { Input } from "../../../../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../components/ui/select'
+} from "../../../../components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../../components/ui/table'
+} from "../../../../components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '../../../../components/ui/alert-dialog'
+} from "../../../../components/ui/alert-dialog";
 import {
   Plus,
   Search,
@@ -46,172 +50,270 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
-} from 'lucide-react'
-import { epicApiService, Epic, EpicsResponse } from '../../../../services/epicApi'
-import { projectApiService, ProjectMastersResponse, ProjectStatusItem, ProjectPriorityItem } from '../../../../services/projectApi'
-import { EpicCreateModal } from './EpicCreateModal'
-import { EpicViewEditModal } from './EpicViewEditModal'
-import { toast } from 'sonner'
+  ChevronsRight,
+} from "lucide-react";
+import {
+  epicApiService,
+  Epic,
+  EpicsResponse,
+} from "../../../../services/epicApi";
+import {
+  projectApiService,
+  ProjectMastersResponse,
+  ProjectStatusItem,
+  ProjectPriorityItem,
+} from "../../../../services/projectApi";
+import { EpicCreateModal } from "./EpicCreateModal";
+import { EpicViewEditModal } from "./EpicViewEditModal";
+import { toast } from "sonner";
 
 interface EpicListProps {
-  projectId: string
-  user: any
-  teamMembers?: any[]
+  projectId: string;
+  user: any;
+  teamMembers?: any[];
 }
 
 export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
-  const [epics, setEpics] = useState<Epic[]>([])
-  const [loading, setLoading] = useState(true)
-  const [totalItems, setTotalItems] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [selectedEpic, setSelectedEpic] = useState<Epic | null>(null)
-  const [showViewEditModal, setShowViewEditModal] = useState(false)
+  const [epics, setEpics] = useState<Epic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedEpic, setSelectedEpic] = useState<Epic | null>(null);
+  const [showViewEditModal, setShowViewEditModal] = useState(false);
 
   // Project Master Data
-  const [projectMasters, setProjectMasters] = useState<ProjectMastersResponse | null>(null)
-  const [availableStatuses, setAvailableStatuses] = useState<ProjectStatusItem[]>([])
-  const [availablePriorities, setAvailablePriorities] = useState<ProjectPriorityItem[]>([])
-  const [loadingMasters, setLoadingMasters] = useState(true)
+  const [projectMasters, setProjectMasters] =
+    useState<ProjectMastersResponse | null>(null);
+  const [availableStatuses, setAvailableStatuses] = useState<
+    ProjectStatusItem[]
+  >([]);
+  const [availablePriorities, setAvailablePriorities] = useState<
+    ProjectPriorityItem[]
+  >([]);
+  const [loadingMasters, setLoadingMasters] = useState(true);
 
   // Filters and Pagination
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [priorityFilter, setPriorityFilter] = useState('all')
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('table')
-  const [itemsPerPage] = useState(10)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"card" | "table">("table");
+  const [itemsPerPage] = useState(10);
 
   const loadProjectMasters = async () => {
     try {
-      setLoadingMasters(true)
-      const masters = await projectApiService.getProjectMasters()
-      setProjectMasters(masters)
+      setLoadingMasters(true);
+      const masters = await projectApiService.getProjectMasters();
+      setProjectMasters(masters);
 
       // Filter active statuses and priorities, sorted by sort_order
       const activeStatuses = masters.statuses
-        .filter(status => status.is_active)
-        .sort((a, b) => a.sort_order - b.sort_order)
+        .filter((status) => status.is_active)
+        .sort((a, b) => a.sort_order - b.sort_order);
 
       const activePriorities = masters.priorities
-        .filter(priority => priority.is_active)
-        .sort((a, b) => a.sort_order - b.sort_order)
+        .filter((priority) => priority.is_active)
+        .sort((a, b) => a.sort_order - b.sort_order);
 
-      setAvailableStatuses(activeStatuses)
-      setAvailablePriorities(activePriorities)
-
+      setAvailableStatuses(activeStatuses);
+      setAvailablePriorities(activePriorities);
     } catch (error) {
-      console.error('Error loading project masters:', error)
+      console.error("Error loading project masters:", error);
       // Fallback to default values
       setAvailableStatuses([
-        { id: '1', name: 'Not Started', description: '', is_active: true, sort_order: 1, created_at: '', updated_at: '', color: '#gray' },
-        { id: '2', name: 'In Progress', description: '', is_active: true, sort_order: 2, created_at: '', updated_at: '', color: '#blue' },
-        { id: '3', name: 'Completed', description: '', is_active: true, sort_order: 3, created_at: '', updated_at: '', color: '#green' },
-        { id: '4', name: 'On Hold', description: '', is_active: true, sort_order: 4, created_at: '', updated_at: '', color: '#yellow' },
-        { id: '5', name: 'Cancelled', description: '', is_active: true, sort_order: 5, created_at: '', updated_at: '', color: '#red' }
-      ])
+        {
+          id: "1",
+          name: "Not Started",
+          description: "",
+          is_active: true,
+          sort_order: 1,
+          created_at: "",
+          updated_at: "",
+          color: "#gray",
+        },
+        {
+          id: "2",
+          name: "In Progress",
+          description: "",
+          is_active: true,
+          sort_order: 2,
+          created_at: "",
+          updated_at: "",
+          color: "#blue",
+        },
+        {
+          id: "3",
+          name: "Completed",
+          description: "",
+          is_active: true,
+          sort_order: 3,
+          created_at: "",
+          updated_at: "",
+          color: "#green",
+        },
+        {
+          id: "4",
+          name: "On Hold",
+          description: "",
+          is_active: true,
+          sort_order: 4,
+          created_at: "",
+          updated_at: "",
+          color: "#yellow",
+        },
+        {
+          id: "5",
+          name: "Cancelled",
+          description: "",
+          is_active: true,
+          sort_order: 5,
+          created_at: "",
+          updated_at: "",
+          color: "#red",
+        },
+      ]);
       setAvailablePriorities([
-        { id: '1', name: 'Low', description: '', is_active: true, sort_order: 1, created_at: '', updated_at: '', color: '#green', level: 1 },
-        { id: '2', name: 'Medium', description: '', is_active: true, sort_order: 2, created_at: '', updated_at: '', color: '#yellow', level: 2 },
-        { id: '3', name: 'High', description: '', is_active: true, sort_order: 3, created_at: '', updated_at: '', color: '#orange', level: 3 },
-        { id: '4', name: 'Critical', description: '', is_active: true, sort_order: 4, created_at: '', updated_at: '', color: '#red', level: 4 }
-      ])
-      toast.error('Failed to load project settings, using defaults')
+        {
+          id: "1",
+          name: "Low",
+          description: "",
+          is_active: true,
+          sort_order: 1,
+          created_at: "",
+          updated_at: "",
+          color: "#green",
+          level: 1,
+        },
+        {
+          id: "2",
+          name: "Medium",
+          description: "",
+          is_active: true,
+          sort_order: 2,
+          created_at: "",
+          updated_at: "",
+          color: "#yellow",
+          level: 2,
+        },
+        {
+          id: "3",
+          name: "High",
+          description: "",
+          is_active: true,
+          sort_order: 3,
+          created_at: "",
+          updated_at: "",
+          color: "#orange",
+          level: 3,
+        },
+        {
+          id: "4",
+          name: "Critical",
+          description: "",
+          is_active: true,
+          sort_order: 4,
+          created_at: "",
+          updated_at: "",
+          color: "#red",
+          level: 4,
+        },
+      ]);
+      toast.error("Failed to load project settings, using defaults");
     } finally {
-      setLoadingMasters(false)
+      setLoadingMasters(false);
     }
-  }
+  };
 
   const loadEpics = async (page = 1) => {
     try {
-      setLoading(true)
+      setLoading(true);
       const response: EpicsResponse = await epicApiService.getEpics(
         page,
         itemsPerPage,
         projectId,
-        statusFilter === 'all' ? undefined : statusFilter,
-        priorityFilter === 'all' ? undefined : priorityFilter,
+        statusFilter === "all" ? undefined : statusFilter,
+        priorityFilter === "all" ? undefined : priorityFilter,
         undefined,
         searchTerm
-      )
-      setEpics(response.items)
-      setTotalItems(response.total)
-      setCurrentPage(response.page)
-      setTotalPages(response.total_pages)
+      );
+      setEpics(response.items);
+      setTotalItems(response.total);
+      setCurrentPage(response.page);
+      setTotalPages(response.total_pages);
     } catch (error) {
-      console.error('Error loading epics:', error)
-      toast.error('Failed to load epics')
+      console.error("Error loading epics:", error);
+      toast.error("Failed to load epics");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadProjectMasters()
-  }, [])
+    loadProjectMasters();
+  }, []);
 
   useEffect(() => {
-    loadEpics()
-  }, [projectId, searchTerm, statusFilter, priorityFilter])
+    loadEpics();
+  }, [projectId, searchTerm, statusFilter, priorityFilter]);
 
   const handleCreateEpic = () => {
-    setShowCreateModal(true)
-  }
+    setShowCreateModal(true);
+  };
 
   const handleViewEpic = (epic: Epic) => {
-    setSelectedEpic(epic)
-    setShowViewEditModal(true)
-  }
+    setSelectedEpic(epic);
+    setShowViewEditModal(true);
+  };
 
   const handleDeleteEpic = async (epicId: string) => {
     try {
-      await epicApiService.deleteEpic(epicId)
-      toast.success('Epic deleted successfully')
-      loadEpics(currentPage)
+      await epicApiService.deleteEpic(epicId);
+      toast.success("Epic deleted successfully");
+      loadEpics(currentPage);
     } catch (error) {
-      console.error('Error deleting epic:', error)
-      toast.error('Failed to delete epic')
+      console.error("Error deleting epic:", error);
+      toast.error("Failed to delete epic");
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 hover:bg-green-100'
-      case 'in progress':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-100'
-      case 'on hold':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 hover:bg-red-100'
+      case "completed":
+        return "bg-green-100 text-green-800 hover:bg-green-100";
+      case "in progress":
+        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+      case "on hold":
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+      case "cancelled":
+        return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-100'
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
-      case 'critical':
-        return 'bg-red-100 text-red-800 hover:bg-red-100'
-      case 'high':
-        return 'bg-orange-100 text-orange-800 hover:bg-orange-100'
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
-      case 'low':
-        return 'bg-green-100 text-green-800 hover:bg-green-100'
+      case "critical":
+        return "bg-red-100 text-red-800 hover:bg-red-100";
+      case "high":
+        return "bg-orange-100 text-orange-800 hover:bg-orange-100";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+      case "low":
+        return "bg-green-100 text-green-800 hover:bg-green-100";
       default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-100'
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -256,14 +358,16 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               {loadingMasters ? (
-                <SelectItem value="loading" disabled>Loading...</SelectItem>
+                <SelectItem value="loading" disabled>
+                  Loading...
+                </SelectItem>
               ) : (
                 availableStatuses.map((status) => (
                   <SelectItem key={status.id} value={status.name}>
                     <div className="flex items-center space-x-2">
                       <div
                         className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: status.color || '#gray' }}
+                        style={{ backgroundColor: status.color || "#gray" }}
                       />
                       <span>{status.name}</span>
                     </div>
@@ -281,17 +385,21 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
             <SelectContent>
               <SelectItem value="all">All Priorities</SelectItem>
               {loadingMasters ? (
-                <SelectItem value="loading" disabled>Loading...</SelectItem>
+                <SelectItem value="loading" disabled>
+                  Loading...
+                </SelectItem>
               ) : (
                 availablePriorities.map((priority) => (
                   <SelectItem key={priority.id} value={priority.name}>
                     <div className="flex items-center space-x-2">
                       <div
                         className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: priority.color || '#gray' }}
+                        style={{ backgroundColor: priority.color || "#gray" }}
                       />
                       <span>{priority.name}</span>
-                      <span className="text-xs text-muted-foreground">({priority.level})</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({priority.level})
+                      </span>
                     </div>
                   </SelectItem>
                 ))
@@ -304,18 +412,18 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
           {/* View Toggle */}
           <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
             <Button
-              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              variant={viewMode === "card" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setViewMode('card')}
+              onClick={() => setViewMode("card")}
               className="h-8 px-3"
             >
               <Grid3x3 className="w-4 h-4 mr-1" />
               Cards
             </Button>
             <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              variant={viewMode === "table" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setViewMode('table')}
+              onClick={() => setViewMode("table")}
               className="h-8 px-3"
             >
               <List className="w-4 h-4 mr-1" />
@@ -325,7 +433,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
 
           {/* Results Count */}
           <div className="text-sm text-gray-600">
-            Showing {totalItems > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} epics
+            Showing {totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
+            {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}{" "}
+            epics
           </div>
         </div>
       </div>
@@ -338,7 +448,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               <Target className="w-5 h-5 text-[#007BFF] mr-2" />
             </div>
             <div className="text-2xl font-semibold text-[#007BFF]">
-              {epics.filter(epic => epic.status === 'In Progress').length}
+              {epics.filter((epic) => epic.status === "In Progress").length}
             </div>
             <div className="text-xs text-muted-foreground">Active Epics</div>
           </CardContent>
@@ -349,7 +459,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               <CheckCircle2 className="w-5 h-5 text-[#28A745] mr-2" />
             </div>
             <div className="text-2xl font-semibold text-[#28A745]">
-              {epics.filter(epic => epic.status === 'Completed').length}
+              {epics.filter((epic) => epic.status === "Completed").length}
             </div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </CardContent>
@@ -360,7 +470,13 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               <Clock className="w-5 h-5 text-[#FFC107] mr-2" />
             </div>
             <div className="text-2xl font-semibold text-[#FFC107]">
-              {Math.round(epics.reduce((sum, epic) => sum + (epic.completion_percentage || 0), 0) / Math.max(epics.length, 1))}%
+              {Math.round(
+                epics.reduce(
+                  (sum, epic) => sum + (epic.completion_percentage || 0),
+                  0
+                ) / Math.max(epics.length, 1)
+              )}
+              %
             </div>
             <div className="text-xs text-muted-foreground">Avg Progress</div>
           </CardContent>
@@ -371,7 +487,12 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               <AlertCircle className="w-5 h-5 text-[#DC3545] mr-2" />
             </div>
             <div className="text-2xl font-semibold text-[#DC3545]">
-              {epics.filter(epic => epic.priority === 'High' || epic.priority === 'Critical').length}
+              {
+                epics.filter(
+                  (epic) =>
+                    epic.priority === "High" || epic.priority === "Critical"
+                ).length
+              }
             </div>
             <div className="text-xs text-muted-foreground">High Priority</div>
           </CardContent>
@@ -386,18 +507,32 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
             <p className="text-gray-500 dark:text-gray-400">Loading epics...</p>
           </div>
         ) : epics.length > 0 ? (
-          viewMode === 'table' ? (
+          viewMode === "table" ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-6 py-4">Title</TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">Priority</TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">Assignee</TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">Progress</TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">Due Date</TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-6 py-4 text-right">Actions</TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-6 py-4">
+                      Title
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                      Status
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                      Priority
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                      Assignee
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                      Progress
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                      Due Date
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-6 py-4 text-right">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -418,26 +553,41 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                         </div>
                       </TableCell>
                       <TableCell className="px-4 py-4">
-                        <Badge variant="secondary" className={`${getStatusColor(epic.status)} font-medium px-3 py-1 rounded-full`}>
+                        <Badge
+                          variant="secondary"
+                          className={`${getStatusColor(
+                            epic.status
+                          )} font-medium px-3 py-1 rounded-full`}
+                        >
                           {epic.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-4">
-                        <Badge variant="secondary" className={`${getPriorityColor(epic.priority)} font-medium px-3 py-1 rounded-full`}>
+                        <Badge
+                          variant="secondary"
+                          className={`${getPriorityColor(
+                            epic.priority
+                          )} font-medium px-3 py-1 rounded-full`}
+                        >
                           {epic.priority}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-4">
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8 ring-2 ring-green-100 dark:ring-green-900">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${epic.assignee_name || 'unassigned'}`} alt={epic.assignee_name} />
+                            <AvatarImage
+                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${
+                                epic.assignee_name || "unassigned"
+                              }`}
+                              alt={epic.assignee_name}
+                            />
                             <AvatarFallback className="bg-[#28A745] text-white text-sm font-medium">
-                              {epic.assignee_name?.charAt(0) || 'U'}
+                              {epic.assignee_name?.charAt(0) || "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                              {epic.assignee_name || 'Unassigned'}
+                              {epic.assignee_name || "Unassigned"}
                             </div>
                           </div>
                         </div>
@@ -445,15 +595,20 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                       <TableCell className="px-4 py-4">
                         <div className="space-y-2 min-w-[120px]">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-gray-900 dark:text-gray-100">{epic.completion_percentage}%</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {epic.completion_percentage}%
+                            </span>
                             <span className="text-gray-500 dark:text-gray-400 text-xs">
-                              {epic.completed_story_points}/{epic.total_story_points} SP
+                              {epic.completed_story_points}/
+                              {epic.total_story_points} SP
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                             <div
                               className="bg-[#28A745] h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${epic.completion_percentage}%` }}
+                              style={{
+                                width: `${epic.completion_percentage}%`,
+                              }}
                             ></div>
                           </div>
                         </div>
@@ -469,9 +624,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleViewEpic(epic)
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              handleViewEpic(epic);
                             }}
                             className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                           >
@@ -482,7 +637,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e: React.MouseEvent) =>
+                                  e.stopPropagation()
+                                }
                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -492,7 +649,8 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Epic</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{epic.title}"? This action cannot be undone.
+                                  Are you sure you want to delete "{epic.title}
+                                  "? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -522,12 +680,17 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                   onClick={() => handleViewEpic(epic)}
                 >
                   {/* Status Indicator Bar */}
-                  <div className={`absolute top-0 left-0 right-0 h-1 ${
-                    epic.status === 'Completed' ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                    epic.status === 'In Progress' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                    epic.status === 'Planning' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                    'bg-gradient-to-r from-gray-400 to-gray-600'
-                  }`} />
+                  <div
+                    className={`absolute top-0 left-0 right-0 h-1 ${
+                      epic.status === "Completed"
+                        ? "bg-gradient-to-r from-green-400 to-green-600"
+                        : epic.status === "In Progress"
+                        ? "bg-gradient-to-r from-blue-400 to-blue-600"
+                        : epic.status === "Planning"
+                        ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
+                        : "bg-gradient-to-r from-gray-400 to-gray-600"
+                    }`}
+                  />
 
                   <CardContent className="p-6">
                     <div className="space-y-5">
@@ -549,9 +712,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleViewEpic(epic)
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              handleViewEpic(epic);
                             }}
                           >
                             <Eye className="w-4 h-4" />
@@ -560,9 +723,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600 rounded-full"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleViewEpic(epic)
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              handleViewEpic(epic);
                             }}
                           >
                             <Edit className="w-4 h-4" />
@@ -576,10 +739,13 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                           <Badge
                             variant="outline"
                             className={`px-3 py-1 font-semibold text-xs rounded-full shadow-sm ${
-                              epic.status === 'Completed' ? 'bg-green-50 text-green-700 border-green-200' :
-                              epic.status === 'In Progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                              epic.status === 'Planning' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                              'bg-gray-50 text-gray-700 border-gray-200'
+                              epic.status === "Completed"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : epic.status === "In Progress"
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : epic.status === "Planning"
+                                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                : "bg-gray-50 text-gray-700 border-gray-200"
                             }`}
                           >
                             <CheckCircle2 className="w-3 h-3 mr-1" />
@@ -588,10 +754,13 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                           <Badge
                             variant="outline"
                             className={`px-3 py-1 font-semibold text-xs rounded-full shadow-sm ${
-                              epic.priority === 'Critical' ? 'bg-red-50 text-red-700 border-red-200' :
-                              epic.priority === 'High' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                              epic.priority === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                              'bg-green-50 text-green-700 border-green-200'
+                              epic.priority === "Critical"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : epic.priority === "High"
+                                ? "bg-orange-50 text-orange-700 border-orange-200"
+                                : epic.priority === "Medium"
+                                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                : "bg-green-50 text-green-700 border-green-200"
                             }`}
                           >
                             <AlertCircle className="w-3 h-3 mr-1" />
@@ -605,7 +774,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <Clock className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progress</span>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Progress
+                            </span>
                           </div>
                           <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
                             {epic.completion_percentage}%
@@ -614,9 +785,11 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                         <div className="relative w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                           <div
                             className={`h-3 rounded-full transition-all duration-500 ${
-                              epic.completion_percentage >= 80 ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                              epic.completion_percentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                              'bg-gradient-to-r from-blue-400 to-blue-600'
+                              epic.completion_percentage >= 80
+                                ? "bg-gradient-to-r from-green-400 to-green-600"
+                                : epic.completion_percentage >= 50
+                                ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
+                                : "bg-gradient-to-r from-blue-400 to-blue-600"
                             }`}
                             style={{ width: `${epic.completion_percentage}%` }}
                           />
@@ -630,16 +803,25 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                         <div className="flex items-center space-x-3">
                           <div className="relative">
                             <Avatar className="w-10 h-10 ring-2 ring-blue-100 dark:ring-blue-900">
-                              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${epic.assignee_name || 'unassigned'}`} alt={epic.assignee_name} />
+                              <AvatarImage
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${
+                                  epic.assignee_name || "unassigned"
+                                }`}
+                                alt={epic.assignee_name}
+                              />
                               <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm font-bold">
-                                {epic.assignee_name ? epic.assignee_name.substring(0, 2).toUpperCase() : 'UN'}
+                                {epic.assignee_name
+                                  ? epic.assignee_name
+                                      .substring(0, 2)
+                                      .toUpperCase()
+                                  : "UN"}
                               </AvatarFallback>
                             </Avatar>
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm" />
                           </div>
                           <div>
                             <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                              {epic.assignee_name || 'Unassigned'}
+                              {epic.assignee_name || "Unassigned"}
                             </span>
                             <p className="text-xs text-gray-500">Assignee</p>
                           </div>
@@ -650,7 +832,9 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                             <Calendar className="w-4 h-4" />
                             <span className="font-medium">
-                              {epic.due_date ? formatDate(epic.due_date) : 'No due date'}
+                              {epic.due_date
+                                ? formatDate(epic.due_date)
+                                : "No due date"}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">Due date</p>
@@ -695,19 +879,20 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
 
               {/* Page Numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
-                if (pageNum > totalPages) return null
+                const pageNum =
+                  Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                if (pageNum > totalPages) return null;
                 return (
                   <Button
                     key={pageNum}
-                    variant={currentPage === pageNum ? 'default' : 'outline'}
+                    variant={currentPage === pageNum ? "default" : "outline"}
                     size="sm"
                     onClick={() => loadEpics(pageNum)}
                     className="h-8 w-8 p-0"
                   >
                     {pageNum}
                   </Button>
-                )
+                );
               })}
 
               <Button
@@ -740,8 +925,8 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
-            loadEpics()
-            setShowCreateModal(false)
+            loadEpics();
+            setShowCreateModal(false);
           }}
           user={user}
           teamMembers={teamMembers}
@@ -755,13 +940,13 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
           epic={selectedEpic}
           isOpen={showViewEditModal}
           onClose={() => {
-            setShowViewEditModal(false)
-            setSelectedEpic(null)
+            setShowViewEditModal(false);
+            setSelectedEpic(null);
           }}
           onSuccess={() => {
-            loadEpics()
-            setShowViewEditModal(false)
-            setSelectedEpic(null)
+            loadEpics();
+            setShowViewEditModal(false);
+            setSelectedEpic(null);
           }}
           user={user}
           teamMembers={teamMembers}
@@ -770,5 +955,5 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
         />
       )}
     </div>
-  )
+  );
 }

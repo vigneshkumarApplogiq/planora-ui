@@ -1,41 +1,69 @@
-import { useState, useEffect } from 'react'
-import { Card } from '../../components/ui/card'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
-import { Progress } from '../../components/ui/progress'
-import { Avatar, AvatarFallback } from '../../components/ui/avatar'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
-import { Input } from '../../components/ui/input'
-import { Textarea } from '../../components/ui/textarea'
-import { Calendar as CalendarComponent } from '../../components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
-import { Separator } from '../../components/ui/separator'
-import { Switch } from '../../components/ui/switch'
-import { Label } from '../../components/ui/label'
-import { cn } from '../../components/ui/utils'
-import { format } from 'date-fns'
-import { toast } from 'sonner@2.0.3'
-import { ProjectTemplates } from './ProjectTemplates'
-import { TaskManagement } from './TaskManagement'
-import { Project } from '../../mock-data/projects'
-import { customerApiService, Customer } from '../../services/customerApi'
-import { userApiService, User } from '../../services/userApi'
-import { useProjectMasters } from '../../hooks/useProjectMasters'
-import { useProjectOwners } from '../../hooks/useProjectOwners'
-import { useAppDispatch, useAppSelector } from '../../store/hooks'
+import { useState, useEffect } from "react";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Progress } from "../../components/ui/progress";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import { Calendar as CalendarComponent } from "../../components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../components/ui/popover";
+import { Separator } from "../../components/ui/separator";
+import { Switch } from "../../components/ui/switch";
+import { Label } from "../../components/ui/label";
+import { cn } from "../../components/ui/utils";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { ProjectTemplates } from "./ProjectTemplates";
+import { TaskManagement } from "./TaskManagement";
+import { Project } from "../../mock-data/projects";
+import { customerApiService, Customer } from "../../services/customerApi";
+import { userApiService, User } from "../../services/userApi";
+import { useProjectMasters } from "../../hooks/useProjectMasters";
+import { useProjectOwners } from "../../hooks/useProjectOwners";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   fetchProjects,
   createProject,
   setFilters,
   setPagination,
-  clearError
-} from '../../store/slices/projectSlice'
-import { CreateProjectRequest } from '../../services/projectApi'
-import { useFormik } from 'formik'
-import * as Yup from 'yup'
+  clearError,
+} from "../../store/slices/projectSlice";
+import { CreateProjectRequest } from "../../services/projectApi";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import {
   Plus,
   Search,
@@ -65,8 +93,8 @@ import {
   Save,
   DollarSign,
   Calendar as CalendarDays,
-  CheckSquare
-} from 'lucide-react'
+  CheckSquare,
+} from "lucide-react";
 
 // Add computed properties for UI display
 const addComputedProperties = (project: Project) => ({
@@ -80,179 +108,186 @@ const addComputedProperties = (project: Project) => ({
   epics: Math.floor(Math.random() * 5) + 1,
   stories: Math.floor(Math.random() * 20) + 10,
   currentSprint: `Sprint ${Math.floor(Math.random() * 5) + 20}`,
-  nextMilestone: 'Release v1.0',
+  nextMilestone: "Release v1.0",
   milestoneDue: project.endDate,
-  version: 'v1.0.0',
-  dependencies: []
+  version: "v1.0.0",
+  dependencies: [],
 });
 
 interface ProjectsProps {
-  onProjectSelect?: (projectId: string) => void
-  user?: any
+  onProjectSelect?: (projectId: string) => void;
+  user?: any;
 }
 
 export function Projects({ onProjectSelect, user }: ProjectsProps) {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
   const {
     projects: reduxProjects,
     loading,
     error,
     filters,
-    total
-  } = useAppSelector((state) => state.projects)
+    total,
+  } = useAppSelector((state) => state.projects);
 
   const {
     data: projectMasters,
     loading: mastersLoading,
     error: mastersError,
-    retry: retryMasters
-  } = useProjectMasters()
+    retry: retryMasters,
+  } = useProjectMasters();
 
   const {
     data: projectOwners,
     loading: ownersLoading,
     error: ownersError,
-    retry: retryOwners
-  } = useProjectOwners()
+    retry: retryOwners,
+  } = useProjectOwners();
 
   // Team members state management
-  const [teamMembers, setTeamMembers] = useState<User[]>([])
-  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
-  const [teamMembersError, setTeamMembersError] = useState<string | null>(null)
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
+  const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
 
   // Customer state management
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [loadingCustomers, setLoadingCustomers] = useState(false)
-  const [customersError, setCustomersError] = useState<string | null>(null)
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [customersError, setCustomersError] = useState<string | null>(null);
 
-
-  const userRole = user?.role || 'developer'
-  const isAdmin = userRole === 'admin'
-  const isProjectManager = userRole === 'project_manager'
-  const isDeveloperOrTester = userRole === 'developer' || userRole === 'tester'
+  const userRole = user?.role || "developer";
+  const isAdmin = userRole === "admin";
+  const isProjectManager = userRole === "project_manager";
+  const isDeveloperOrTester = userRole === "developer" || userRole === "tester";
 
   // Add computed properties to projects from Redux
-  const projects = reduxProjects.map(addComputedProperties)
+  const projects = reduxProjects.map(addComputedProperties);
 
   // Filter projects based on user role
   const getFilteredProjects = () => {
     if (isAdmin || isProjectManager) {
-      return projects // Admins and PMs see all projects
+      return projects; // Admins and PMs see all projects
     } else if (isDeveloperOrTester) {
       // Developers and testers only see projects they're assigned to
       // Check if user ID is in team_members array or if user is the team_lead_id
       // Note: API uses snake_case (team_members, team_lead_id) while mock uses camelCase (teamMembers, teamLead)
       // Check both formats for compatibility
-      return projects.filter(project => {
-        const projectAny = project as any
-        const teamMembers = projectAny.team_members || projectAny.teamMembers || []
-        const teamLeadId = projectAny.team_lead_id || projectAny.teamLeadId
+      return projects.filter((project) => {
+        const projectAny = project as any;
+        const teamMembers =
+          projectAny.team_members || projectAny.teamMembers || [];
+        const teamLeadId = projectAny.team_lead_id || projectAny.teamLeadId;
 
-        return teamMembers.includes(user?.id) || teamLeadId === user?.id
-      })
+        return teamMembers.includes(user?.id) || teamLeadId === user?.id;
+      });
     }
-    return projects
-  }
+    return projects;
+  };
 
-  const roleFilteredProjects = getFilteredProjects()
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [selectedFilter, setSelectedFilter] = useState('all')
-  const [showCreateProject, setShowCreateProject] = useState(false)
-  const [showTemplateModal, setShowTemplateModal] = useState(false)
-  const [showTaskManagement, setShowTaskManagement] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<string | null>(null)
-  const [selectedProjectForTasks, setSelectedProjectForTasks] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const roleFilteredProjects = getFilteredProjects();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showTaskManagement, setShowTaskManagement] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedProjectForTasks, setSelectedProjectForTasks] = useState<
+    string | null
+  >(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterBy, setFilterBy] = useState({
-    status: 'all',
-    priority: 'all',
-    methodology: 'all',
-    type: 'all'
-  })
+    status: "all",
+    priority: "all",
+    methodology: "all",
+    type: "all",
+  });
   const [newProject, setNewProject] = useState({
-    name: '',
-    description: '',
-    status: '',
-    priority: '',
-    methodology: '',
-    type: '',
+    name: "",
+    description: "",
+    status: "",
+    priority: "",
+    methodology: "",
+    type: "",
     startDate: new Date(),
     dueDate: new Date(),
     budget: 0,
-    customer: '',
-    owner: '',
+    customer: "",
+    owner: "",
     team: [] as any[],
     isPublic: true,
     notifications: true,
     autoArchive: false,
-    version: '',
+    version: "",
     tags: [] as string[],
     customFields: {} as Record<string, any>,
-    customerId: '',
-    teamLead: '',
-    prefix: ''
-  })
+    customerId: "",
+    teamLead: "",
+    prefix: "",
+  });
 
   // Update default values when API data is loaded
   useEffect(() => {
     if (projectMasters) {
-      const availableStatuses = getApiStatuses()
-      const availablePriorities = getApiPriorities()
+      const availableStatuses = getApiStatuses();
+      const availablePriorities = getApiPriorities();
 
       // Only update if current values don't exist in available options
-      if (availableStatuses.length > 0 && !availableStatuses.find(s => s.value === newProject.status)) {
-        setNewProject(prev => ({ ...prev, status: availableStatuses[0].value }))
+      if (
+        availableStatuses.length > 0 &&
+        !availableStatuses.find((s) => s.value === newProject.status)
+      ) {
+        setNewProject((prev) => ({
+          ...prev,
+          status: availableStatuses[0].value,
+        }));
       }
 
-      if (availablePriorities.length > 0 && !availablePriorities.find(p => p.value === newProject.priority)) {
-        const mediumPriority = availablePriorities.find(p => p.value === 'Medium')
-        setNewProject(prev => ({
+      if (
+        availablePriorities.length > 0 &&
+        !availablePriorities.find((p) => p.value === newProject.priority)
+      ) {
+        const mediumPriority = availablePriorities.find(
+          (p) => p.value === "Medium"
+        );
+        setNewProject((prev) => ({
           ...prev,
-          priority: mediumPriority?.value || availablePriorities[0].value
-        }))
+          priority: mediumPriority?.value || availablePriorities[0].value,
+        }));
       }
     }
-  }, [projectMasters])
+  }, [projectMasters]);
 
-  const [activeTab, setActiveTab] = useState('general')
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false)
-  const [showDueDatePicker, setShowDueDatePicker] = useState(false)
-  const [newTag, setNewTag] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState("general");
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+  const [newTag, setNewTag] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Formik validation schema
   const projectValidationSchema = Yup.object().shape({
     name: Yup.string()
-      .required('Project name is required')
-      .min(3, 'Project name must be at least 3 characters')
-      .max(100, 'Project name must be at most 100 characters'),
-    description: Yup.string()
-      .optional(),
-    customer: Yup.string()
-      .required('Customer is required'),
+      .required("Project name is required")
+      .min(3, "Project name must be at least 3 characters")
+      .max(100, "Project name must be at most 100 characters"),
+    description: Yup.string().optional(),
+    customer: Yup.string().required("Customer is required"),
     prefix: Yup.string()
-      .required('Project prefix is required')
-      .min(2, 'Prefix must be at least 2 characters')
-      .max(10, 'Prefix must be at most 10 characters')
-      .matches(/^[A-Z0-9]+$/, 'Prefix must contain only uppercase letters and numbers'),
-    status: Yup.string()
-      .required('Status is required'),
-    priority: Yup.string()
-      .required('Priority is required'),
-    methodology: Yup.string()
-      .required('Methodology is required'),
-    type: Yup.string()
-      .required('Project type is required'),
-    owner: Yup.string()
-      .required('Project owner is required'),
-    startDate: Yup.date()
-      .required('Start date is required'),
+      .required("Project prefix is required")
+      .min(2, "Prefix must be at least 2 characters")
+      .max(10, "Prefix must be at most 10 characters")
+      .matches(
+        /^[A-Z0-9]+$/,
+        "Prefix must contain only uppercase letters and numbers"
+      ),
+    status: Yup.string().required("Status is required"),
+    priority: Yup.string().required("Priority is required"),
+    methodology: Yup.string().required("Methodology is required"),
+    type: Yup.string().required("Project type is required"),
+    owner: Yup.string().required("Project owner is required"),
+    startDate: Yup.date().required("Start date is required"),
     dueDate: Yup.date()
-      .required('End date is required')
-      .min(Yup.ref('startDate'), 'End date must be after start date'),
-    budget: Yup.number()
-      .min(0, 'Budget must be a positive number')
-  })
+      .required("End date is required")
+      .min(Yup.ref("startDate"), "End date must be after start date"),
+    budget: Yup.number().min(0, "Budget must be a positive number"),
+  });
 
   // Initialize Formik
   const formik = useFormik({
@@ -262,288 +297,331 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
     validateOnBlur: true,
     enableReinitialize: true,
     onSubmit: async (values) => {
-      await handleCreateProjectSubmit(values)
-    }
-  })
+      await handleCreateProjectSubmit(values);
+    },
+  });
 
   // Helper functions to process API data
   const getApiStatuses = () => {
-    if (!projectMasters?.statuses) return []
+    if (!projectMasters?.statuses) return [];
     return projectMasters.statuses
-      .filter(status => status.is_active)
+      .filter((status) => status.is_active)
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(status => ({
+      .map((status) => ({
         value: status.name,
-        color: `bg-[${status.color}] text-white`
-      }))
-  }
+        color: `bg-[${status.color}] text-white`,
+      }));
+  };
 
   const getApiPriorities = () => {
-    if (!projectMasters?.priorities) return []
+    if (!projectMasters?.priorities) return [];
     return projectMasters.priorities
-      .filter(priority => priority.is_active)
+      .filter((priority) => priority.is_active)
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(priority => ({
+      .map((priority) => ({
         value: priority.name,
-        color: `bg-[${priority.color}] text-white`
-      }))
-  }
+        color: `bg-[${priority.color}] text-white`,
+      }));
+  };
 
   const getApiMethodologies = () => {
-    if (!projectMasters?.methodologies) return []
+    if (!projectMasters?.methodologies) return [];
     return projectMasters.methodologies
-      .filter(methodology => methodology.is_active)
+      .filter((methodology) => methodology.is_active)
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(methodology => methodology.name)
-  }
+      .map((methodology) => methodology.name);
+  };
 
   const getApiProjectTypes = () => {
-    if (!projectMasters?.types) return []
+    if (!projectMasters?.types) return [];
     return projectMasters.types
-      .filter(type => type.is_active)
+      .filter((type) => type.is_active)
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(type => type.name)
-  }
+      .map((type) => type.name);
+  };
 
   // Use API data if available, fallback to mock data
-  const statuses = getApiStatuses().length > 0 ? getApiStatuses() : []
+  const statuses = getApiStatuses().length > 0 ? getApiStatuses() : [];
 
-  const priorities = getApiPriorities().length > 0 ? getApiPriorities() : []
+  const priorities = getApiPriorities().length > 0 ? getApiPriorities() : [];
+  console.log("priorities: ", priorities);
 
-  const editableMethodologies = getApiMethodologies().length > 0 ? getApiMethodologies() : []
+  const editableMethodologies =
+    getApiMethodologies().length > 0 ? getApiMethodologies() : [];
 
-  const editableProjectTypes = getApiProjectTypes().length > 0 ? getApiProjectTypes() : []
+  const editableProjectTypes =
+    getApiProjectTypes().length > 0 ? getApiProjectTypes() : [];
 
   // Fetch projects on component mount
   useEffect(() => {
-    dispatch(fetchProjects())
-  }, [dispatch])
+    dispatch(fetchProjects({}));
+  }, [dispatch]);
 
   // Update filters in Redux when local filters change
   useEffect(() => {
-    dispatch(setFilters({
-      search: searchQuery,
-      status: filterBy.status === 'all' ? '' : filterBy.status,
-      priority: filterBy.priority === 'all' ? '' : filterBy.priority,
-      methodology: filterBy.methodology === 'all' ? '' : filterBy.methodology,
-      projectType: filterBy.type === 'all' ? '' : filterBy.type
-    }))
-  }, [dispatch, searchQuery, filterBy])
+    dispatch(
+      setFilters({
+        search: searchQuery,
+        status: filterBy.status === "all" ? "" : filterBy.status,
+        priority: filterBy.priority === "all" ? "" : filterBy.priority,
+        methodology: filterBy.methodology === "all" ? "" : filterBy.methodology,
+        projectType: filterBy.type === "all" ? "" : filterBy.type,
+      })
+    );
+  }, [dispatch, searchQuery, filterBy]);
 
   // Load customers from API
   const loadCustomers = async () => {
-    setLoadingCustomers(true)
-    setCustomersError(null)
+    setLoadingCustomers(true);
+    setCustomersError(null);
     try {
-      const response = await customerApiService.getCustomers({ size: 100 }) // Get all customers
-      setCustomers(response.customers || [])
+      const response = await customerApiService.getCustomers({ size: 100 }); // Get all customers
+      setCustomers(response.customers || []);
     } catch (error) {
-      setCustomersError('Failed to load customers')
-      toast.error('Failed to load customers')
+      setCustomersError("Failed to load customers");
+      toast.error("Failed to load customers");
     } finally {
-      setLoadingCustomers(false)
+      setLoadingCustomers(false);
     }
-  }
+  };
 
   // Load customers on component mount
   useEffect(() => {
-    loadCustomers()
-  }, [])
+    loadCustomers();
+  }, []);
 
   // Load team members from API
   const loadTeamMembers = async () => {
-    setLoadingTeamMembers(true)
-    setTeamMembersError(null)
+    setLoadingTeamMembers(true);
+    setTeamMembersError(null);
     try {
-      const response = await userApiService.getTeamMembers({ per_page: 100, is_active: true })
-      setTeamMembers(response.items || [])
+      const response = await userApiService.getTeamMembers({
+        per_page: 100,
+        is_active: true,
+      });
+      setTeamMembers(response.items || []);
     } catch (error) {
-      setTeamMembersError('Failed to load team members')
-      console.error('Team members loading error:', error)
+      setTeamMembersError("Failed to load team members");
+      console.error("Team members loading error:", error);
     } finally {
-      setLoadingTeamMembers(false)
+      setLoadingTeamMembers(false);
     }
-  }
+  };
 
   // Load team members on component mount
   useEffect(() => {
-    loadTeamMembers()
-  }, [])
-
+    loadTeamMembers();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'text-[#28A745]'
-      case 'In Progress': return 'text-[#FFC107]'
-      case 'Completed': return 'text-[#007BFF]'
-      case 'On Hold': return 'text-[#DC3545]'
-      default: return 'text-muted-foreground'
+      case "Active":
+        return "text-[#28A745]";
+      case "In Progress":
+        return "text-[#FFC107]";
+      case "Completed":
+        return "text-[#007BFF]";
+      case "On Hold":
+        return "text-[#DC3545]";
+      default:
+        return "text-muted-foreground";
     }
-  }
+  };
 
-  const filteredProjects = roleFilteredProjects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.customer.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesStatus = filterBy.status === 'all' || project.status === filterBy.status
-    const matchesPriority = filterBy.priority === 'all' || project.priority === filterBy.priority
-    const matchesMethodology = filterBy.methodology === 'all' || project.methodology === filterBy.methodology
-    const matchesType = filterBy.type === 'all' || project.projectType === filterBy.type
-    
-    return matchesSearch && matchesStatus && matchesPriority && matchesMethodology && matchesType
-  })
+  const filteredProjects = roleFilteredProjects.filter((project) => {
+    const matchesSearch =
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.customer.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const getPriorityColor = (priority: string) => {
+    const matchesStatus =
+      filterBy.status === "all" || project.status === filterBy.status;
+    const matchesPriority =
+      filterBy.priority === "all" || project.priority === filterBy.priority;
+    const matchesMethodology =
+      filterBy.methodology === "all" ||
+      project.methodology === filterBy.methodology;
+    const matchesType =
+      filterBy.type === "all" || project.projectType === filterBy.type;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesPriority &&
+      matchesMethodology &&
+      matchesType
+    );
+  });
+  console.log(filteredProjects, "filteredProjects");
+
+  const getPriorityColor = (priority: string, color: string) => {
     switch (priority) {
-      case 'High': return 'bg-[#DC3545] text-white'
-      case 'Medium': return 'bg-[#FFC107] text-white'
-      case 'Low': return 'bg-[#28A745] text-white'
-      default: return 'bg-muted text-foreground'
+      case "Urgent":
+        return "bg-[#491280] text-white";
+      case "High":
+        return "bg-[#DC3545] text-white";
+      case "Medium":
+        return "bg-[#FFC107] text-white";
+      case "Low":
+        return "bg-[#6C757D] text-white";
+      default:
+        return "bg-muted text-foreground";
     }
-  }
+  };
 
   const getBudgetStatus = (spent: number, budget: number) => {
-    const percentage = (spent / budget) * 100
-    if (percentage > 90) return { color: 'text-[#DC3545]', status: 'Over Budget' }
-    if (percentage > 75) return { color: 'text-[#FFC107]', status: 'At Risk' }
-    return { color: 'text-[#28A745]', status: 'On Track' }
-  }
+    const percentage = (spent / budget) * 100;
+    if (percentage > 90)
+      return { color: "text-[#DC3545]", status: "Over Budget" };
+    if (percentage > 75) return { color: "text-[#FFC107]", status: "At Risk" };
+    return { color: "text-[#28A745]", status: "On Track" };
+  };
 
   const handleInputChange = (field: string, value: any) => {
-    formik.setFieldValue(field, value)
-    setNewProject(prev => ({
+    formik.setFieldValue(field, value);
+    setNewProject((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   const handleAddTeamMember = (member: any) => {
-    if (!formik.values.team.find(m => m.id === member.id)) {
-      const updatedTeam = [...formik.values.team, member]
-      formik.setFieldValue('team', updatedTeam)
-      setNewProject(prev => ({
+    if (!formik.values.team.find((m) => m.id === member.id)) {
+      const updatedTeam = [...formik.values.team, member];
+      formik.setFieldValue("team", updatedTeam);
+      setNewProject((prev) => ({
         ...prev,
-        team: updatedTeam
-      }))
+        team: updatedTeam,
+      }));
     }
-  }
+  };
 
   const handleRemoveTeamMember = (memberId: number) => {
-    const updatedTeam = formik.values.team.filter(m => m.id !== memberId)
-    formik.setFieldValue('team', updatedTeam)
-    setNewProject(prev => ({
+    const updatedTeam = formik.values.team.filter((m) => m.id !== memberId);
+    formik.setFieldValue("team", updatedTeam);
+    setNewProject((prev) => ({
       ...prev,
-      team: updatedTeam
-    }))
-  }
+      team: updatedTeam,
+    }));
+  };
 
   const handleAddTag = () => {
-    const tagToAdd = newTag.trim()
+    const tagToAdd = newTag.trim();
     if (tagToAdd && !formik.values.tags.includes(tagToAdd)) {
-      const updatedTags = [...formik.values.tags, tagToAdd]
-      formik.setFieldValue('tags', updatedTags)
-      setNewProject(prev => ({
+      const updatedTags = [...formik.values.tags, tagToAdd];
+      formik.setFieldValue("tags", updatedTags);
+      setNewProject((prev) => ({
         ...prev,
-        tags: updatedTags
-      }))
-      setNewTag('')
+        tags: updatedTags,
+      }));
+      setNewTag("");
     } else if (tagToAdd && formik.values.tags.includes(tagToAdd)) {
-      toast.error('Tag already exists')
+      toast.error("Tag already exists");
     } else if (!tagToAdd) {
-      toast.error('Please enter a tag name')
+      toast.error("Please enter a tag name");
     }
-  }
+  };
 
   const handleRemoveTag = (tag: string) => {
-    const updatedTags = formik.values.tags.filter(t => t !== tag)
-    formik.setFieldValue('tags', updatedTags)
-    setNewProject(prev => ({
+    const updatedTags = formik.values.tags.filter((t) => t !== tag);
+    formik.setFieldValue("tags", updatedTags);
+    setNewProject((prev) => ({
       ...prev,
-      tags: updatedTags
-    }))
-  }
+      tags: updatedTags,
+    }));
+  };
 
   const handleCreateProjectSubmit = async (values: typeof newProject) => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       // Find customer ID from the selected customer name
-      const selectedCustomer = customers.find(c => c.name === values.customer)
+      const selectedCustomer = customers.find(
+        (c) => c.name === values.customer
+      );
 
       // Find team lead ID from the selected owner name
-      const selectedOwner = projectOwners?.items?.find(owner => owner.name === values.owner)
+      const selectedOwner = projectOwners?.items?.find(
+        (owner) => owner.name === values.owner
+      );
 
       const projectData: CreateProjectRequest = {
         name: values.name,
         description: values.description,
         status: values.status,
-        start_date: values.startDate.toISOString().split('T')[0],
-        end_date: values.dueDate.toISOString().split('T')[0],
+        start_date: values.startDate.toISOString().split("T")[0],
+        end_date: values.dueDate.toISOString().split("T")[0],
         budget: values.budget,
-        customer_id: selectedCustomer?.id || values.customerId || 'default-customer',
+        customer_id:
+          selectedCustomer?.id || values.customerId || "default-customer",
         customer: values.customer,
         priority: values.priority,
-        team_lead_id: selectedOwner?.id || values.teamLead || values.owner || 'default-lead',
-        team_members: values.team.map(member => {
+        team_lead_id:
+          selectedOwner?.id ||
+          values.teamLead ||
+          values.owner ||
+          "default-lead",
+        team_members: values.team.map((member) => {
           // Try to find the member ID from the team members data
-          const teamMember = teamMembers.find(tm => tm.name === member.name)
+          const teamMember = teamMembers.find((tm) => tm.name === member.name);
           if (teamMember?.id) {
-            return teamMember.id
+            return teamMember.id;
           }
           // Return the member's existing ID or generate a fallback
-          return member.id || `member-${Date.now()}`
+          return member.id || `member-${Date.now()}`;
         }),
         tags: values.tags,
         methodology: values.methodology,
         project_type: values.type,
-        color: '#007BFF', // Default project color
-        prefix: values.prefix
-      }
+        color: "#007BFF", // Default project color
+        prefix: values.prefix,
+      };
 
-      await dispatch(createProject(projectData)).unwrap()
-      toast.success('Project created successfully!')
-      setShowCreateProject(false)
+      await dispatch(createProject(projectData)).unwrap();
+      toast.success("Project created successfully!");
+      setShowCreateProject(false);
 
       // Reset form to initial state with proper default values
-      const availableStatuses = getApiStatuses()
-      const availablePriorities = getApiPriorities()
+      const availableStatuses = getApiStatuses();
+      const availablePriorities = getApiPriorities();
 
       const initialValues = {
-        name: '',
-        description: '',
-        status: availableStatuses.length > 0 ? availableStatuses[0].value : '',
-        priority: availablePriorities.length > 0 ?
-                 (availablePriorities.find(p => p.value === 'Medium')?.value || availablePriorities[0].value) :
-                 '',
-        methodology: '',
-        type: '',
+        name: "",
+        description: "",
+        status: availableStatuses.length > 0 ? availableStatuses[0].value : "",
+        priority:
+          availablePriorities.length > 0
+            ? availablePriorities.find((p) => p.value === "Medium")?.value ||
+              availablePriorities[0].value
+            : "",
+        methodology: "",
+        type: "",
         startDate: new Date(),
         dueDate: new Date(),
         budget: 0,
-        customer: '',
-        owner: '',
+        customer: "",
+        owner: "",
         team: [] as any[],
         isPublic: true,
         notifications: true,
         autoArchive: false,
-        version: '',
+        version: "",
         tags: [] as string[],
         customFields: {} as Record<string, any>,
-        customerId: '',
-        teamLead: '',
-        prefix: ''
-      }
+        customerId: "",
+        teamLead: "",
+        prefix: "",
+      };
 
-      setNewProject(initialValues)
-      formik.resetForm({ values: initialValues })
-      setActiveTab('general')
+      setNewProject(initialValues);
+      formik.resetForm({ values: initialValues });
+      setActiveTab("general");
     } catch (error) {
-      toast.error(`Failed to create project: ${error}`)
+      toast.error(`Failed to create project: ${error}`);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleUseTemplate = (template: any) => {
     setNewProject({
@@ -551,64 +629,71 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
       name: `${template.name} - ${new Date().toLocaleDateString()}`,
       description: template.description,
       methodology: template.methodology,
-      type: template.type
-    })
-    setShowTemplateModal(false)
-    setShowCreateProject(true)
-  }
+      type: template.type,
+    });
+    setShowTemplateModal(false);
+    setShowCreateProject(true);
+  };
 
   // Get available team members from API data
   const getAvailableMembers = () => {
-    const availableTeamMembers = teamMembers.filter(member => member.is_active) || []
+    const availableTeamMembers =
+      teamMembers.filter((member) => member.is_active) || [];
 
     // Use team members API data
-    const allMembers = availableTeamMembers.map(member => ({
+    const allMembers = availableTeamMembers.map((member) => ({
       id: member.id,
       name: member.name,
-      role: typeof member.role === 'object' ? member.role.name : member.role,
+      role: typeof member.role === "object" ? member.role.name : member.role,
       avatar: member.user_profile || member.name.charAt(0).toUpperCase(),
       email: member.email,
-      department: member.department
-    }))
+      department: member.department,
+    }));
 
     return allMembers.filter(
-      availableMember => !newProject.team.find(teamMember => teamMember.id === availableMember.id)
-    )
-  }
+      (availableMember) =>
+        !newProject.team.find(
+          (teamMember) => teamMember.id === availableMember.id
+        )
+    );
+  };
 
-  const availableMembers = getAvailableMembers()
+  const availableMembers = getAvailableMembers();
 
   const getMethodologyIcon = (methodology: string) => {
     switch (methodology) {
-      case 'Scrum': return <Zap className="w-4 h-4" />
-      case 'Kanban': return <BarChart3 className="w-4 h-4" />
-      case 'Waterfall': return <GitBranch className="w-4 h-4" />
-      default: return <Target className="w-4 h-4" />
+      case "Scrum":
+        return <Zap className="w-4 h-4" />;
+      case "Kanban":
+        return <BarChart3 className="w-4 h-4" />;
+      case "Waterfall":
+        return <GitBranch className="w-4 h-4" />;
+      default:
+        return <Target className="w-4 h-4" />;
     }
-  }
+  };
 
   // Show error if there's one
   useEffect(() => {
     if (error) {
-      toast.error(error)
-      dispatch(clearError())
+      toast.error(error);
+      dispatch(clearError());
     }
-  }, [error, dispatch])
+  }, [error, dispatch]);
 
   // Show error for masters API
   useEffect(() => {
     if (mastersError) {
-      toast.error(`Failed to load project configuration: ${mastersError}`)
+      toast.error(`Failed to load project configuration: ${mastersError}`);
     }
-  }, [mastersError])
+  }, [mastersError]);
 
   // Show error for owners API
   useEffect(() => {
     if (ownersError) {
-      toast.error(`Failed to load project owners: ${ownersError}`)
+      toast.error(`Failed to load project owners: ${ownersError}`);
     }
-  }, [ownersError])
-
+  }, [ownersError]);
 
   return (
     <div className="space-y-6">
@@ -623,14 +708,18 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
-            {isAdmin ? 'All Projects' : 
-             isProjectManager ? 'Managed Projects' : 
-             'My Projects'}
+            {isAdmin
+              ? "All Projects"
+              : isProjectManager
+              ? "Managed Projects"
+              : "My Projects"}
           </h1>
           <p className="text-muted-foreground">
-            {isAdmin ? 'End-to-end project lifecycle management with Agile, Waterfall & Hybrid workflows' :
-             isProjectManager ? 'Projects under your management and team collaboration' :
-             'Your assigned projects and contributions'}
+            {isAdmin
+              ? "End-to-end project lifecycle management with Agile, Waterfall & Hybrid workflows"
+              : isProjectManager
+              ? "Projects under your management and team collaboration"
+              : "Your assigned projects and contributions"}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -644,7 +733,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
               className="pl-10 w-64"
             />
           </div>
-          
+
           {/* Filter Dropdown */}
           <Popover>
             <PopoverTrigger asChild>
@@ -656,11 +745,18 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
             <PopoverContent className="w-80" align="end">
               <div className="space-y-4">
                 <h4 className="font-medium leading-none">Filter Projects</h4>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Status</label>
-                    <Select value={filterBy.status} onValueChange={(value) => setFilterBy({...filterBy, status: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Status
+                    </label>
+                    <Select
+                      value={filterBy.status}
+                      onValueChange={(value: string) =>
+                        setFilterBy({ ...filterBy, status: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -672,10 +768,17 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Priority</label>
-                    <Select value={filterBy.priority} onValueChange={(value) => setFilterBy({...filterBy, priority: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Priority
+                    </label>
+                    <Select
+                      value={filterBy.priority}
+                      onValueChange={(value: string) =>
+                        setFilterBy({ ...filterBy, priority: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -687,10 +790,17 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Methodology</label>
-                    <Select value={filterBy.methodology} onValueChange={(value) => setFilterBy({...filterBy, methodology: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Methodology
+                    </label>
+                    <Select
+                      value={filterBy.methodology}
+                      onValueChange={(value: string) =>
+                        setFilterBy({ ...filterBy, methodology: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -702,17 +812,28 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Type</label>
-                    <Select value={filterBy.type} onValueChange={(value) => setFilterBy({...filterBy, type: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Type
+                    </label>
+                    <Select
+                      value={filterBy.type}
+                      onValueChange={(value: string) =>
+                        setFilterBy({ ...filterBy, type: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="Software Development">Software Dev</SelectItem>
-                        <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                        <SelectItem value="Software Development">
+                          Software Dev
+                        </SelectItem>
+                        <SelectItem value="Infrastructure">
+                          Infrastructure
+                        </SelectItem>
                         <SelectItem value="Marketing">Marketing</SelectItem>
                         <SelectItem value="Analytics">Analytics</SelectItem>
                         <SelectItem value="Security">Security</SelectItem>
@@ -720,20 +841,31 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     </Select>
                   </div>
                 </div>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full"
-                  onClick={() => setFilterBy({status: 'all', priority: 'all', methodology: 'all', type: 'all'})}
+                  onClick={() =>
+                    setFilterBy({
+                      status: "all",
+                      priority: "all",
+                      methodology: "all",
+                      type: "all",
+                    })
+                  }
                 >
                   Clear Filters
                 </Button>
               </div>
             </PopoverContent>
           </Popover>
-          
-          <Button variant="outline" size="sm" onClick={() => setShowTemplateModal(true)}>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTemplateModal(true)}
+          >
             <FileText className="w-4 h-4 mr-2" />
             Templates
           </Button>
@@ -744,7 +876,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
             disabled={mastersLoading || ownersLoading || loadingTeamMembers}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {(mastersLoading || ownersLoading || loadingTeamMembers) ? 'Loading...' : 'New Project'}
+            {mastersLoading || ownersLoading || loadingTeamMembers
+              ? "Loading..."
+              : "New Project"}
           </Button>
         </div>
       </div>
@@ -754,8 +888,12 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
-              <p className="text-3xl font-bold">{roleFilteredProjects.length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Projects
+              </p>
+              <p className="text-3xl font-bold">
+                {roleFilteredProjects.length}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 +{Math.floor(roleFilteredProjects.length * 0.1)} from last month
               </p>
@@ -769,8 +907,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Projects</p>
-              <p className="text-3xl font-bold">{roleFilteredProjects.filter(p => p.status === 'Active').length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Active Projects
+              </p>
+              <p className="text-3xl font-bold">
+                {
+                  roleFilteredProjects.filter((p) => p.status === "Active")
+                    .length
+                }
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Currently in progress
               </p>
@@ -784,11 +929,17 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">At Risk</p>
-              <p className="text-3xl font-bold">{roleFilteredProjects.filter(p => {
-                const budgetUsage = (p.spent / p.budget) * 100;
-                return budgetUsage > 90 || p.progress < 50;
-              }).length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                At Risk
+              </p>
+              <p className="text-3xl font-bold">
+                {
+                  roleFilteredProjects.filter((p) => {
+                    const budgetUsage = (p.spent / p.budget) * 100;
+                    return budgetUsage > 90 || p.progress < 50;
+                  }).length
+                }
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Need attention
               </p>
@@ -802,8 +953,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">On Hold</p>
-              <p className="text-3xl font-bold">{roleFilteredProjects.filter(p => p.status === 'On Hold').length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                On Hold
+              </p>
+              <p className="text-3xl font-bold">
+                {
+                  roleFilteredProjects.filter((p) => p.status === "On Hold")
+                    .length
+                }
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Temporarily paused
               </p>
@@ -819,25 +977,31 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-semibold">Projects ({filteredProjects.length})</h3>
+            <h3 className="text-lg font-semibold">
+              Projects ({filteredProjects.length})
+            </h3>
             <Badge variant="outline" className="ml-2">
-              {viewMode === 'grid' ? 'Card View' : 'Table View'}
+              {viewMode === "grid" ? "Card View" : "Table View"}
             </Badge>
           </div>
           <div className="flex items-center space-x-2">
             <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              variant={viewMode === "grid" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('grid')}
-              className={viewMode === 'grid' ? 'bg-[#007BFF] hover:bg-[#0056b3]' : ''}
+              onClick={() => setViewMode("grid")}
+              className={
+                viewMode === "grid" ? "bg-[#007BFF] hover:bg-[#0056b3]" : ""
+              }
             >
               <Grid3X3 className="w-4 h-4" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
+              variant={viewMode === "list" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('list')}
-              className={viewMode === 'list' ? 'bg-[#007BFF] hover:bg-[#0056b3]' : ''}
+              onClick={() => setViewMode("list")}
+              className={
+                viewMode === "list" ? "bg-[#007BFF] hover:bg-[#0056b3]" : ""
+              }
             >
               <List className="w-4 h-4" />
             </Button>
@@ -845,10 +1009,14 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         </div>
 
         {/* Card View */}
-        {viewMode === 'grid' && (
+        {viewMode === "grid" && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
             {filteredProjects.map((project) => {
-              const budgetStatus = getBudgetStatus(project.spent, project.budget)
+              const budgetStatus = getBudgetStatus(
+                project.spent,
+                project.budget
+              );
+              console.log(project, "akuhkdhaksjd");
 
               return (
                 <Card
@@ -861,8 +1029,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-semibold text-lg group-hover:text-[#007BFF] transition-colors">{project.name}</h3>
-                          <Badge className={getPriorityColor(project.priority)}>
+                          <h3 className="font-semibold text-lg group-hover:text-[#007BFF] transition-colors">
+                            {project.name}
+                          </h3>
+                          <Badge
+                            className={getPriorityColor(
+                              project.priority,
+                              project?.color
+                            )}
+                          >
                             {project.priority}
                           </Badge>
                         </div>
@@ -875,9 +1050,13 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                             <span>{project.methodology}</span>
                           </div>
                           <Badge variant="outline" className="text-xs">
-                            {project.projectType}
+                            {project.project_type || "-"}
                           </Badge>
-                          <span className={`text-xs font-medium ${getStatusColor(project.status)}`}>
+                          <span
+                            className={`text-xs font-medium ${getStatusColor(
+                              project.status
+                            )}`}
+                          >
                             {project.status}
                           </span>
                         </div>
@@ -887,17 +1066,14 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           variant="ghost"
                           size="sm"
                           className="p-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedProjectForTasks(project.id)
-                            setShowTaskManagement(true)
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            setSelectedProjectForTasks(project.id);
+                            setShowTaskManagement(true);
                           }}
                           title="Manage Tasks"
                         >
                           <CheckSquare className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="p-1">
-                          <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -906,7 +1082,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">Progress</span>
-                        <span className="text-sm text-muted-foreground">{project.progress}%</span>
+                        <span className="text-sm text-muted-foreground">
+                          {project.progress}%
+                        </span>
                       </div>
                       <Progress value={project.progress} className="h-2" />
                     </div>
@@ -914,16 +1092,24 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-3 gap-3 mb-4">
                       <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Epics</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Epics
+                        </p>
                         <p className="text-lg font-bold">{project.epics}</p>
                       </div>
                       <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Stories</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Stories
+                        </p>
                         <p className="text-lg font-bold">{project.stories}</p>
                       </div>
                       <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Tasks</p>
-                        <p className="text-lg font-bold">{project.tasksCompleted}/{project.tasksTotal}</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Tasks
+                        </p>
+                        <p className="text-lg font-bold">
+                          {project.tasksCompleted}/{project.tasksTotal}
+                        </p>
                       </div>
                     </div>
 
@@ -931,26 +1117,33 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <div className="flex items-center justify-between pt-3 border-t">
                       <div className="flex items-center space-x-2">
                         <Users className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{project.teamSize} members</span>
+                        <span className="text-sm text-muted-foreground">
+                          {project.teamSize} members
+                        </span>
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm font-medium ${budgetStatus.color}`}>
-                          ${(project.spent/1000).toFixed(0)}k / ${(project.budget/1000).toFixed(0)}k
+                        <p
+                          className={`text-sm font-medium ${budgetStatus.color}`}
+                        >
+                          ${(project.spent / 1000).toFixed(0)}k / $
+                          {(project.budget / 1000).toFixed(0)}k
                         </p>
-                        <p className="text-xs text-muted-foreground">{budgetStatus.status}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {budgetStatus.status}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </Card>
-              )
+              );
             })}
           </div>
         )}
 
         {/* Table View */}
-        {viewMode === 'list' && (
-          <Card>
-            <Table>
+        {viewMode === "list" && (
+          <Card className="overflow-x-auto relative">
+            <Table className="min-w-full relative border-separate border-spacing-0">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[250px]">Project</TableHead>
@@ -961,12 +1154,18 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   <TableHead>Budget</TableHead>
                   <TableHead>Methodology</TableHead>
                   <TableHead>Due Date</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+
+                  {/* Sticky last column */}
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {filteredProjects.map((project) => {
-                  const budgetStatus = getBudgetStatus(project.spent, project.budget)
+                  const budgetStatus = getBudgetStatus(
+                    project.spent,
+                    project.budget
+                  );
 
                   return (
                     <TableRow
@@ -976,25 +1175,30 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     >
                       <TableCell>
                         <div>
-                          <div className="font-semibold text-sm">{project.name}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">
-                            {project.description}
+                          <div className="font-semibold text-sm">
+                            {project.name}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
                             {project.customer}
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell>
-                        <Badge variant="outline" className={getStatusColor(project.status)}>
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(project.status)}
+                        >
                           {project.status}
                         </Badge>
                       </TableCell>
+
                       <TableCell>
                         <Badge className={getPriorityColor(project.priority)}>
                           {project.priority}
                         </Badge>
                       </TableCell>
+
                       <TableCell>
                         <div className="w-full">
                           <div className="flex items-center justify-between mb-1">
@@ -1003,51 +1207,61 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           <Progress value={project.progress} className="h-2" />
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           <Users className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm">{project.teamSize}</span>
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <div>
-                          <div className={`text-sm font-medium ${budgetStatus.color}`}>
-                            ${(project.spent/1000).toFixed(0)}k / ${(project.budget/1000).toFixed(0)}k
+                          <div
+                            className={`text-sm font-medium ${budgetStatus.color}`}
+                          >
+                            ${(project.spent / 1000).toFixed(0)}k / $
+                            {(project.budget / 1000).toFixed(0)}k
                           </div>
-                          <div className="text-xs text-muted-foreground">{budgetStatus.status}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {budgetStatus.status}
+                          </div>
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           {getMethodologyIcon(project.methodology)}
                           <span className="text-sm">{project.methodology}</span>
                         </div>
                       </TableCell>
+
                       <TableCell>
-                        <div className="text-sm">{project.endDate}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {project.endDate || "N/A"}
+                        </div>
                       </TableCell>
-                      <TableCell>
+
+                      {/* Sticky action buttons */}
+                      <TableCell className="sticky right-0 bg-white shadow-[-2px_0_4px_rgba(0,0,0,0.05)] z-10">
                         <div className="flex space-x-1">
                           <Button
                             variant="ghost"
                             size="sm"
                             className="p-1"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedProjectForTasks(project.id)
-                              setShowTaskManagement(true)
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              setSelectedProjectForTasks(project.id);
+                              setShowTaskManagement(true);
                             }}
                             title="Manage Tasks"
                           >
                             <CheckSquare className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="p-1">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })}
               </TableBody>
             </Table>
@@ -1055,10 +1269,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         )}
       </div>
 
-
       {/* Project Template Modal - 1200px width */}
-      <ProjectTemplates 
-        isOpen={showTemplateModal} 
+      <ProjectTemplates
+        isOpen={showTemplateModal}
         onClose={() => setShowTemplateModal(false)}
         onSelectTemplate={handleUseTemplate}
       />
@@ -1072,13 +1285,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
               <span>Create New Project</span>
             </DialogTitle>
             <DialogDescription>
-              Set up your project with comprehensive details, manage team members, set timeline and budget, and configure project settings.
+              Set up your project with comprehensive details, manage team
+              members, set timeline and budget, and configure project settings.
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="general" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="general"
+                className="flex items-center space-x-2"
+              >
                 <FileText className="w-4 h-4" />
                 <span>General</span>
               </TabsTrigger>
@@ -1086,11 +1307,17 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                 <Users className="w-4 h-4" />
                 <span>Team</span>
               </TabsTrigger>
-              <TabsTrigger value="timeline" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="timeline"
+                className="flex items-center space-x-2"
+              >
                 <CalendarDays className="w-4 h-4" />
                 <span>Timeline & Budget</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="settings"
+                className="flex items-center space-x-2"
+              >
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>
               </TabsTrigger>
@@ -1104,13 +1331,22 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Input
                       id="name"
                       value={newProject.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
                       onBlur={formik.handleBlur}
                       placeholder="Enter project name"
-                      className={cn("mt-1", formik.touched.name && formik.errors.name && "border-red-500")}
+                      className={cn(
+                        "mt-1",
+                        formik.touched.name &&
+                          formik.errors.name &&
+                          "border-red-500"
+                      )}
                     />
                     {formik.touched.name && formik.errors.name && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.name}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.name}
+                      </p>
                     )}
                   </div>
 
@@ -1119,7 +1355,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Textarea
                       id="description"
                       value={newProject.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("description", e.target.value)
+                      }
                       placeholder="Enter project description"
                       rows={4}
                       className="mt-1"
@@ -1131,12 +1369,25 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Select
                       value={newProject.customer}
                       onValueChange={(value: string) => {
-                        handleInputChange('customer', value)
-                        formik.setFieldTouched('customer', true)
+                        handleInputChange("customer", value);
+                        formik.setFieldTouched("customer", true);
                       }}
                     >
-                      <SelectTrigger className={cn("mt-1", formik.touched.customer && formik.errors.customer && "border-red-500")}>
-                        <SelectValue placeholder={loadingCustomers ? "Loading customers..." : "Select customer"} />
+                      <SelectTrigger
+                        className={cn(
+                          "mt-1",
+                          formik.touched.customer &&
+                            formik.errors.customer &&
+                            "border-red-500"
+                        )}
+                      >
+                        <SelectValue
+                          placeholder={
+                            loadingCustomers
+                              ? "Loading customers..."
+                              : "Select customer"
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {loadingCustomers ? (
@@ -1159,9 +1410,16 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                                 <Badge variant="outline" className="text-xs">
                                   {customer.industry}
                                 </Badge>
-                                <Badge variant="outline" className="text-xs" style={{
-                                  color: customer.status === 'Active' ? '#28A745' : '#6C757D'
-                                }}>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs"
+                                  style={{
+                                    color:
+                                      customer.status === "Active"
+                                        ? "#28A745"
+                                        : "#6C757D",
+                                  }}
+                                >
                                   {customer.status}
                                 </Badge>
                               </div>
@@ -1171,7 +1429,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                     {formik.touched.customer && formik.errors.customer && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.customer}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.customer}
+                      </p>
                     )}
                   </div>
 
@@ -1180,7 +1440,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Input
                       id="version"
                       value={newProject.version}
-                      onChange={(e) => handleInputChange('version', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("version", e.target.value)
+                      }
                       placeholder="e.g., v1.0.0"
                       className="mt-1"
                     />
@@ -1191,13 +1453,25 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Input
                       id="prefix"
                       value={newProject.prefix}
-                      onChange={(e) => handleInputChange('prefix', e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "prefix",
+                          e.target.value.toUpperCase()
+                        )
+                      }
                       onBlur={formik.handleBlur}
                       placeholder="e.g., PROJ"
-                      className={cn("mt-1", formik.touched.prefix && formik.errors.prefix && "border-red-500")}
+                      className={cn(
+                        "mt-1",
+                        formik.touched.prefix &&
+                          formik.errors.prefix &&
+                          "border-red-500"
+                      )}
                     />
                     {formik.touched.prefix && formik.errors.prefix && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.prefix}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.prefix}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1208,18 +1482,29 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Select
                       value={newProject.status}
                       onValueChange={(value: string) => {
-                        handleInputChange('status', value)
-                        formik.setFieldTouched('status', true)
+                        handleInputChange("status", value);
+                        formik.setFieldTouched("status", true);
                       }}
                     >
-                      <SelectTrigger className={cn("mt-1", formik.touched.status && formik.errors.status && "border-red-500")}>
+                      <SelectTrigger
+                        className={cn(
+                          "mt-1",
+                          formik.touched.status &&
+                            formik.errors.status &&
+                            "border-red-500"
+                        )}
+                      >
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
                         {statuses.map((status) => (
                           <SelectItem key={status.value} value={status.value}>
                             <div className="flex items-center space-x-2">
-                              <div className={`w-2 h-2 rounded-full ${status.color.split(' ')[0]}`} />
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  status.color.split(" ")[0]
+                                }`}
+                              />
                               <span>{status.value}</span>
                             </div>
                           </SelectItem>
@@ -1227,7 +1512,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                     {formik.touched.status && formik.errors.status && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.status}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.status}
+                      </p>
                     )}
                   </div>
 
@@ -1236,18 +1523,32 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Select
                       value={newProject.priority}
                       onValueChange={(value: string) => {
-                        handleInputChange('priority', value)
-                        formik.setFieldTouched('priority', true)
+                        handleInputChange("priority", value);
+                        formik.setFieldTouched("priority", true);
                       }}
                     >
-                      <SelectTrigger className={cn("mt-1", formik.touched.priority && formik.errors.priority && "border-red-500")}>
+                      <SelectTrigger
+                        className={cn(
+                          "mt-1",
+                          formik.touched.priority &&
+                            formik.errors.priority &&
+                            "border-red-500"
+                        )}
+                      >
                         <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
                       <SelectContent>
                         {priorities.map((priority) => (
-                          <SelectItem key={priority.value} value={priority.value}>
+                          <SelectItem
+                            key={priority.value}
+                            value={priority.value}
+                          >
                             <div className="flex items-center space-x-2">
-                              <div className={`w-2 h-2 rounded-full ${priority.color.split(' ')[0]}`} />
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  priority.color.split(" ")[0]
+                                }`}
+                              />
                               <span>{priority.value}</span>
                             </div>
                           </SelectItem>
@@ -1255,7 +1556,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                     {formik.touched.priority && formik.errors.priority && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.priority}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.priority}
+                      </p>
                     )}
                   </div>
 
@@ -1264,11 +1567,18 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Select
                       value={newProject.methodology}
                       onValueChange={(value: string) => {
-                        handleInputChange('methodology', value)
-                        formik.setFieldTouched('methodology', true)
+                        handleInputChange("methodology", value);
+                        formik.setFieldTouched("methodology", true);
                       }}
                     >
-                      <SelectTrigger className={cn("mt-1", formik.touched.methodology && formik.errors.methodology && "border-red-500")}>
+                      <SelectTrigger
+                        className={cn(
+                          "mt-1",
+                          formik.touched.methodology &&
+                            formik.errors.methodology &&
+                            "border-red-500"
+                        )}
+                      >
                         <SelectValue placeholder="Select methodology" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1279,9 +1589,12 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         ))}
                       </SelectContent>
                     </Select>
-                    {formik.touched.methodology && formik.errors.methodology && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.methodology}</p>
-                    )}
+                    {formik.touched.methodology &&
+                      formik.errors.methodology && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {formik.errors.methodology}
+                        </p>
+                      )}
                   </div>
 
                   <div>
@@ -1289,11 +1602,18 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Select
                       value={newProject.type}
                       onValueChange={(value: string) => {
-                        handleInputChange('type', value)
-                        formik.setFieldTouched('type', true)
+                        handleInputChange("type", value);
+                        formik.setFieldTouched("type", true);
                       }}
                     >
-                      <SelectTrigger className={cn("mt-1", formik.touched.type && formik.errors.type && "border-red-500")}>
+                      <SelectTrigger
+                        className={cn(
+                          "mt-1",
+                          formik.touched.type &&
+                            formik.errors.type &&
+                            "border-red-500"
+                        )}
+                      >
                         <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1305,7 +1625,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                     {formik.touched.type && formik.errors.type && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.type}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.type}
+                      </p>
                     )}
                   </div>
 
@@ -1314,11 +1636,18 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     <Select
                       value={newProject.owner}
                       onValueChange={(value: string) => {
-                        handleInputChange('owner', value)
-                        formik.setFieldTouched('owner', true)
+                        handleInputChange("owner", value);
+                        formik.setFieldTouched("owner", true);
                       }}
                     >
-                      <SelectTrigger className={cn("mt-1", formik.touched.owner && formik.errors.owner && "border-red-500")}>
+                      <SelectTrigger
+                        className={cn(
+                          "mt-1",
+                          formik.touched.owner &&
+                            formik.errors.owner &&
+                            "border-red-500"
+                        )}
+                      >
                         <SelectValue placeholder="Select project owner" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1328,17 +1657,23 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           </SelectItem>
                         ) : projectOwners?.items?.length ? (
                           projectOwners.items
-                            .filter(owner => owner.is_active)
+                            .filter((owner) => owner.is_active)
                             .map((owner) => (
                               <SelectItem key={owner.id} value={owner.name}>
                                 <div className="flex items-center space-x-2">
                                   <div className="w-6 h-6 rounded-full bg-[#007BFF] text-white text-xs flex items-center justify-center">
-                                    {owner.avatar || owner.name.charAt(0).toUpperCase()}
+                                    {owner.avatar ||
+                                      owner.name.charAt(0).toUpperCase()}
                                   </div>
                                   <div>
-                                    <span className="font-medium">{owner.name}</span>
+                                    <span className="font-medium">
+                                      {owner.name}
+                                    </span>
                                     <span className="text-xs text-muted-foreground ml-2">
-                                      {typeof owner.role === 'object' ? owner.role.name : owner.role} • {owner.department}
+                                      {typeof owner.role === "object"
+                                        ? owner.role.name
+                                        : owner.role}{" "}
+                                      • {owner.department}
                                     </span>
                                   </div>
                                 </div>
@@ -1352,7 +1687,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </SelectContent>
                     </Select>
                     {formik.touched.owner && formik.errors.owner && (
-                      <p className="text-sm text-red-500 mt-1">{formik.errors.owner}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {formik.errors.owner}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1362,7 +1699,11 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                 <Label>Tags</Label>
                 <div className="flex flex-wrap gap-2 mt-2 mb-2">
                   {newProject.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="flex items-center space-x-1"
+                    >
                       <span>{tag}</span>
                       <Button
                         variant="ghost"
@@ -1381,9 +1722,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Add a tag"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAddTag()
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
                       }
                     }}
                   />
@@ -1408,10 +1749,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   </h3>
                   <div className="space-y-3 max-h-80 overflow-y-auto">
                     {newProject.team.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No team members assigned</p>
+                      <p className="text-muted-foreground text-sm">
+                        No team members assigned
+                      </p>
                     ) : (
                       newProject.team.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        >
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-8 h-8">
                               <AvatarFallback className="bg-[#007BFF] text-white text-sm">
@@ -1419,8 +1765,12 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-sm">{member.name}</p>
-                              <p className="text-xs text-muted-foreground">{member.role}</p>
+                              <p className="font-medium text-sm">
+                                {member.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {member.role}
+                              </p>
                             </div>
                           </div>
                           <Button
@@ -1444,19 +1794,33 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   </h3>
                   <div className="space-y-3 max-h-80 overflow-y-auto">
                     {loadingTeamMembers ? (
-                      <p className="text-muted-foreground text-sm">Loading team members...</p>
+                      <p className="text-muted-foreground text-sm">
+                        Loading team members...
+                      </p>
                     ) : teamMembersError ? (
                       <div className="text-center py-4">
-                        <p className="text-red-500 text-sm">{teamMembersError}</p>
-                        <Button variant="outline" size="sm" onClick={loadTeamMembers} className="mt-2">
+                        <p className="text-red-500 text-sm">
+                          {teamMembersError}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={loadTeamMembers}
+                          className="mt-2"
+                        >
                           Retry
                         </Button>
                       </div>
                     ) : availableMembers.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">All team members are already assigned</p>
+                      <p className="text-muted-foreground text-sm">
+                        All team members are already assigned
+                      </p>
                     ) : (
                       availableMembers.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-8 h-8">
                               <AvatarFallback className="bg-[#28A745] text-white text-sm">
@@ -1464,9 +1828,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-sm">{member.name}</p>
-                              <p className="text-xs text-muted-foreground">{member.role}</p>
-                              <p className="text-xs text-muted-foreground">{member.department}</p>
+                              <p className="font-medium text-sm">
+                                {member.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {member.role}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {member.department}
+                              </p>
                             </div>
                           </div>
                           <Button
@@ -1495,18 +1865,25 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   <div className="space-y-4">
                     <div>
                       <Label>Start Date *</Label>
-                      <Popover open={showStartDatePicker} onOpenChange={setShowStartDatePicker}>
+                      <Popover
+                        open={showStartDatePicker}
+                        onOpenChange={setShowStartDatePicker}
+                      >
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal mt-1",
                               !newProject.startDate && "text-muted-foreground",
-                              formik.touched.startDate && formik.errors.startDate && "border-red-500"
+                              formik.touched.startDate &&
+                                formik.errors.startDate &&
+                                "border-red-500"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {newProject.startDate ? format(newProject.startDate, "PPP") : "Pick a date"}
+                            {newProject.startDate
+                              ? format(newProject.startDate, "PPP")
+                              : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -1515,9 +1892,9 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                             selected={newProject.startDate}
                             onSelect={(date: Date | undefined) => {
                               if (date) {
-                                handleInputChange('startDate', date)
-                                formik.setFieldTouched('startDate', true)
-                                setShowStartDatePicker(false)
+                                handleInputChange("startDate", date);
+                                formik.setFieldTouched("startDate", true);
+                                setShowStartDatePicker(false);
                               }
                             }}
                             initialFocus
@@ -1525,24 +1902,33 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         </PopoverContent>
                       </Popover>
                       {formik.touched.startDate && formik.errors.startDate && (
-                        <p className="text-sm text-red-500 mt-1">{formik.errors.startDate}</p>
+                        <p className="text-sm text-red-500 mt-1">
+                          {formik.errors.startDate}
+                        </p>
                       )}
                     </div>
 
                     <div>
                       <Label>End Date *</Label>
-                      <Popover open={showDueDatePicker} onOpenChange={setShowDueDatePicker}>
+                      <Popover
+                        open={showDueDatePicker}
+                        onOpenChange={setShowDueDatePicker}
+                      >
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal mt-1",
                               !newProject.dueDate && "text-muted-foreground",
-                              formik.touched.dueDate && formik.errors.dueDate && "border-red-500"
+                              formik.touched.dueDate &&
+                                formik.errors.dueDate &&
+                                "border-red-500"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {newProject.dueDate ? format(newProject.dueDate, "PPP") : "Pick a date"}
+                            {newProject.dueDate
+                              ? format(newProject.dueDate, "PPP")
+                              : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -1551,25 +1937,34 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                             selected={newProject.dueDate}
                             onSelect={(date: Date | undefined) => {
                               if (date) {
-                                handleInputChange('dueDate', date)
-                                formik.setFieldTouched('dueDate', true)
-                                setShowDueDatePicker(false)
+                                handleInputChange("dueDate", date);
+                                formik.setFieldTouched("dueDate", true);
+                                setShowDueDatePicker(false);
                               }
                             }}
                             initialFocus
-                            disabled={(date: Date) => date <= newProject.startDate}
+                            disabled={(date: Date) =>
+                              date <= newProject.startDate
+                            }
                           />
                         </PopoverContent>
                       </Popover>
                       {formik.touched.dueDate && formik.errors.dueDate && (
-                        <p className="text-sm text-red-500 mt-1">{formik.errors.dueDate}</p>
+                        <p className="text-sm text-red-500 mt-1">
+                          {formik.errors.dueDate}
+                        </p>
                       )}
                     </div>
 
                     <div className="pt-2">
                       <Label className="text-muted-foreground">Duration</Label>
                       <p className="text-sm font-medium mt-1">
-                        {Math.ceil((newProject.dueDate.getTime() - newProject.startDate.getTime()) / (1000 * 3600 * 24))} days
+                        {Math.ceil(
+                          (newProject.dueDate.getTime() -
+                            newProject.startDate.getTime()) /
+                            (1000 * 3600 * 24)
+                        )}{" "}
+                        days
                       </p>
                     </div>
                   </div>
@@ -1587,7 +1982,12 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         id="budget"
                         type="number"
                         value={newProject.budget}
-                        onChange={(e) => handleInputChange('budget', parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "budget",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         placeholder="Enter budget amount"
                         className="mt-1"
                         min="0"
@@ -1609,11 +2009,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="font-medium">Public Project</Label>
-                      <p className="text-sm text-muted-foreground">Allow all team members to view this project</p>
+                      <p className="text-sm text-muted-foreground">
+                        Allow all team members to view this project
+                      </p>
                     </div>
                     <Switch
                       checked={newProject.isPublic}
-                      onCheckedChange={(checked: boolean) => handleInputChange('isPublic', checked)}
+                      onCheckedChange={(checked: boolean) =>
+                        handleInputChange("isPublic", checked)
+                      }
                     />
                   </div>
 
@@ -1622,11 +2026,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="font-medium">Email Notifications</Label>
-                      <p className="text-sm text-muted-foreground">Send email updates for project activities</p>
+                      <p className="text-sm text-muted-foreground">
+                        Send email updates for project activities
+                      </p>
                     </div>
                     <Switch
                       checked={newProject.notifications}
-                      onCheckedChange={(checked: boolean) => handleInputChange('notifications', checked)}
+                      onCheckedChange={(checked: boolean) =>
+                        handleInputChange("notifications", checked)
+                      }
                     />
                   </div>
 
@@ -1635,11 +2043,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="font-medium">Auto Archive</Label>
-                      <p className="text-sm text-muted-foreground">Automatically archive completed projects after 30 days</p>
+                      <p className="text-sm text-muted-foreground">
+                        Automatically archive completed projects after 30 days
+                      </p>
                     </div>
                     <Switch
                       checked={newProject.autoArchive}
-                      onCheckedChange={(checked: boolean) => handleInputChange('autoArchive', checked)}
+                      onCheckedChange={(checked: boolean) =>
+                        handleInputChange("autoArchive", checked)
+                      }
                     />
                   </div>
                 </div>
@@ -1648,7 +2060,11 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
           </Tabs>
 
           <div className="flex justify-end space-x-3 pt-6 border-t">
-            <Button variant="outline" onClick={() => setShowCreateProject(false)} disabled={isLoading}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateProject(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button
@@ -1664,12 +2080,13 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   type: true,
                   owner: true,
                   startDate: true,
-                  dueDate: true
-                })
-                formik.handleSubmit()
+                  dueDate: true,
+                });
+                formik.handleSubmit();
               }}
               disabled={isLoading}
-              className="bg-[#28A745] hover:bg-[#218838]">
+              className="bg-[#28A745] hover:bg-[#218838]"
+            >
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -1692,11 +2109,11 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
           projectId={selectedProjectForTasks}
           isOpen={showTaskManagement}
           onClose={() => {
-            setShowTaskManagement(false)
-            setSelectedProjectForTasks(null)
+            setShowTaskManagement(false);
+            setSelectedProjectForTasks(null);
           }}
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,75 +1,92 @@
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog'
-import { Input } from '../ui/input'
-import { Badge } from '../ui/badge'
-import { Avatar, AvatarFallback } from '../ui/avatar'
-import { 
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import {
   Search,
   CheckSquare,
   FolderOpen,
   Users,
   Clock,
   Calendar,
-  ArrowRight
-} from 'lucide-react'
+  ArrowRight,
+} from "lucide-react";
 
 interface GlobalSearchProps {
-  isOpen: boolean
-  onClose: () => void
-  user?: any
+  isOpen: boolean;
+  onClose: () => void;
+  user?: any;
 }
 
 export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState("");
   const [filteredResults, setFilteredResults] = useState({
     tasks: [] as any[],
     projects: [] as any[],
-    users: [] as any[]
-  })
+    users: [] as any[],
+  });
 
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFilteredResults({ tasks: [], projects: [], users: [] })
-      return
+      setFilteredResults({ tasks: [], projects: [], users: [] });
+      return;
     }
 
     // TODO: Implement actual API search
-    setFilteredResults({ tasks: [], projects: [], users: [] })
-  }, [searchTerm])
+    setFilteredResults({ tasks: [], projects: [], users: [] });
+  }, [searchTerm]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'In Progress': return 'bg-[#007BFF] text-white'
-      case 'Todo': return 'bg-[#6C757D] text-white'
-      case 'Done': return 'bg-[#28A745] text-white'
-      case 'Planning': return 'bg-[#FFC107] text-white'
-      case 'Active': return 'bg-[#28A745] text-white'
-      default: return 'bg-muted text-foreground'
+      case "In Progress":
+        return "bg-[#007BFF] text-white";
+      case "Todo":
+        return "bg-[#6C757D] text-white";
+      case "Done":
+        return "bg-[#28A745] text-white";
+      case "Planning":
+        return "bg-[#FFC107] text-white";
+      case "Active":
+        return "bg-[#28A745] text-white";
+      default:
+        return "bg-muted text-foreground";
     }
-  }
+  };
 
   const handleResultClick = (type: string, id: string) => {
     // In a real app, this would navigate to the specific item
-    onClose()
-  }
+    onClose();
+  };
 
-  const totalResults = filteredResults.tasks.length + filteredResults.projects.length + filteredResults.users.length
+  const totalResults =
+    filteredResults.tasks.length +
+    filteredResults.projects.length +
+    filteredResults.users.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[920px] max-w-[920px] max-h-[80vh] overflow-hidden p-0">
+      <DialogContent className="w-[920px] max-w-[920px] h-[800px] overflow-hidden p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Global Search</DialogTitle>
-          <DialogDescription>Search for tasks, projects, and users across your workspace</DialogDescription>
+          <DialogDescription>
+            Search for tasks, projects, and users across your workspace
+          </DialogDescription>
         </DialogHeader>
-        <div className="border-b border-border/20 p-4">
+        <div className="border-b border-border/20 p-4 ">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search tasks, projects, users..."
-              className="pl-10 border-none shadow-none focus:ring-0"
+              className="pl-10 border-none shadow-none focus:ring-0 "
               autoFocus
             />
           </div>
@@ -84,11 +101,6 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
               <p className="text-muted-foreground mb-4">
                 Find tasks, projects, users, and more across your workspace
               </p>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p><kbd className="bg-muted px-2 py-1 rounded text-xs">Enter</kbd> to select</p>
-                <p><kbd className="bg-muted px-2 py-1 rounded text-xs">↑↓</kbd> to navigate</p>
-                <p><kbd className="bg-muted px-2 py-1 rounded text-xs">Esc</kbd> to close</p>
-              </div>
             </div>
           ) : totalResults === 0 ? (
             /* No Results */
@@ -115,13 +127,15 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
                     {filteredResults.tasks.map((task) => (
                       <div
                         key={task.id}
-                        onClick={() => handleResultClick('task', task.id)}
+                        onClick={() => handleResultClick("task", task.id)}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group"
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <h4 className="font-medium">{task.title}</h4>
-                            <Badge variant="outline" className="text-xs">{task.id}</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {task.id}
+                            </Badge>
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <span>{task.project}</span>
@@ -131,7 +145,9 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
                             </div>
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-3 h-3" />
-                              <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                              <span>
+                                {new Date(task.dueDate).toLocaleDateString()}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -160,13 +176,15 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
                     {filteredResults.projects.map((project) => (
                       <div
                         key={project.id}
-                        onClick={() => handleResultClick('project', project.id)}
+                        onClick={() => handleResultClick("project", project.id)}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group"
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <h4 className="font-medium">{project.name}</h4>
-                            <Badge variant="outline" className="text-xs">{project.id}</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {project.id}
+                            </Badge>
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <span>{project.customer}</span>
@@ -198,13 +216,16 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
                     {filteredResults.users.map((user) => (
                       <div
                         key={user.id}
-                        onClick={() => handleResultClick('user', user.id)}
+                        onClick={() => handleResultClick("user", user.id)}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group"
                       >
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8">
                             <AvatarFallback className="bg-[#007BFF] text-white text-xs">
-                              {user.name.split(' ').map(n => n[0]).join('')}
+                              {user.name
+                                .split(" ")
+                                .map((n: string) => n[0])
+                                .join("")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -234,17 +255,28 @@ export function GlobalSearch({ isOpen, onClose, user }: GlobalSearchProps) {
         {/* Footer */}
         <div className="border-t border-border/20 p-3 bg-muted/20">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center space-x-4">
-              <span>Use ↑↓ to navigate</span>
-              <span>Enter to select</span>
-              <span>Esc to close</span>
+            <div className="flex flex-1 items-center justify-between space-x-4">
+              <span>
+                <kbd className="bg-muted px-2 py-1 rounded text-xs">↑↓</kbd> to
+                navigate
+              </span>
+              <span>
+                <kbd className="bg-muted px-2 py-1 rounded text-xs">Enter</kbd>{" "}
+                to select
+              </span>
+              <span>
+                <kbd className="bg-muted px-2 py-1 rounded text-xs">Esc</kbd> to
+                close
+              </span>
+              {totalResults > 0 && (
+                <span>
+                  {totalResults} result{totalResults !== 1 ? "s" : ""} found
+                </span>
+              )}
             </div>
-            {totalResults > 0 && (
-              <span>{totalResults} result{totalResults !== 1 ? 's' : ''} found</span>
-            )}
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

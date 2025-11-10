@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { projectApiService } from '../services/projectApi';
-import { Project } from '../mock-data/projects';
+import { Project } from './../services/projectApi';
 
 export function useActiveProjects() {
   const [projects, setProjects] = useState<Project[]>([]);

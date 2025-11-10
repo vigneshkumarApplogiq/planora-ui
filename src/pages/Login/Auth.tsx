@@ -1,136 +1,150 @@
-import React, { useState } from 'react'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Label } from '../../components/ui/label'
-import { Checkbox } from '../../components/ui/checkbox'
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
+import React, { useState } from "react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Checkbox } from "../../components/ui/checkbox";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
   Heart,
   Users,
   BarChart3,
-  Shield
-} from 'lucide-react'
-import { toast } from 'sonner@2.0.3'
-import logoImage from 'figma:asset/6748e9361ee0546a59b88c4fb2d8d612f9260020.png'
-import { authApiService } from '../../services/authApi'
-import { APP_VERSION } from '../../config/api'
+  Shield,
+} from "lucide-react";
+import { toast } from "sonner";
+import logoImage from "figma:asset/6748e9361ee0546a59b88c4fb2d8d612f9260020.png";
+import { authApiService } from "../../services/authApi";
+import { APP_VERSION } from "../../config/api";
 
 interface AuthProps {
-  onLogin: (user: any) => void
+  onLogin: (user: any) => void;
 }
 
 // Mock user roles and permissions
 const userRoles = {
-  'super_admin': {
-    name: 'Super Admin',
-    permissions: ['*'], // All permissions
-    color: 'bg-red-500',
-    description: 'Full system access and management'
+  super_admin: {
+    name: "Super Admin",
+    permissions: ["*"], // All permissions
+    color: "bg-red-500",
+    description: "Full system access and management",
   },
-  'admin': {
-    name: 'Admin',
-    permissions: ['users:read', 'users:write', 'projects:*', 'tasks:*', 'reports:read'],
-    color: 'bg-purple-500',
-    description: 'Administrative access to most features'
+  admin: {
+    name: "Admin",
+    permissions: [
+      "users:read",
+      "users:write",
+      "projects:*",
+      "tasks:*",
+      "reports:read",
+    ],
+    color: "bg-purple-500",
+    description: "Administrative access to most features",
   },
-  'project_manager': {
-    name: 'Project Manager',
-    permissions: ['projects:*', 'tasks:*', 'reports:read', 'customers:read'],
-    color: 'bg-blue-500',
-    description: 'Manage projects, tasks, and view reports'
+  project_manager: {
+    name: "Project Manager",
+    permissions: ["projects:*", "tasks:*", "reports:read", "customers:read"],
+    color: "bg-blue-500",
+    description: "Manage projects, tasks, and view reports",
   },
-  'developer': {
-    name: 'Developer',
-    permissions: ['tasks:read', 'tasks:write', 'projects:read'],
-    color: 'bg-green-500',
-    description: 'Access to assigned tasks and project details'
+  developer: {
+    name: "Developer",
+    permissions: ["tasks:read", "tasks:write", "projects:read"],
+    color: "bg-green-500",
+    description: "Access to assigned tasks and project details",
   },
-  'tester': {
-    name: 'Tester',
-    permissions: ['tasks:read', 'tasks:write', 'projects:read', 'reports:read'],
-    color: 'bg-yellow-500',
-    description: 'Test and quality assurance access'
+  tester: {
+    name: "Tester",
+    permissions: ["tasks:read", "tasks:write", "projects:read", "reports:read"],
+    color: "bg-yellow-500",
+    description: "Test and quality assurance access",
   },
-  'client': {
-    name: 'Client',
-    permissions: ['projects:read', 'tasks:read'],
-    color: 'bg-orange-500',
-    description: 'View project progress and milestones'
-  }
-}
-
-
+  client: {
+    name: "Client",
+    permissions: ["projects:read", "tasks:read"],
+    color: "bg-orange-500",
+    description: "View project progress and milestones",
+  },
+};
 
 export function Auth({ onLogin }: AuthProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
+    email: "",
+    password: "",
+  });
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       // API authentication
       const loginResponse = await authApiService.login({
         email: formData.email,
-        password: formData.password
-      })
+        password: formData.password,
+      });
 
       // Store tokens
-      authApiService.setTokens(loginResponse)
+      authApiService.setTokens(loginResponse);
 
       // Get user profile
-      const userProfile = await authApiService.getCurrentUser()
+      const userProfile = await authApiService.getCurrentUser();
 
       // Transform user profile to match expected format
       const user = {
         id: userProfile.id,
         email: userProfile.email,
         name: userProfile.name,
-        role: userProfile.role_id.startsWith('role_') ? userProfile.role_id.replace('role_', '') : userProfile.role_id,
-        avatar: userProfile.avatar || userProfile.name.split(' ').map(n => n[0]).join(''),
+        role: userProfile.role_id.startsWith("role_")
+          ? userProfile.role_id.replace("role_", "")
+          : userProfile.role_id,
+        avatar:
+          userProfile.avatar ||
+          userProfile.name
+            .split(" ")
+            .map((n) => n[0])
+            .join(""),
         lastLogin: userProfile.last_login,
-        status: userProfile.is_active ? 'active' : 'inactive',
+        status: userProfile.is_active ? "active" : "inactive",
         department: userProfile.department,
         phone: userProfile.phone,
         skills: userProfile.skills,
         timezone: userProfile.timezone,
         created_at: userProfile.created_at,
-        updated_at: userProfile.updated_at
-      }
+        updated_at: userProfile.updated_at,
+      };
 
       // Store user profile
-      authApiService.setUserProfile(userProfile)
+      authApiService.setUserProfile(userProfile);
 
-      toast.success(`Welcome back, ${user.name}!`)
-      onLogin(user)
-
+      toast.success(`Welcome back, ${user.name}!`);
+      onLogin(user);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed. Please try again.')
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please try again."
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleForgotPassword = () => {
-    toast.info('Password reset link would be sent to your email')
-  }
+    toast.info("Password reset link would be sent to your email");
+  };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen h-full flex">
       {/* Left Panel - Branding Section (60%) */}
       <div className="hidden lg:flex w-3/5 relative bg-gradient-to-br from-[#28A745] via-[#20924A] to-[#1E7E34] overflow-hidden">
         {/* Background Pattern */}
@@ -148,8 +162,9 @@ export function Auth({ onLogin }: AuthProps) {
               Streamline Your Project Workflow with Planora
             </h1>
             <p className="text-xl text-white/90 leading-relaxed">
-              The comprehensive project management platform that brings teams together, 
-              tracks progress seamlessly, and delivers results efficiently.
+              The comprehensive project management platform that brings teams
+              together, tracks progress seamlessly, and delivers results
+              efficiently.
             </p>
           </div>
 
@@ -160,11 +175,14 @@ export function Auth({ onLogin }: AuthProps) {
                 <BarChart3 className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">Complete Project Control</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Complete Project Control
+                </h3>
                 <p className="text-white/90 leading-relaxed">
-                  From project initiation to delivery - manage timelines, resources, budgets, and team collaboration 
-                  in one powerful platform. Track milestones, monitor progress, and ensure on-time delivery with 
-                  advanced reporting and analytics.
+                  From project initiation to delivery - manage timelines,
+                  resources, budgets, and team collaboration in one powerful
+                  platform. Track milestones, monitor progress, and ensure
+                  on-time delivery with advanced reporting and analytics.
                 </p>
               </div>
             </div>
@@ -198,9 +216,9 @@ export function Auth({ onLogin }: AuthProps) {
           {/* Logo */}
           <div className="mb-8">
             <div className="flex items-center space-x-3">
-              <img 
-                src={logoImage} 
-                alt="Planora Logo" 
+              <img
+                src={logoImage}
+                alt="Planora Logo"
                 className="w-12 h-12 object-contain"
               />
               <span className="text-2xl font-bold text-[#28A745]">Planora</span>
@@ -209,14 +227,21 @@ export function Auth({ onLogin }: AuthProps) {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Login to your account</h1>
-            <p className="text-gray-600">Welcome back. Please provide your details below.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Login to your account
+            </h1>
+            <p className="text-gray-600">
+              Welcome back. Please provide your details below.
+            </p>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="email"
+                className="text-sm font-medium text-gray-700"
+              >
                 Email Address
               </Label>
               <div className="relative">
@@ -226,7 +251,7 @@ export function Auth({ onLogin }: AuthProps) {
                   type="email"
                   placeholder="tenant@planora.com"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   className="pl-10 h-12 border-gray-300 focus:border-[#28A745] focus:ring-[#28A745]"
                   required
                 />
@@ -234,17 +259,22 @@ export function Auth({ onLogin }: AuthProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-gray-700"
+              >
                 Password
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
                   className="pl-10 pr-12 h-12 border-gray-300 focus:border-[#28A745] focus:ring-[#28A745]"
                   required
                 />
@@ -255,7 +285,11 @@ export function Auth({ onLogin }: AuthProps) {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -263,10 +297,12 @@ export function Auth({ onLogin }: AuthProps) {
             {/* Options */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Checkbox 
+                <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  onCheckedChange={(checked: boolean) =>
+                    setRememberMe(checked as boolean)
+                  }
                 />
                 <Label htmlFor="remember" className="text-sm text-gray-600">
                   Remember me
@@ -282,42 +318,54 @@ export function Auth({ onLogin }: AuthProps) {
             </div>
 
             {/* Login Button */}
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full h-12 bg-[#28A745] hover:bg-[#218838] text-white font-medium rounded-lg transition-colors"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Login'}
+              {loading ? "Signing in..." : "Login"}
             </Button>
           </form>
 
           {/* Quick Login Section */}
           <div className="mt-6">
-            <p className="text-sm text-gray-600 text-center mb-3">Quick Login (Demo):</p>
+            <p className="text-sm text-gray-600 text-center mb-3">
+              Quick Login (Demo):
+            </p>
             <div className="grid grid-cols-2 gap-2">
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFormData({ email: 'manojkumar@planora.com', password: 'planora@123' })
+                  setFormData({
+                    email: "manojkumar@planora.com",
+                    password: "planora@123",
+                  });
                   setTimeout(() => {
-                    const form = document.querySelector('form') as HTMLFormElement
-                    form?.requestSubmit()
-                  }, 100)
+                    const form = document.querySelector(
+                      "form"
+                    ) as HTMLFormElement;
+                    form?.requestSubmit();
+                  }, 100);
                 }}
                 className="text-xs"
               >
                 Super Admin
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFormData({ email: 'mohammedyasik@planora.com', password: 'planora@123' })
+                  setFormData({
+                    email: "mohammedyasik@planora.com",
+                    password: "planora@123",
+                  });
                   setTimeout(() => {
-                    const form = document.querySelector('form') as HTMLFormElement
-                    form?.requestSubmit()
-                  }, 100)
+                    const form = document.querySelector(
+                      "form"
+                    ) as HTMLFormElement;
+                    form?.requestSubmit();
+                  }, 100);
                 }}
                 className="text-xs"
               >
@@ -325,29 +373,39 @@ export function Auth({ onLogin }: AuthProps) {
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-2">
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFormData({ email: 'gowtham@planora.com', password: 'planora@123' })
+                  setFormData({
+                    email: "gowtham@planora.com",
+                    password: "planora@123",
+                  });
                   setTimeout(() => {
-                    const form = document.querySelector('form') as HTMLFormElement
-                    form?.requestSubmit()
-                  }, 100)
+                    const form = document.querySelector(
+                      "form"
+                    ) as HTMLFormElement;
+                    form?.requestSubmit();
+                  }, 100);
                 }}
                 className="text-xs"
               >
                 Project Manager
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFormData({ email: 'grace.moore@planora.com', password: 'planora@123' })
+                  setFormData({
+                    email: "grace.moore@planora.com",
+                    password: "planora@123",
+                  });
                   setTimeout(() => {
-                    const form = document.querySelector('form') as HTMLFormElement
-                    form?.requestSubmit()
-                  }, 100)
+                    const form = document.querySelector(
+                      "form"
+                    ) as HTMLFormElement;
+                    form?.requestSubmit();
+                  }, 100);
                 }}
                 className="text-xs"
               >
@@ -355,15 +413,20 @@ export function Auth({ onLogin }: AuthProps) {
               </Button>
             </div>
             <div className="grid grid-cols-1 gap-2 mt-2">
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setFormData({ email: 'aaryastrak@planora.com', password: 'planora@123' })
+                  setFormData({
+                    email: "aaryastrak@planora.com",
+                    password: "planora@123",
+                  });
                   setTimeout(() => {
-                    const form = document.querySelector('form') as HTMLFormElement
-                    form?.requestSubmit()
-                  }, 100)
+                    const form = document.querySelector(
+                      "form"
+                    ) as HTMLFormElement;
+                    form?.requestSubmit();
+                  }, 100);
                 }}
                 className="text-xs"
               >
@@ -381,7 +444,7 @@ export function Auth({ onLogin }: AuthProps) {
               <p className="text-xs text-gray-400">
                 Version {APP_VERSION.version} • Build: {APP_VERSION.buildDate}
               </p>
-              {APP_VERSION.environment !== 'production' && (
+              {APP_VERSION.environment !== "production" && (
                 <p className="text-xs text-orange-500 font-medium">
                   Environment: {APP_VERSION.environment.toUpperCase()}
                 </p>
@@ -394,8 +457,8 @@ export function Auth({ onLogin }: AuthProps) {
       {/* Mobile Background for smaller screens */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-[#28A745]/5 to-[#1E7E34]/5 -z-10"></div>
     </div>
-  )
+  );
 }
 
 // Export user roles and permissions for use in other components
-export { userRoles }
+export { userRoles };

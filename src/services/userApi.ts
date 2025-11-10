@@ -11,6 +11,7 @@ export interface Role {
 export interface User {
   email: string;
   name: string;
+  avatar: string;
   role_id: string;
   user_profile: string;
   is_active: boolean;
@@ -19,7 +20,7 @@ export interface User {
   phone: string;
   timezone: string;
   id: string;
-  last_login: string | null;
+  last_login: string ;
   created_at: string;
   updated_at: string | null;
   role: Role;

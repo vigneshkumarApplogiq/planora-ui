@@ -1,17 +1,37 @@
-import { useState, useEffect } from 'react'
-import { Card } from '../../components/ui/card'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
-import { Progress } from '../../components/ui/progress'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { Input } from '../../components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
-import { toast } from 'sonner@2.0.3'
-import { TaskManagement } from '../Project/TaskManagement'
-import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { fetchMyProjects, clearError } from '../../store/slices/myProjectsSlice'
-import { MyProject } from '../../services/projectApi'
+import React, { useState, useEffect } from "react";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Progress } from "../../components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { Input } from "../../components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../components/ui/popover";
+import { toast } from "sonner";
+import { TaskManagement } from "../Project/TaskManagement";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  fetchMyProjects,
+  clearError,
+} from "../../store/slices/myProjectsSlice";
+import { MyProject } from "../../services/projectApi";
 import {
   Search,
   Filter,
@@ -27,8 +47,8 @@ import {
   Grid3X3,
   List,
   MoreHorizontal,
-  CheckSquare
-} from 'lucide-react'
+  CheckSquare,
+} from "lucide-react";
 
 // Add computed properties for UI display
 const addComputedProperties = (project: MyProject) => ({
@@ -40,94 +60,122 @@ const addComputedProperties = (project: MyProject) => ({
   upcomingMilestones: 2,
   epics: Math.floor(Math.random() * 5) + 1,
   stories: Math.floor(Math.random() * 20) + 10,
-  version: 'v1.0.0',
+  version: "v1.0.0",
 });
 
 interface MyProjectsProps {
-  onProjectSelect?: (projectId: string) => void
-  user?: any
+  onProjectSelect?: (projectId: string) => void;
+  user?: any;
 }
 
 export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
   const {
     projects: myProjects,
     loading,
-    error
-  } = useAppSelector((state) => state.myProjects)
+    error,
+  } = useAppSelector((state) => state.myProjects);
 
-  const projects = myProjects.map(addComputedProperties)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [showTaskManagement, setShowTaskManagement] = useState(false)
-  const [selectedProjectForTasks, setSelectedProjectForTasks] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const projects = myProjects.map(addComputedProperties);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showTaskManagement, setShowTaskManagement] = useState(false);
+  const [selectedProjectForTasks, setSelectedProjectForTasks] = useState<
+    string | null
+  >(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterBy, setFilterBy] = useState({
-    status: 'all',
-    priority: 'all',
-    methodology: 'all',
-    type: 'all'
-  })
+    status: "all",
+    priority: "all",
+    methodology: "all",
+    type: "all",
+  });
 
   // Fetch my projects on component mount
   useEffect(() => {
-    dispatch(fetchMyProjects())
-  }, [dispatch])
+    dispatch(fetchMyProjects());
+  }, [dispatch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'text-[#28A745]'
-      case 'In Progress': return 'text-[#FFC107]'
-      case 'Completed': return 'text-[#007BFF]'
-      case 'On Hold': return 'text-[#DC3545]'
-      default: return 'text-muted-foreground'
+      case "Active":
+        return "text-[#28A745]";
+      case "In Progress":
+        return "text-[#FFC107]";
+      case "Completed":
+        return "text-[#007BFF]";
+      case "On Hold":
+        return "text-[#DC3545]";
+      default:
+        return "text-muted-foreground";
     }
-  }
+  };
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.customer.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch =
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.customer.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = filterBy.status === 'all' || project.status === filterBy.status
-    const matchesPriority = filterBy.priority === 'all' || project.priority === filterBy.priority
-    const matchesMethodology = filterBy.methodology === 'all' || project.methodology === filterBy.methodology
-    const matchesType = filterBy.type === 'all' || project.project_type === filterBy.type
+    const matchesStatus =
+      filterBy.status === "all" || project.status === filterBy.status;
+    const matchesPriority =
+      filterBy.priority === "all" || project.priority === filterBy.priority;
+    const matchesMethodology =
+      filterBy.methodology === "all" ||
+      project.methodology === filterBy.methodology;
+    const matchesType =
+      filterBy.type === "all" || project.project_type === filterBy.type;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesMethodology && matchesType
-  })
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesPriority &&
+      matchesMethodology &&
+      matchesType
+    );
+  });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High': return 'bg-[#DC3545] text-white'
-      case 'Medium': return 'bg-[#FFC107] text-white'
-      case 'Low': return 'bg-[#28A745] text-white'
-      default: return 'bg-muted text-foreground'
+      case "High":
+        return "bg-[#DC3545] text-white";
+      case "Medium":
+        return "bg-[#FFC107] text-white";
+      case "Low":
+        return "bg-[#28A745] text-white";
+      default:
+        return "bg-muted text-foreground";
     }
-  }
+  };
 
   const getBudgetStatus = (spent: number, budget: number) => {
-    const percentage = (spent / budget) * 100
-    if (percentage > 90) return { color: 'text-[#DC3545]', status: 'Over Budget' }
-    if (percentage > 75) return { color: 'text-[#FFC107]', status: 'At Risk' }
-    return { color: 'text-[#28A745]', status: 'On Track' }
-  }
+    const percentage = (spent / budget) * 100;
+    if (percentage > 90)
+      return { color: "text-[#DC3545]", status: "Over Budget" };
+    if (percentage > 75) return { color: "text-[#FFC107]", status: "At Risk" };
+    return { color: "text-[#28A745]", status: "On Track" };
+  };
 
   const getMethodologyIcon = (methodology: string) => {
     switch (methodology) {
-      case 'Scrum': return <Zap className="w-4 h-4" />
-      case 'Kanban': return <BarChart3 className="w-4 h-4" />
-      case 'Waterfall': return <GitBranch className="w-4 h-4" />
-      default: return <Target className="w-4 h-4" />
+      case "Scrum":
+        return <Zap className="w-4 h-4" />;
+      case "Kanban":
+        return <BarChart3 className="w-4 h-4" />;
+      case "Waterfall":
+        return <GitBranch className="w-4 h-4" />;
+      default:
+        return <Target className="w-4 h-4" />;
     }
-  }
+  };
 
   // Show error if there's one
   useEffect(() => {
     if (error) {
-      toast.error(error)
-      dispatch(clearError())
+      toast.error(error);
+      dispatch(clearError());
     }
-  }, [error, dispatch])
+  }, [error, dispatch]);
 
   return (
     <div className="space-y-6">
@@ -141,7 +189,9 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">My Projects</h1>
+          <h1 className="text-2xl font-semibold text-foreground">
+            My Projects
+          </h1>
           <p className="text-muted-foreground">
             Projects you're assigned to and your contributions
           </p>
@@ -172,8 +222,15 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Status</label>
-                    <Select value={filterBy.status} onValueChange={(value) => setFilterBy({...filterBy, status: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Status
+                    </label>
+                    <Select
+                      value={filterBy.status}
+                      onValueChange={(value: any) =>
+                        setFilterBy({ ...filterBy, status: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -187,8 +244,15 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Priority</label>
-                    <Select value={filterBy.priority} onValueChange={(value) => setFilterBy({...filterBy, priority: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Priority
+                    </label>
+                    <Select
+                      value={filterBy.priority}
+                      onValueChange={(value: any) =>
+                        setFilterBy({ ...filterBy, priority: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -202,8 +266,15 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Methodology</label>
-                    <Select value={filterBy.methodology} onValueChange={(value) => setFilterBy({...filterBy, methodology: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Methodology
+                    </label>
+                    <Select
+                      value={filterBy.methodology}
+                      onValueChange={(value: any) =>
+                        setFilterBy({ ...filterBy, methodology: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -217,15 +288,26 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Type</label>
-                    <Select value={filterBy.type} onValueChange={(value) => setFilterBy({...filterBy, type: value})}>
+                    <label className="text-sm font-medium mb-1 block">
+                      Type
+                    </label>
+                    <Select
+                      value={filterBy.type}
+                      onValueChange={(value: any) =>
+                        setFilterBy({ ...filterBy, type: value })
+                      }
+                    >
                       <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="Software Development">Software Dev</SelectItem>
-                        <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                        <SelectItem value="Software Development">
+                          Software Dev
+                        </SelectItem>
+                        <SelectItem value="Infrastructure">
+                          Infrastructure
+                        </SelectItem>
                         <SelectItem value="Marketing">Marketing</SelectItem>
                         <SelectItem value="Analytics">Analytics</SelectItem>
                         <SelectItem value="Security">Security</SelectItem>
@@ -238,7 +320,14 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                   variant="outline"
                   size="sm"
                   className="w-full"
-                  onClick={() => setFilterBy({status: 'all', priority: 'all', methodology: 'all', type: 'all'})}
+                  onClick={() =>
+                    setFilterBy({
+                      status: "all",
+                      priority: "all",
+                      methodology: "all",
+                      type: "all",
+                    })
+                  }
                 >
                   Clear Filters
                 </Button>
@@ -253,7 +342,9 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Projects
+              </p>
               <p className="text-3xl font-bold">{projects.length}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Projects assigned to you
@@ -268,8 +359,12 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Projects</p>
-              <p className="text-3xl font-bold">{projects.filter(p => p.status === 'Active').length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Active Projects
+              </p>
+              <p className="text-3xl font-bold">
+                {projects.filter((p) => p.status === "Active").length}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Currently in progress
               </p>
@@ -283,11 +378,17 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">At Risk</p>
-              <p className="text-3xl font-bold">{projects.filter(p => {
-                const budgetUsage = (p.spent / p.budget) * 100;
-                return budgetUsage > 90 || p.progress < 50;
-              }).length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                At Risk
+              </p>
+              <p className="text-3xl font-bold">
+                {
+                  projects.filter((p) => {
+                    const budgetUsage = (p.spent / p.budget) * 100;
+                    return budgetUsage > 90 || p.progress < 50;
+                  }).length
+                }
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Need attention
               </p>
@@ -301,8 +402,12 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">On Hold</p>
-              <p className="text-3xl font-bold">{projects.filter(p => p.status === 'On Hold').length}</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                On Hold
+              </p>
+              <p className="text-3xl font-bold">
+                {projects.filter((p) => p.status === "On Hold").length}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Temporarily paused
               </p>
@@ -318,25 +423,31 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-semibold">Projects ({filteredProjects.length})</h3>
+            <h3 className="text-lg font-semibold">
+              Projects ({filteredProjects.length})
+            </h3>
             <Badge variant="outline" className="ml-2">
-              {viewMode === 'grid' ? 'Card View' : 'Table View'}
+              {viewMode === "grid" ? "Card View" : "Table View"}
             </Badge>
           </div>
           <div className="flex items-center space-x-2">
             <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              variant={viewMode === "grid" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('grid')}
-              className={viewMode === 'grid' ? 'bg-[#007BFF] hover:bg-[#0056b3]' : ''}
+              onClick={() => setViewMode("grid")}
+              className={
+                viewMode === "grid" ? "bg-[#007BFF] hover:bg-[#0056b3]" : ""
+              }
             >
               <Grid3X3 className="w-4 h-4" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
+              variant={viewMode === "list" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('list')}
-              className={viewMode === 'list' ? 'bg-[#007BFF] hover:bg-[#0056b3]' : ''}
+              onClick={() => setViewMode("list")}
+              className={
+                viewMode === "list" ? "bg-[#007BFF] hover:bg-[#0056b3]" : ""
+              }
             >
               <List className="w-4 h-4" />
             </Button>
@@ -344,10 +455,13 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
         </div>
 
         {/* Card View */}
-        {viewMode === 'grid' && (
+        {viewMode === "grid" && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
             {filteredProjects.map((project) => {
-              const budgetStatus = getBudgetStatus(project.spent, project.budget)
+              const budgetStatus = getBudgetStatus(
+                project.spent,
+                project.budget
+              );
 
               return (
                 <Card
@@ -360,7 +474,9 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-semibold text-lg group-hover:text-[#007BFF] transition-colors">{project.name}</h3>
+                          <h3 className="font-semibold text-lg group-hover:text-[#007BFF] transition-colors">
+                            {project.name}
+                          </h3>
                           <Badge className={getPriorityColor(project.priority)}>
                             {project.priority}
                           </Badge>
@@ -376,7 +492,11 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                           <Badge variant="outline" className="text-xs">
                             {project.project_type}
                           </Badge>
-                          <span className={`text-xs font-medium ${getStatusColor(project.status)}`}>
+                          <span
+                            className={`text-xs font-medium ${getStatusColor(
+                              project.status
+                            )}`}
+                          >
                             {project.status}
                           </span>
                         </div>
@@ -386,10 +506,10 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                           variant="ghost"
                           size="sm"
                           className="p-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedProjectForTasks(project.id)
-                            setShowTaskManagement(true)
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            setSelectedProjectForTasks(project.id);
+                            setShowTaskManagement(true);
                           }}
                           title="Manage Tasks"
                         >
@@ -405,7 +525,9 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">Progress</span>
-                        <span className="text-sm text-muted-foreground">{project.progress}%</span>
+                        <span className="text-sm text-muted-foreground">
+                          {project.progress}%
+                        </span>
                       </div>
                       <Progress value={project.progress} className="h-2" />
                     </div>
@@ -413,16 +535,24 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-3 gap-3 mb-4">
                       <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Epics</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Epics
+                        </p>
                         <p className="text-lg font-bold">{project.epics}</p>
                       </div>
                       <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Stories</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Stories
+                        </p>
                         <p className="text-lg font-bold">{project.stories}</p>
                       </div>
                       <div className="text-center p-3 bg-muted/30 rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-1">Tasks</p>
-                        <p className="text-lg font-bold">{project.tasksCompleted}/{project.tasksTotal}</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Tasks
+                        </p>
+                        <p className="text-lg font-bold">
+                          {project.tasksCompleted}/{project.tasksTotal}
+                        </p>
                       </div>
                     </div>
 
@@ -430,24 +560,31 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                     <div className="flex items-center justify-between pt-3 border-t">
                       <div className="flex items-center space-x-2">
                         <Users className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{project.teamSize} members</span>
+                        <span className="text-sm text-muted-foreground">
+                          {project.teamSize} members
+                        </span>
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm font-medium ${budgetStatus.color}`}>
-                          ${(project.spent/1000).toFixed(0)}k / ${(project.budget/1000).toFixed(0)}k
+                        <p
+                          className={`text-sm font-medium ${budgetStatus.color}`}
+                        >
+                          ${(project.spent / 1000).toFixed(0)}k / $
+                          {(project.budget / 1000).toFixed(0)}k
                         </p>
-                        <p className="text-xs text-muted-foreground">{budgetStatus.status}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {budgetStatus.status}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </Card>
-              )
+              );
             })}
           </div>
         )}
 
         {/* Table View */}
-        {viewMode === 'list' && (
+        {viewMode === "list" && (
           <Card>
             <Table>
               <TableHeader>
@@ -465,7 +602,10 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
               </TableHeader>
               <TableBody>
                 {filteredProjects.map((project) => {
-                  const budgetStatus = getBudgetStatus(project.spent, project.budget)
+                  const budgetStatus = getBudgetStatus(
+                    project.spent,
+                    project.budget
+                  );
 
                   return (
                     <TableRow
@@ -475,7 +615,9 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                     >
                       <TableCell>
                         <div>
-                          <div className="font-semibold text-sm">{project.name}</div>
+                          <div className="font-semibold text-sm">
+                            {project.name}
+                          </div>
                           <div className="text-xs text-muted-foreground line-clamp-1">
                             {project.description}
                           </div>
@@ -485,7 +627,10 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getStatusColor(project.status)}>
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(project.status)}
+                        >
                           {project.status}
                         </Badge>
                       </TableCell>
@@ -510,10 +655,15 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className={`text-sm font-medium ${budgetStatus.color}`}>
-                            ${(project.spent/1000).toFixed(0)}k / ${(project.budget/1000).toFixed(0)}k
+                          <div
+                            className={`text-sm font-medium ${budgetStatus.color}`}
+                          >
+                            ${(project.spent / 1000).toFixed(0)}k / $
+                            {(project.budget / 1000).toFixed(0)}k
                           </div>
-                          <div className="text-xs text-muted-foreground">{budgetStatus.status}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {budgetStatus.status}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -531,10 +681,10 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                             variant="ghost"
                             size="sm"
                             className="p-1"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedProjectForTasks(project.id)
-                              setShowTaskManagement(true)
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              setSelectedProjectForTasks(project.id);
+                              setShowTaskManagement(true);
                             }}
                             title="Manage Tasks"
                           >
@@ -546,7 +696,7 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })}
               </TableBody>
             </Table>
@@ -560,11 +710,11 @@ export function MyProjects({ onProjectSelect, user }: MyProjectsProps) {
           projectId={selectedProjectForTasks}
           isOpen={showTaskManagement}
           onClose={() => {
-            setShowTaskManagement(false)
-            setSelectedProjectForTasks(null)
+            setShowTaskManagement(false);
+            setSelectedProjectForTasks(null);
           }}
         />
       )}
     </div>
-  )
+  );
 }

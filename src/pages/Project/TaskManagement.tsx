@@ -1,23 +1,57 @@
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Label } from '../../components/ui/label'
-import { Textarea } from '../../components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { Badge } from '../../components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { Calendar } from '../../components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
-import { Progress } from '../../components/ui/progress'
-import { Separator } from '../../components/ui/separator'
-import { cn } from '../../components/ui/utils'
-import { format } from 'date-fns'
-import { toast } from 'sonner@2.0.3'
-import { storiesApiService, Story, CreateStoryRequest } from '../../services/storiesApi'
-import { userApiService, User } from '../../services/userApi'
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../components/ui/dialog";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { Badge } from "../../components/ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../components/ui/avatar";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import { Calendar } from "../../components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../components/ui/popover";
+import { Progress } from "../../components/ui/progress";
+import { Separator } from "../../components/ui/separator";
+import { cn } from "../../components/ui/utils";
+import { format } from "date-fns";
+import { toast } from "sonner@2.0.3";
+import {
+  storiesApiService,
+  Story,
+  CreateStoryRequest,
+} from "../../services/storiesApi";
+import { userApiService, User } from "../../services/userApi";
 import {
   Plus,
   Calendar as CalendarIcon,
@@ -35,196 +69,204 @@ import {
   CheckCircle,
   AlertTriangle,
   MoreHorizontal,
-  Eye
-} from 'lucide-react'
+  Eye,
+} from "lucide-react";
 
 interface TaskManagementProps {
-  projectId: string
-  isOpen: boolean
-  onClose: () => void
+  projectId: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementProps) {
+export function TaskManagement({
+  projectId,
+  isOpen,
+  onClose,
+}: TaskManagementProps) {
   // Stories/Tasks state
-  const [stories, setStories] = useState<Story[]>([])
-  const [loadingStories, setLoadingStories] = useState(false)
-  const [storiesError, setStoriesError] = useState<string | null>(null)
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loadingStories, setLoadingStories] = useState(false);
+  const [storiesError, setStoriesError] = useState<string | null>(null);
 
   // Team members for assignment
-  const [teamMembers, setTeamMembers] = useState<User[]>([])
-  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
 
   // Modal states
-  const [showCreateTask, setShowCreateTask] = useState(false)
-  const [showEditTask, setShowEditTask] = useState(false)
-  const [editingTask, setEditingTask] = useState<Story | null>(null)
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [showEditTask, setShowEditTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<Story | null>(null);
 
   // Form states
-  const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false)
-  const [showDueDatePicker, setShowDueDatePicker] = useState(false)
-  const [newTag, setNewTag] = useState('')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+  const [newTag, setNewTag] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [taskForm, setTaskForm] = useState<CreateStoryRequest>({
-    title: '',
-    description: '',
-    status: 'To Do',
-    priority: 'Medium',
+    title: "",
+    description: "",
+    status: "To Do",
+    priority: "Medium",
     assignee_id: null,
     project_id: projectId,
-    start_date: '',
-    due_date: '',
+    start_date: "",
+    due_date: "",
     progress: 0,
     tags: [],
     story_points: 1,
-    acceptance_criteria: ''
-  })
+    acceptance_criteria: "",
+  });
 
   // Load stories and team members when component mounts
   useEffect(() => {
     if (isOpen && projectId) {
-      loadStories()
-      loadTeamMembers()
+      loadStories();
+      loadTeamMembers();
     }
-  }, [isOpen, projectId])
+  }, [isOpen, projectId]);
 
   const loadStories = async () => {
-    setLoadingStories(true)
-    setStoriesError(null)
+    setLoadingStories(true);
+    setStoriesError(null);
     try {
-      const response = await storiesApiService.getStories(projectId)
-      setStories(response.items || [])
+      const response = await storiesApiService.getStories(projectId);
+      setStories(response.items || []);
     } catch (error) {
-      setStoriesError('Failed to load tasks')
-      toast.error('Failed to load tasks')
+      setStoriesError("Failed to load tasks");
+      toast.error("Failed to load tasks");
     } finally {
-      setLoadingStories(false)
+      setLoadingStories(false);
     }
-  }
+  };
 
   const loadTeamMembers = async () => {
-    setLoadingTeamMembers(true)
+    setLoadingTeamMembers(true);
     try {
-      const response = await userApiService.getTeamMembers({ per_page: 100, is_active: true })
-      setTeamMembers(response.items || [])
+      const response = await userApiService.getTeamMembers({
+        per_page: 100,
+        is_active: true,
+      });
+      setTeamMembers(response.items || []);
     } catch (error) {
-      console.error('Failed to load team members:', error)
+      console.error("Failed to load team members:", error);
     } finally {
-      setLoadingTeamMembers(false)
+      setLoadingTeamMembers(false);
     }
-  }
+  };
 
   const handleInputChange = (field: string, value: any) => {
-    setTaskForm(prev => ({
+    setTaskForm((prev) => ({
       ...prev,
-      [field]: value
-    }))
-  }
+      [field]: value,
+    }));
+  };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size must be less than 5MB')
-        return
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        toast.error("Image size must be less than 5MB");
+        return;
       }
 
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select a valid image file')
-        return
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
       }
 
-      setImageFile(file)
+      setImageFile(file);
 
       // Create preview
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const removeImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
-  }
+    setImageFile(null);
+    setImagePreview(null);
+  };
 
   const handleAddTag = () => {
-    const tagToAdd = newTag.trim()
+    const tagToAdd = newTag.trim();
     if (tagToAdd && !taskForm.tags?.includes(tagToAdd)) {
-      setTaskForm(prev => ({
+      setTaskForm((prev) => ({
         ...prev,
-        tags: [...(prev.tags || []), tagToAdd]
-      }))
-      setNewTag('')
+        tags: [...(prev.tags || []), tagToAdd],
+      }));
+      setNewTag("");
     } else if (tagToAdd && taskForm.tags?.includes(tagToAdd)) {
-      toast.error('Tag already exists')
+      toast.error("Tag already exists");
     }
-  }
+  };
 
   const handleRemoveTag = (tag: string) => {
-    setTaskForm(prev => ({
+    setTaskForm((prev) => ({
       ...prev,
-      tags: prev.tags?.filter(t => t !== tag) || []
-    }))
-  }
+      tags: prev.tags?.filter((t) => t !== tag) || [],
+    }));
+  };
 
   const resetForm = () => {
     setTaskForm({
-      title: '',
-      description: '',
-      status: 'To Do',
-      priority: 'Medium',
+      title: "",
+      description: "",
+      status: "To Do",
+      priority: "Medium",
       assignee_id: null,
       project_id: projectId,
-      start_date: '',
-      due_date: '',
+      start_date: "",
+      due_date: "",
       progress: 0,
       tags: [],
       story_points: 1,
-      acceptance_criteria: ''
-    })
-    setImageFile(null)
-    setImagePreview(null)
-    setNewTag('')
-    setActiveTab('overview')
-  }
+      acceptance_criteria: "",
+    });
+    setImageFile(null);
+    setImagePreview(null);
+    setNewTag("");
+    setActiveTab("overview");
+  };
 
   const handleCreateTask = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     // Validation
     if (!taskForm.title.trim()) {
-      toast.error('Task title is required')
-      setIsLoading(false)
-      return
+      toast.error("Task title is required");
+      setIsLoading(false);
+      return;
     }
 
     if (!taskForm.description.trim()) {
-      toast.error('Task description is required')
-      setIsLoading(false)
-      return
+      toast.error("Task description is required");
+      setIsLoading(false);
+      return;
     }
 
     try {
-      await storiesApiService.createStory(taskForm, imageFile || undefined)
-      toast.success('Task created successfully!')
-      resetForm()
-      setShowCreateTask(false)
-      await loadStories() // Reload stories
+      await storiesApiService.createStory(taskForm, imageFile || undefined);
+      toast.success("Task created successfully!");
+      resetForm();
+      setShowCreateTask(false);
+      await loadStories(); // Reload stories
     } catch (error) {
-      toast.error(`Failed to create task: ${error}`)
+      toast.error(`Failed to create task: ${error}`);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleEditTask = (task: Story) => {
-    setEditingTask(task)
+    setEditingTask(task);
     setTaskForm({
       title: task.title,
       description: task.description,
@@ -232,88 +274,102 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
       priority: task.priority,
       assignee_id: task.assignee_id,
       project_id: task.project_id,
-      start_date: task.start_date || '',
-      due_date: task.due_date || '',
+      start_date: task.start_date || "",
+      due_date: task.due_date || "",
       progress: task.progress,
       tags: task.tags || [],
       story_points: task.story_points || 1,
-      acceptance_criteria: task.acceptance_criteria || ''
-    })
+      acceptance_criteria: task.acceptance_criteria || "",
+    });
 
     // Set existing image preview if available
     if (task.image_url) {
-      setImagePreview(task.image_url)
+      setImagePreview(task.image_url);
     }
 
-    setShowEditTask(true)
-  }
+    setShowEditTask(true);
+  };
 
   const handleUpdateTask = async () => {
-    if (!editingTask) return
+    if (!editingTask) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     // Validation
     if (!taskForm.title.trim()) {
-      toast.error('Task title is required')
-      setIsLoading(false)
-      return
+      toast.error("Task title is required");
+      setIsLoading(false);
+      return;
     }
 
     if (!taskForm.description.trim()) {
-      toast.error('Task description is required')
-      setIsLoading(false)
-      return
+      toast.error("Task description is required");
+      setIsLoading(false);
+      return;
     }
 
     try {
-      await storiesApiService.updateStory(editingTask.id, taskForm, imageFile || undefined)
-      toast.success('Task updated successfully!')
-      resetForm()
-      setEditingTask(null)
-      setShowEditTask(false)
-      await loadStories() // Reload stories
+      await storiesApiService.updateStory(
+        editingTask.id,
+        taskForm,
+        imageFile || undefined
+      );
+      toast.success("Task updated successfully!");
+      resetForm();
+      setEditingTask(null);
+      setShowEditTask(false);
+      await loadStories(); // Reload stories
     } catch (error) {
-      toast.error(`Failed to update task: ${error}`)
+      toast.error(`Failed to update task: ${error}`);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return
+    if (!confirm("Are you sure you want to delete this task?")) return;
 
     try {
-      await storiesApiService.deleteStory(taskId)
-      toast.success('Task deleted successfully!')
-      await loadStories()
+      await storiesApiService.deleteStory(taskId);
+      toast.success("Task deleted successfully!");
+      await loadStories();
     } catch (error) {
-      toast.error(`Failed to delete task: ${error}`)
+      toast.error(`Failed to delete task: ${error}`);
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High': return 'bg-red-500 text-white'
-      case 'Medium': return 'bg-yellow-500 text-white'
-      case 'Low': return 'bg-green-500 text-white'
-      case 'Critical': return 'bg-purple-500 text-white'
-      default: return 'bg-gray-500 text-white'
+      case "High":
+        return "bg-red-500 text-white";
+      case "Medium":
+        return "bg-yellow-500 text-white";
+      case "Low":
+        return "bg-green-500 text-white";
+      case "Critical":
+        return "bg-purple-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'To Do': return 'text-gray-600'
-      case 'In Progress': return 'text-blue-600'
-      case 'Review': return 'text-orange-600'
-      case 'Done': return 'text-green-600'
-      default: return 'text-gray-600'
+      case "To Do":
+        return "text-gray-600";
+      case "In Progress":
+        return "text-blue-600";
+      case "Review":
+        return "text-orange-600";
+      case "Done":
+        return "text-green-600";
+      default:
+        return "text-gray-600";
     }
-  }
+  };
 
-  const statusOptions = ['To Do', 'In Progress', 'Review', 'Done']
-  const priorityOptions = ['Low', 'Medium', 'High', 'Critical']
+  const statusOptions = ["To Do", "In Progress", "Review", "Done"];
+  const priorityOptions = ["Low", "Medium", "High", "Critical"];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -332,8 +388,12 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
           {/* Header with Create Task Button */}
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">Tasks ({stories.length})</h3>
-              <p className="text-sm text-muted-foreground">Track project progress with user stories and tasks</p>
+              <h3 className="text-lg font-semibold">
+                Tasks ({stories.length})
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Track project progress with user stories and tasks
+              </p>
             </div>
             <Button
               onClick={() => setShowCreateTask(true)}
@@ -353,7 +413,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
             ) : storiesError ? (
               <div className="col-span-full text-center py-8">
                 <div className="text-red-500">{storiesError}</div>
-                <Button variant="outline" onClick={loadStories} className="mt-2">
+                <Button
+                  variant="outline"
+                  onClick={loadStories}
+                  className="mt-2"
+                >
                   Retry
                 </Button>
               </div>
@@ -362,8 +426,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                 <div className="text-muted-foreground">No tasks found</div>
               </div>
             ) : (
-              stories.map((task) => (
-                <Card key={task.id} className="hover:shadow-md transition-shadow">
+              stories?.map((task) => (
+                <Card
+                  key={task.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -371,7 +438,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                           <Badge className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
-                          <span className={`text-sm font-medium ${getStatusColor(task.status)}`}>
+                          <span
+                            className={`text-sm font-medium ${getStatusColor(
+                              task.status
+                            )}`}
+                          >
                             {task.status}
                           </span>
                         </div>
@@ -428,7 +499,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                     {task.tags && task.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {task.tags.slice(0, 3).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -459,7 +534,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       {task.due_date && (
                         <div className="flex items-center space-x-1">
                           <Clock className="w-3 h-3" />
-                          <span>{format(new Date(task.due_date), 'MMM dd')}</span>
+                          <span>
+                            {format(new Date(task.due_date), "MMM dd")}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -483,17 +560,30 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
               </DialogDescription>
             </DialogHeader>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview" className="flex items-center space-x-2">
+                <TabsTrigger
+                  value="overview"
+                  className="flex items-center space-x-2"
+                >
                   <FileText className="w-4 h-4" />
                   <span>Overview</span>
                 </TabsTrigger>
-                <TabsTrigger value="details" className="flex items-center space-x-2">
+                <TabsTrigger
+                  value="details"
+                  className="flex items-center space-x-2"
+                >
                   <Target className="w-4 h-4" />
                   <span>Details</span>
                 </TabsTrigger>
-                <TabsTrigger value="attachments" className="flex items-center space-x-2">
+                <TabsTrigger
+                  value="attachments"
+                  className="flex items-center space-x-2"
+                >
                   <ImageIcon className="w-4 h-4" />
                   <span>Attachments</span>
                 </TabsTrigger>
@@ -507,7 +597,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       <Input
                         id="title"
                         value={taskForm.title}
-                        onChange={(e) => handleInputChange('title', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("title", e.target.value)
+                        }
                         placeholder="Enter task title"
                         className="mt-1"
                       />
@@ -518,7 +610,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       <Textarea
                         id="description"
                         value={taskForm.description}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
                         placeholder="Describe the task..."
                         rows={4}
                         className="mt-1"
@@ -526,11 +620,18 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                     </div>
 
                     <div>
-                      <Label htmlFor="acceptance_criteria">Acceptance Criteria</Label>
+                      <Label htmlFor="acceptance_criteria">
+                        Acceptance Criteria
+                      </Label>
                       <Textarea
                         id="acceptance_criteria"
                         value={taskForm.acceptance_criteria}
-                        onChange={(e) => handleInputChange('acceptance_criteria', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "acceptance_criteria",
+                            e.target.value
+                          )
+                        }
                         placeholder="Define what constitutes completion..."
                         rows={3}
                         className="mt-1"
@@ -541,13 +642,18 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="status">Status</Label>
-                      <Select value={taskForm.status} onValueChange={(value) => handleInputChange('status', value)}>
+                      <Select
+                        value={taskForm.status}
+                        onValueChange={(value: string) =>
+                          handleInputChange("status", value)
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map((status) => (
-                            <SelectItem key={status} value={status}>
+                            <SelectItem key={status} value={status || ""}>
                               {status}
                             </SelectItem>
                           ))}
@@ -557,15 +663,24 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
 
                     <div>
                       <Label htmlFor="priority">Priority</Label>
-                      <Select value={taskForm.priority} onValueChange={(value) => handleInputChange('priority', value)}>
+                      <Select
+                        value={taskForm.priority}
+                        onValueChange={(value: string) =>
+                          handleInputChange("priority", value)
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
-                          {priorityOptions.map((priority) => (
-                            <SelectItem key={priority} value={priority}>
+                          {priorityOptions?.map((priority) => (
+                            <SelectItem key={priority} value={priority || ""}>
                               <div className="flex items-center space-x-2">
-                                <div className={`w-2 h-2 rounded-full ${getPriorityColor(priority).split(' ')[0]}`} />
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    getPriorityColor(priority).split(" ")[0]
+                                  }`}
+                                />
                                 <span>{priority}</span>
                               </div>
                             </SelectItem>
@@ -576,21 +691,25 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
 
                     <div>
                       <Label htmlFor="assignee">Assignee</Label>
-                      <Select value={taskForm.assignee_id || ''} onValueChange={(value) => handleInputChange('assignee_id', value || null)}>
+                      <Select
+                        value={taskForm.assignee_id || ""}
+                        onValueChange={(value: string) =>
+                          handleInputChange("assignee_id", value || null)
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select assignee" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
-                          {teamMembers.map((member) => (
+                          {teamMembers?.map((member) => (
                             <SelectItem key={member.id} value={member.id}>
                               <div className="flex items-center space-x-2">
                                 <Avatar className="w-5 h-5">
                                   <AvatarFallback className="text-xs">
-                                    {member.name.charAt(0)}
+                                    {member?.name.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span>{member.name}</span>
+                                <span>{member?.name}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -604,7 +723,12 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                         id="story_points"
                         type="number"
                         value={taskForm.story_points}
-                        onChange={(e) => handleInputChange('story_points', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "story_points",
+                            parseInt(e.target.value) || 1
+                          )
+                        }
                         min="1"
                         max="13"
                         className="mt-1"
@@ -618,7 +742,10 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date</Label>
-                    <Popover open={showStartDatePicker} onOpenChange={setShowStartDatePicker}>
+                    <Popover
+                      open={showStartDatePicker}
+                      onOpenChange={setShowStartDatePicker}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -628,17 +755,26 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {taskForm.start_date ? format(new Date(taskForm.start_date), "PPP") : "Pick a date"}
+                          {taskForm.start_date
+                            ? format(new Date(taskForm.start_date), "PPP")
+                            : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={taskForm.start_date ? new Date(taskForm.start_date) : undefined}
-                          onSelect={(date) => {
+                          selected={
+                            taskForm.start_date
+                              ? new Date(taskForm.start_date)
+                              : undefined
+                          }
+                          onSelect={(date: Date) => {
                             if (date) {
-                              handleInputChange('start_date', date.toISOString().split('T')[0])
-                              setShowStartDatePicker(false)
+                              handleInputChange(
+                                "start_date",
+                                date.toISOString().split("T")[0]
+                              );
+                              setShowStartDatePicker(false);
                             }
                           }}
                           initialFocus
@@ -649,7 +785,10 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
 
                   <div>
                     <Label>Due Date</Label>
-                    <Popover open={showDueDatePicker} onOpenChange={setShowDueDatePicker}>
+                    <Popover
+                      open={showDueDatePicker}
+                      onOpenChange={setShowDueDatePicker}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -659,21 +798,34 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {taskForm.due_date ? format(new Date(taskForm.due_date), "PPP") : "Pick a date"}
+                          {taskForm.due_date
+                            ? format(new Date(taskForm.due_date), "PPP")
+                            : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={taskForm.due_date ? new Date(taskForm.due_date) : undefined}
+                          selected={
+                            taskForm.due_date
+                              ? new Date(taskForm.due_date)
+                              : undefined
+                          }
                           onSelect={(date) => {
                             if (date) {
-                              handleInputChange('due_date', date.toISOString().split('T')[0])
-                              setShowDueDatePicker(false)
+                              handleInputChange(
+                                "due_date",
+                                date.toISOString().split("T")[0]
+                              );
+                              setShowDueDatePicker(false);
                             }
                           }}
                           initialFocus
-                          disabled={(date) => taskForm.start_date ? date <= new Date(taskForm.start_date) : false}
+                          disabled={(date) =>
+                            taskForm.start_date
+                              ? date <= new Date(taskForm.start_date)
+                              : false
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -689,7 +841,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       min="0"
                       max="100"
                       value={taskForm.progress}
-                      onChange={(e) => handleInputChange('progress', parseInt(e.target.value))}
+                      onChange={(e) =>
+                        handleInputChange("progress", parseInt(e.target.value))
+                      }
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -704,7 +858,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                   <Label>Tags</Label>
                   <div className="flex flex-wrap gap-2 mt-2 mb-2">
                     {taskForm.tags?.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center space-x-1"
+                      >
                         <span>{tag}</span>
                         <Button
                           variant="ghost"
@@ -723,9 +881,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       onChange={(e) => setNewTag(e.target.value)}
                       placeholder="Add a tag"
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddTag()
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddTag();
                         }
                       }}
                     />
@@ -799,10 +957,18 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
             </Tabs>
 
             <div className="flex justify-end space-x-3 pt-6 border-t">
-              <Button variant="outline" onClick={() => setShowCreateTask(false)} disabled={isLoading}>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateTask(false)}
+                disabled={isLoading}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleCreateTask} disabled={isLoading} className="bg-[#28A745] hover:bg-[#218838]">
+              <Button
+                onClick={handleCreateTask}
+                disabled={isLoading}
+                className="bg-[#28A745] hover:bg-[#218838]"
+              >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -833,17 +999,30 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
             </DialogHeader>
 
             {/* Same tabs structure as create modal but with update logic */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview" className="flex items-center space-x-2">
+                <TabsTrigger
+                  value="overview"
+                  className="flex items-center space-x-2"
+                >
                   <FileText className="w-4 h-4" />
                   <span>Overview</span>
                 </TabsTrigger>
-                <TabsTrigger value="details" className="flex items-center space-x-2">
+                <TabsTrigger
+                  value="details"
+                  className="flex items-center space-x-2"
+                >
                   <Target className="w-4 h-4" />
                   <span>Details</span>
                 </TabsTrigger>
-                <TabsTrigger value="attachments" className="flex items-center space-x-2">
+                <TabsTrigger
+                  value="attachments"
+                  className="flex items-center space-x-2"
+                >
                   <ImageIcon className="w-4 h-4" />
                   <span>Attachments</span>
                 </TabsTrigger>
@@ -858,7 +1037,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       <Input
                         id="edit-title"
                         value={taskForm.title}
-                        onChange={(e) => handleInputChange('title', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("title", e.target.value)
+                        }
                         placeholder="Enter task title"
                         className="mt-1"
                       />
@@ -869,7 +1050,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       <Textarea
                         id="edit-description"
                         value={taskForm.description}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
                         placeholder="Describe the task..."
                         rows={4}
                         className="mt-1"
@@ -877,11 +1060,18 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                     </div>
 
                     <div>
-                      <Label htmlFor="edit-acceptance_criteria">Acceptance Criteria</Label>
+                      <Label htmlFor="edit-acceptance_criteria">
+                        Acceptance Criteria
+                      </Label>
                       <Textarea
                         id="edit-acceptance_criteria"
                         value={taskForm.acceptance_criteria}
-                        onChange={(e) => handleInputChange('acceptance_criteria', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "acceptance_criteria",
+                            e.target.value
+                          )
+                        }
                         placeholder="Define what constitutes completion..."
                         rows={3}
                         className="mt-1"
@@ -892,7 +1082,12 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="edit-status">Status</Label>
-                      <Select value={taskForm.status} onValueChange={(value) => handleInputChange('status', value)}>
+                      <Select
+                        value={taskForm.status}
+                        onValueChange={(value: string) =>
+                          handleInputChange("status", value)
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -908,7 +1103,12 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
 
                     <div>
                       <Label htmlFor="edit-priority">Priority</Label>
-                      <Select value={taskForm.priority} onValueChange={(value) => handleInputChange('priority', value)}>
+                      <Select
+                        value={taskForm.priority}
+                        onValueChange={(value) =>
+                          handleInputChange("priority", value)
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
@@ -916,7 +1116,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                           {priorityOptions.map((priority) => (
                             <SelectItem key={priority} value={priority}>
                               <div className="flex items-center space-x-2">
-                                <div className={`w-2 h-2 rounded-full ${getPriorityColor(priority).split(' ')[0]}`} />
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    getPriorityColor(priority).split(" ")[0]
+                                  }`}
+                                />
                                 <span>{priority}</span>
                               </div>
                             </SelectItem>
@@ -927,12 +1131,17 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
 
                     <div>
                       <Label htmlFor="edit-assignee">Assignee</Label>
-                      <Select value={taskForm.assignee_id || ''} onValueChange={(value) => handleInputChange('assignee_id', value || null)}>
+                      <Select
+                        value={taskForm.assignee_id || ""}
+                        onValueChange={(value: string) =>
+                          handleInputChange("assignee_id", value || null)
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select assignee" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem>Unassigned</SelectItem>
                           {teamMembers.map((member) => (
                             <SelectItem key={member.id} value={member.id}>
                               <div className="flex items-center space-x-2">
@@ -955,7 +1164,12 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                         id="edit-story_points"
                         type="number"
                         value={taskForm.story_points}
-                        onChange={(e) => handleInputChange('story_points', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "story_points",
+                            parseInt(e.target.value) || 1
+                          )
+                        }
                         min="1"
                         max="13"
                         className="mt-1"
@@ -970,7 +1184,10 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Start Date</Label>
-                    <Popover open={showStartDatePicker} onOpenChange={setShowStartDatePicker}>
+                    <Popover
+                      open={showStartDatePicker}
+                      onOpenChange={setShowStartDatePicker}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -980,17 +1197,26 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {taskForm.start_date ? format(new Date(taskForm.start_date), "PPP") : "Pick a date"}
+                          {taskForm.start_date
+                            ? format(new Date(taskForm.start_date), "PPP")
+                            : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={taskForm.start_date ? new Date(taskForm.start_date) : undefined}
-                          onSelect={(date) => {
+                          selected={
+                            taskForm.start_date
+                              ? new Date(taskForm.start_date)
+                              : undefined
+                          }
+                          onSelect={(date: Date) => {
                             if (date) {
-                              handleInputChange('start_date', date.toISOString().split('T')[0])
-                              setShowStartDatePicker(false)
+                              handleInputChange(
+                                "start_date",
+                                date.toISOString().split("T")[0]
+                              );
+                              setShowStartDatePicker(false);
                             }
                           }}
                           initialFocus
@@ -1001,7 +1227,10 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
 
                   <div>
                     <Label>Due Date</Label>
-                    <Popover open={showDueDatePicker} onOpenChange={setShowDueDatePicker}>
+                    <Popover
+                      open={showDueDatePicker}
+                      onOpenChange={setShowDueDatePicker}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -1011,21 +1240,34 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {taskForm.due_date ? format(new Date(taskForm.due_date), "PPP") : "Pick a date"}
+                          {taskForm.due_date
+                            ? format(new Date(taskForm.due_date), "PPP")
+                            : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={taskForm.due_date ? new Date(taskForm.due_date) : undefined}
+                          selected={
+                            taskForm.due_date
+                              ? new Date(taskForm.due_date)
+                              : undefined
+                          }
                           onSelect={(date) => {
                             if (date) {
-                              handleInputChange('due_date', date.toISOString().split('T')[0])
-                              setShowDueDatePicker(false)
+                              handleInputChange(
+                                "due_date",
+                                date.toISOString().split("T")[0]
+                              );
+                              setShowDueDatePicker(false);
                             }
                           }}
                           initialFocus
-                          disabled={(date) => taskForm.start_date ? date <= new Date(taskForm.start_date) : false}
+                          disabled={(date) =>
+                            taskForm.start_date
+                              ? date <= new Date(taskForm.start_date)
+                              : false
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -1041,7 +1283,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       min="0"
                       max="100"
                       value={taskForm.progress}
-                      onChange={(e) => handleInputChange('progress', parseInt(e.target.value))}
+                      onChange={(e) =>
+                        handleInputChange("progress", parseInt(e.target.value))
+                      }
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -1056,7 +1300,11 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                   <Label>Tags</Label>
                   <div className="flex flex-wrap gap-2 mt-2 mb-2">
                     {taskForm.tags?.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center space-x-1"
+                      >
                         <span>{tag}</span>
                         <Button
                           variant="ghost"
@@ -1075,9 +1323,9 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
                       onChange={(e) => setNewTag(e.target.value)}
                       placeholder="Add a tag"
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddTag()
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddTag();
                         }
                       }}
                     />
@@ -1151,10 +1399,18 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
             </Tabs>
 
             <div className="flex justify-end space-x-3 pt-6 border-t">
-              <Button variant="outline" onClick={() => setShowEditTask(false)} disabled={isLoading}>
+              <Button
+                variant="outline"
+                onClick={() => setShowEditTask(false)}
+                disabled={isLoading}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleUpdateTask} disabled={isLoading} className="bg-[#28A745] hover:bg-[#218838]">
+              <Button
+                onClick={handleUpdateTask}
+                disabled={isLoading}
+                className="bg-[#28A745] hover:bg-[#218838]"
+              >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -1172,5 +1428,5 @@ export function TaskManagement({ projectId, isOpen, onClose }: TaskManagementPro
         </Dialog>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

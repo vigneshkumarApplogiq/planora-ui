@@ -1,10 +1,25 @@
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
-import { Button } from '../../../components/ui/button'
-import { Badge } from '../../../components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar'
-import { Input } from '../../../components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Badge } from "../../../components/ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../components/ui/avatar";
+import { Input } from "../../../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 import {
   Search,
   Target,
@@ -15,125 +30,156 @@ import {
   AlertCircle,
   Calendar,
   Layers,
-  Filter
-} from 'lucide-react'
-import { storiesApiService, Story } from '../../../services/storiesApi'
-import { toast } from 'sonner'
-import { TaskModal } from './Tasks/TaskModal'
+  Filter,
+} from "lucide-react";
+import { storiesApiService, Story } from "../../../services/storiesApi";
+import { toast } from "sonner";
+import { TaskModal } from "./Tasks/TaskModal";
 
 interface NativeDragDropKanbanProps {
-  project: any
-  user: any
-  masterData?: any
-  masterLoading?: boolean
+  project: any;
+  user: any;
+  masterData?: any;
+  masterLoading?: boolean;
 }
 
 interface TaskCardProps {
-  task: Story
-  columnId: string
-  onEdit: (task: Story) => void
+  task: Story;
+  columnId: string;
+  onEdit: (task: Story) => void;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
   const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      taskId: task.id,
-      sourceColumn: columnId,
-      taskTitle: task.title
-    }))
-    e.dataTransfer.effectAllowed = 'move'
-  }
+    e.dataTransfer.setData(
+      "application/json",
+      JSON.stringify({
+        taskId: task.id,
+        sourceColumn: columnId,
+        taskTitle: task.title,
+      })
+    );
+    e.dataTransfer.effectAllowed = "move";
+  };
 
   const handleDragEnd = (e: React.DragEvent) => {
     // Reset any visual states if needed
-  }
+  };
 
   // Check if task is in done column
-  const isDone = columnId === 'done' || task.status?.toLowerCase().includes('done') || task.status?.toLowerCase().includes('completed')
+  const isDone =
+    columnId === "done" ||
+    task.status?.toLowerCase().includes("done") ||
+    task.status?.toLowerCase().includes("completed");
 
   // Check if task is overdue
   const isOverdue = () => {
-    if (!task.end_date) return false
-    const dueDate = new Date(task.end_date)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    dueDate.setHours(0, 0, 0, 0)
-    return dueDate < today && !isDone
-  }
+    if (!task.end_date) return false;
+    const dueDate = new Date(task.end_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today && !isDone;
+  };
 
   // Format due date - only date, no time
   const formatDueDate = () => {
-    if (!task.end_date) return null
-    const dueDate = new Date(task.end_date)
-    return dueDate.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short'
-    })
-  }
+    if (!task.end_date) return null;
+    const dueDate = new Date(task.end_date);
+    return dueDate.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+  };
 
   // Calculate days since creation (from start_date)
   const getDaysSinceCreation = () => {
-    if (!task.start_date) return null
-    const startDate = new Date(task.start_date)
-    const today = new Date()
-    const diffTime = Math.abs(today.getTime() - startDate.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
+    if (!task.start_date) return null;
+    const startDate = new Date(task.start_date);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
 
   // Calculate days until due or days overdue
   const getDaysUntilDue = () => {
-    if (!task.end_date) return null
-    const dueDate = new Date(task.end_date)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    dueDate.setHours(0, 0, 0, 0)
-    const diffTime = dueDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
+    if (!task.end_date) return null;
+    const dueDate = new Date(task.end_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
 
   // Truncate description to 100 characters
-  const truncateDescription = (text: string | null | undefined, maxLength: number = 100) => {
-    if (!text) return ''
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
-  }
+  const truncateDescription = (
+    text: string | null | undefined,
+    maxLength: number = 100
+  ) => {
+    if (!text) return "";
+    return text.length > maxLength
+      ? text.substring(0, maxLength) + "..."
+      : text;
+  };
 
   // Get priority color and badge style
   const getPriorityBadge = () => {
     switch (task.priority?.toLowerCase()) {
-      case 'critical':
-        return { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' }
-      case 'high':
-        return { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' }
-      case 'medium':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' }
-      case 'low':
-        return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' }
+      case "critical":
+        return {
+          bg: "bg-red-100",
+          text: "text-red-700",
+          border: "border-red-300",
+        };
+      case "high":
+        return {
+          bg: "bg-orange-100",
+          text: "text-orange-700",
+          border: "border-orange-300",
+        };
+      case "medium":
+        return {
+          bg: "bg-yellow-100",
+          text: "text-yellow-700",
+          border: "border-yellow-300",
+        };
+      case "low":
+        return {
+          bg: "bg-green-100",
+          text: "text-green-700",
+          border: "border-green-300",
+        };
       default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' }
+        return {
+          bg: "bg-gray-100",
+          text: "text-gray-700",
+          border: "border-gray-300",
+        };
     }
-  }
+  };
 
   // Get story type icon and color
   const getStoryTypeIcon = () => {
     switch (task.story_type?.toLowerCase()) {
-      case 'story':
-        return { icon: Target, color: 'text-blue-600' }
-      case 'bug':
-        return { icon: AlertTriangle, color: 'text-red-600' }
-      case 'task':
-        return { icon: CheckCircle, color: 'text-green-600' }
-      case 'epic':
-        return { icon: Layers, color: 'text-purple-600' }
+      case "story":
+        return { icon: Target, color: "text-blue-600" };
+      case "bug":
+        return { icon: AlertTriangle, color: "text-red-600" };
+      case "task":
+        return { icon: CheckCircle, color: "text-green-600" };
+      case "epic":
+        return { icon: Layers, color: "text-purple-600" };
       default:
-        return { icon: Target, color: 'text-gray-600' }
+        return { icon: Target, color: "text-gray-600" };
     }
-  }
+  };
 
-  const priorityBadge = getPriorityBadge()
-  const storyTypeInfo = getStoryTypeIcon()
-  const StoryIcon = storyTypeInfo.icon
+  const priorityBadge = getPriorityBadge();
+  const storyTypeInfo = getStoryTypeIcon();
+  const StoryIcon = storyTypeInfo.icon;
 
   return (
     <div
@@ -145,8 +191,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
       <Card
         className="mb-3 hover:shadow-lg transition-all duration-200 bg-white cursor-pointer border border-gray-200 rounded-xl hover:border-blue-300 group"
         onClick={(e: React.MouseEvent) => {
-          e.stopPropagation()
-          onEdit(task)
+          e.stopPropagation();
+          onEdit(task);
         }}
       >
         <CardContent className="p-3 space-y-2.5">
@@ -155,7 +201,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
             <div className="flex items-center gap-1.5">
               <StoryIcon className={`w-3.5 h-3.5 ${storyTypeInfo.color}`} />
               <span className="text-xs font-bold text-blue-600">
-                {task.task_id || `#${task.id?.slice(0, 8)}` || 'N/A'}
+                {task.task_id || `#${task.id?.slice(0, 8)}` || "N/A"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -177,7 +223,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
           </div>
 
           {/* Task Title */}
-          <h4 className={`font-semibold text-sm leading-tight line-clamp-2 ${isDone ? 'line-through text-gray-400' : 'text-gray-900 group-hover:text-blue-600'}`}>
+          <h4
+            className={`font-semibold text-sm leading-tight line-clamp-2 ${
+              isDone
+                ? "line-through text-gray-400"
+                : "text-gray-900 group-hover:text-blue-600"
+            }`}
+          >
             {task.title}
           </h4>
 
@@ -193,12 +245,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-600">Progress</span>
-                <span className="text-[10px] font-semibold text-gray-700">{task.progress}%</span>
+                <span className="text-[10px] font-semibold text-gray-700">
+                  {task.progress}%
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div
                   className={`h-1.5 rounded-full transition-all ${
-                    task.progress === 100 ? 'bg-green-500' : task.progress >= 70 ? 'bg-blue-500' : task.progress >= 40 ? 'bg-yellow-500' : 'bg-orange-500'
+                    task.progress === 100
+                      ? "bg-green-500"
+                      : task.progress >= 70
+                      ? "bg-blue-500"
+                      : task.progress >= 40
+                      ? "bg-yellow-500"
+                      : "bg-orange-500"
                   }`}
                   style={{ width: `${task.progress}%` }}
                 />
@@ -221,12 +281,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
                     <Calendar className="w-3.5 h-3.5 text-gray-400" />
                   )}
                   <div className="flex flex-col">
-                    <span className={`text-[11px] font-semibold ${isOverdue() ? 'text-red-600' : 'text-gray-700'}`}>
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        isOverdue() ? "text-red-600" : "text-gray-700"
+                      }`}
+                    >
                       {formatDueDate()}
                     </span>
                     {getDaysUntilDue() !== null && !isDone && (
-                      <span className={`text-[9px] ${isOverdue() ? 'text-red-500' : 'text-gray-500'}`}>
-                        {getDaysUntilDue() < 0 ? `${Math.abs(getDaysUntilDue()!)}d overdue` : `${getDaysUntilDue()}d left`}
+                      <span
+                        className={`text-[9px] ${
+                          isOverdue() ? "text-red-500" : "text-gray-500"
+                        }`}
+                      >
+                        {getDaysUntilDue() < 0
+                          ? `${Math.abs(getDaysUntilDue()!)}d overdue`
+                          : `${getDaysUntilDue()}d left`}
                       </span>
                     )}
                   </div>
@@ -245,11 +315,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
                     />
                   )}
                   <AvatarFallback className="text-[10px] bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
-                    {task.assignee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                    {task.assignee.name
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-[11px] text-gray-700 font-medium max-w-[70px] truncate">
-                  {task.assignee.name.split(' ')[0]}
+                  {task.assignee.name.split(" ")[0]}
                 </span>
               </div>
             )}
@@ -257,68 +331,79 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, columnId, onEdit }) => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
 interface ColumnProps {
-  title: string
-  status: string
-  tasks: Story[]
-  onDrop: (taskId: string, newStatus: string) => void
-  onEdit: (task: Story) => void
+  title: string;
+  status: string;
+  tasks: Story[];
+  onDrop: (taskId: string, newStatus: string) => void;
+  onEdit: (task: Story) => void;
 }
 
-const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit }) => {
-  const [isDragOver, setIsDragOver] = useState(false)
+const Column: React.FC<ColumnProps> = ({
+  title,
+  status,
+  tasks,
+  onDrop,
+  onEdit,
+}) => {
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     if (!isDragOver) {
-      setIsDragOver(true)
+      setIsDragOver(true);
     }
-  }
+  };
 
   const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }
+    e.preventDefault();
+    setIsDragOver(true);
+  };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     // Check if we're actually leaving the drop zone
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX
-    const y = e.clientY
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
 
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setIsDragOver(false)
+      setIsDragOver(false);
     }
-  }
+  };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
+    e.preventDefault();
+    setIsDragOver(false);
 
     try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'))
+      const data = JSON.parse(e.dataTransfer.getData("application/json"));
       if (data.sourceColumn !== status) {
-        onDrop(data.taskId, status)
+        onDrop(data.taskId, status);
       }
     } catch (error) {
-      console.error('Error parsing drop data:', error)
+      console.error("Error parsing drop data:", error);
     }
-  }
+  };
 
   const getColumnColor = (status: string) => {
     switch (status) {
-      case 'todo': return 'bg-gray-500'
-      case 'in-progress': return 'bg-blue-500'
-      case 'review': return 'bg-yellow-500'
-      case 'done': return 'bg-green-500'
-      default: return 'bg-gray-500'
+      case "todo":
+        return "bg-gray-500";
+      case "in-progress":
+        return "bg-blue-500";
+      case "review":
+        return "bg-yellow-500";
+      case "done":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
     }
-  }
+  };
 
   return (
     <div className="w-80 flex-shrink-0">
@@ -339,7 +424,9 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit })
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`flex-1 min-h-96 transition-all duration-200 ${
-            isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-400 shadow-inner' : ''
+            isDragOver
+              ? "bg-blue-50 border-2 border-dashed border-blue-400 shadow-inner"
+              : ""
           }`}
         >
           {tasks.map((task) => (
@@ -362,30 +449,35 @@ const Column: React.FC<ColumnProps> = ({ title, status, tasks, onDrop, onEdit })
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export function NativeDragDropKanban({ project, user, masterData: propMasterData, masterLoading: propMasterLoading }: NativeDragDropKanbanProps) {
-  const projectId = project?.id
-  const [tasks, setTasks] = useState<Story[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTask, setSelectedTask] = useState<Story | null>(null)
-  const [showTaskDialog, setShowTaskDialog] = useState(false)
+export function NativeDragDropKanban({
+  project,
+  user,
+  masterData: propMasterData,
+  masterLoading: propMasterLoading,
+}: NativeDragDropKanbanProps) {
+  const projectId = project?.id;
+  const [tasks, setTasks] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTask, setSelectedTask] = useState<Story | null>(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
 
   // Filters
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterPriority, setFilterPriority] = useState<string>('all')
-  const [filterType, setFilterType] = useState<string>('all')
-  const [filterAssignee, setFilterAssignee] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterAssignee, setFilterAssignee] = useState<string>("all");
 
   // Use master data from props or fallback (for backwards compatibility)
-  const masterData = propMasterData
-  const masterLoading = propMasterLoading || false
+  const masterData = propMasterData;
+  const masterLoading = propMasterLoading || false;
 
   // Get team members from project object directly
-  const projectTeamMembers = project?.team_members_detail || []
-  const projectTeamLead = project?.team_lead_detail
+  const projectTeamMembers = project?.team_members_detail || [];
+  const projectTeamLead = project?.team_lead_detail;
 
   // Create columns dynamically from master data (use task_status for task statuses)
   const columns = React.useMemo(() => {
@@ -394,44 +486,49 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
         .filter((status: any) => status.is_active)
         .sort((a: any, b: any) => a.sort_order - b.sort_order)
         .map((status: any) => ({
-          id: status.name.toLowerCase().replace(/\s+/g, '-'),
+          id: status.name.toLowerCase().replace(/\s+/g, "-"),
           title: status.name,
-          status: status.name.toLowerCase().replace(/\s+/g, '-'),
-          color: status.color || '#gray'
-        }))
+          status: status.name.toLowerCase().replace(/\s+/g, "-"),
+          color: status.color || "#gray",
+        }));
     }
     // Fallback to default columns if master data is not available
     return [
-      { id: 'todo', title: 'To Do', status: 'todo', color: '#6B7280' },
-      { id: 'in-progress', title: 'In Progress', status: 'in-progress', color: '#3B82F6' },
-      { id: 'review', title: 'Review', status: 'review', color: '#EAB308' },
-      { id: 'done', title: 'Done', status: 'done', color: '#22C55E' }
-    ]
-  }, [masterData])
+      { id: "todo", title: "To Do", status: "todo", color: "#6B7280" },
+      {
+        id: "in-progress",
+        title: "In Progress",
+        status: "in-progress",
+        color: "#3B82F6",
+      },
+      { id: "review", title: "Review", status: "review", color: "#EAB308" },
+      { id: "done", title: "Done", status: "done", color: "#22C55E" },
+    ];
+  }, [masterData]);
 
   useEffect(() => {
-    loadTasks()
-  }, [projectId])
+    loadTasks();
+  }, [projectId]);
 
   const loadTasks = async () => {
-    if (!projectId) return
+    if (!projectId) return;
 
     try {
-      setLoading(true)
-      const response = await storiesApiService.getStories(projectId, 1, 100)
-      setTasks(response.items)
+      setLoading(true);
+      const response = await storiesApiService.getStories(projectId, 1, 100);
+      setTasks(response.items);
     } catch (error) {
-      console.error('Failed to load tasks:', error)
-      toast.error('Failed to load tasks')
+      console.error("Failed to load tasks:", error);
+      toast.error("Failed to load tasks");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleTaskEdit = (task: Story) => {
-    setSelectedTask(task)
-    setShowTaskDialog(true)
-  }
+    setSelectedTask(task);
+    setShowTaskDialog(true);
+  };
 
   const handleTaskUpdate = async (updatedTask: any) => {
     try {
@@ -449,78 +546,99 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
         end_date: updatedTask.end_date || updatedTask.due_date,
         tags: updatedTask.tags || [],
         labels: updatedTask.tags || [],
-        acceptance_criteria: updatedTask.acceptance_criteria?.filter((c: string) => c.trim() !== '') || [],
+        acceptance_criteria:
+          updatedTask.acceptance_criteria?.filter(
+            (c: string) => c.trim() !== ""
+          ) || [],
         comments: updatedTask.comments || [],
-        attached_files: updatedTask.attachments || []  // API expects 'attached_files', not 'attachments'
-      }
+        attached_files: updatedTask.attachments || [], // API expects 'attached_files', not 'attachments'
+      };
 
-      await storiesApiService.updateStory(updatedTask.id, storyUpdateData)
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
+      await storiesApiService.updateStory(updatedTask.id, storyUpdateData);
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
           task.id === updatedTask.id ? { ...task, ...updatedTask } : task
         )
-      )
-      setShowTaskDialog(false)
-      toast.success('Task updated successfully')
-      loadTasks() // Reload to get fresh data
+      );
+      setShowTaskDialog(false);
+      toast.success("Task updated successfully");
+      loadTasks(); // Reload to get fresh data
     } catch (error) {
-      console.error('Failed to update task:', error)
-      toast.error('Failed to update task')
+      console.error("Failed to update task:", error);
+      toast.error("Failed to update task");
     }
-  }
+  };
 
   const handleTaskMove = async (taskId: string, newStatus: string) => {
     try {
       // Check if the target status is 'done' to automatically set progress to 100%
-      const isDoneStatus = newStatus === 'done' || newStatus.toLowerCase().includes('done') || newStatus.toLowerCase().includes('completed')
+      const isDoneStatus =
+        newStatus === "done" ||
+        newStatus.toLowerCase().includes("done") ||
+        newStatus.toLowerCase().includes("completed");
 
       // Prepare update data
-      const updateData: any = { status: newStatus }
+      const updateData: any = { status: newStatus };
       if (isDoneStatus) {
-        updateData.progress = 100
+        updateData.progress = 100;
       }
 
       // Optimistically update local state first for better UX
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
           task.id === taskId ? { ...task, ...updateData } : task
         )
-      )
+      );
 
       // Update via API
-      await storiesApiService.updateStory(taskId, updateData)
-      toast.success(isDoneStatus ? 'Task completed successfully' : 'Task moved successfully')
+      await storiesApiService.updateStory(taskId, updateData);
+      toast.success(
+        isDoneStatus ? "Task completed successfully" : "Task moved successfully"
+      );
     } catch (error) {
-      console.error('❌ Failed to move task:', error)
-      toast.error('Failed to move task')
+      console.error("❌ Failed to move task:", error);
+      toast.error("Failed to move task");
       // Reload tasks to revert the optimistic update on error
-      loadTasks()
+      loadTasks();
     }
-  }
+  };
 
   const getTasksForColumn = (status: string) => {
-    return tasks.filter(task => {
-      const taskStatus = task.status?.toLowerCase().replace(/\s+/g, '-') || 'todo'
-      const matchesStatus = taskStatus === status
-      const matchesSearch = !searchTerm ||
+    return tasks.filter((task) => {
+      const taskStatus =
+        task.status?.toLowerCase().replace(/\s+/g, "-") || "todo";
+      const matchesStatus = taskStatus === status;
+      const matchesSearch =
+        !searchTerm ||
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Filter by priority
-      const matchesPriority = filterPriority === 'all' ||
-        task.priority?.toLowerCase() === filterPriority.toLowerCase()
+      const matchesPriority =
+        filterPriority === "all" ||
+        task.priority?.toLowerCase() === filterPriority.toLowerCase();
 
       // Filter by type
-      const matchesType = filterType === 'all' ||
-        task.story_type?.toLowerCase() === filterType.toLowerCase()
+      const matchesType =
+        filterType === "all" ||
+        task.story_type?.toLowerCase() === filterType.toLowerCase();
 
       // Filter by assignee
-      const matchesAssignee = filterAssignee === 'all' ||
-        (filterAssignee === 'unassigned' ? !task.assignee_id : task.assignee_id === filterAssignee)
+      const matchesAssignee =
+        filterAssignee === "all" ||
+        (filterAssignee === "unassigned"
+          ? !task.assignee_id
+          : task.assignee_id === filterAssignee);
 
-      return matchesStatus && matchesSearch && matchesPriority && matchesType && matchesAssignee
-    })
-  }
+      return (
+        matchesStatus &&
+        matchesSearch &&
+        matchesPriority &&
+        matchesType &&
+        matchesAssignee
+      );
+    });
+  };
 
   if (loading) {
     return (
@@ -528,7 +646,7 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <span className="ml-2">Loading kanban board...</span>
       </div>
-    )
+    );
   }
 
   return (
@@ -538,7 +656,9 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold">Kanban Board</h2>
-            <p className="text-muted-foreground">Drag and drop tasks to update their status</p>
+            <p className="text-muted-foreground">
+              Drag and drop tasks to update their status
+            </p>
           </div>
         </div>
 
@@ -565,7 +685,10 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
                 <SelectItem value="all">All Priority</SelectItem>
                 {masterData?.priorities && masterData.priorities.length > 0 ? (
                   masterData.priorities.map((priority) => (
-                    <SelectItem key={priority.id} value={priority.name.toLowerCase()}>
+                    <SelectItem
+                      key={priority.id}
+                      value={priority.name.toLowerCase()}
+                    >
                       <div className="flex items-center space-x-2">
                         {priority.color && (
                           <div
@@ -578,8 +701,7 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
                     </SelectItem>
                   ))
                 ) : (
-                  <>                    
-                  </>
+                  <></>
                 )}
               </SelectContent>
             </Select>
@@ -609,7 +731,9 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="loading" disabled>Loading members...</SelectItem>
+                  <SelectItem value="loading" disabled>
+                    Loading members...
+                  </SelectItem>
                 )}
               </SelectContent>
             </Select>
@@ -620,16 +744,30 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
       {/* Board Statistics */}
       <div className="grid grid-cols-6 gap-6">
         {columns.map((column) => {
-          const columnTasks = getTasksForColumn(column.status)
+          const columnTasks = getTasksForColumn(column.status);
           return (
-            <Card key={column.id} className='overflow-x-auto'>
+            <Card key={column.id} className="overflow-x-auto">
               <CardContent className="p-4 text-center gap-6">
-                <div className={`w-3 h-3 rounded-full ${column.status === 'todo' ? 'bg-gray-500' : column.status === 'in-progress' ? 'bg-blue-500' : column.status === 'review' ? 'bg-yellow-500' : 'bg-green-500'} mx-auto mb-2`} />
-                <div className="text-2xl font-semibold">{columnTasks.length}</div>
-                <div className="text-xs text-muted-foreground">{column.title}</div>
+                <div
+                  className={`w-3 h-3 rounded-full ${
+                    column.status === "todo"
+                      ? "bg-gray-500"
+                      : column.status === "in-progress"
+                      ? "bg-blue-500"
+                      : column.status === "review"
+                      ? "bg-yellow-500"
+                      : "bg-green-500"
+                  } mx-auto mb-2`}
+                />
+                <div className="text-2xl font-semibold">
+                  {columnTasks.length}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {column.title}
+                </div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
 
@@ -663,5 +801,5 @@ export function NativeDragDropKanban({ project, user, masterData: propMasterData
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,17 +1,46 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
-import { Label } from '../../../components/ui/label'
-import { Badge } from '../../../components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../../components/ui/dialog'
-import { Alert, AlertDescription } from '../../../components/ui/alert'
-import { Separator } from '../../../components/ui/separator'
-import { Switch } from '../../../components/ui/switch'
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { Badge } from "../../../components/ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../components/ui/avatar";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../../components/ui/dialog";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Separator } from "../../../components/ui/separator";
+import { Switch } from "../../../components/ui/switch";
 import {
   Users,
   Plus,
@@ -31,427 +60,483 @@ import {
   UserPlus,
   Lock,
   Unlock,
-  X
-} from 'lucide-react'
-import { userRoles } from '../../Login/Auth'
-import { toast } from 'sonner@2.0.3'
-import { User, CreateUserRequest, userApiService } from '../../../services/userApi';
-import { authApiService } from '../../../services/authApi'
-import { getProfilePictureUrl, getUserInitials } from '../../../utils/profileUtils'
-import { RootState, AppDispatch } from '../../../store'
-import { fetchUserSummary } from '../../../store/slices/userSlice'
-import { masterApiService, Department } from '../../../services/masterApi'
+  X,
+} from "lucide-react";
+import { userRoles } from "../../Login/Auth";
+import { toast } from "sonner";
+import {
+  User,
+  CreateUserRequest,
+  userApiService,
+} from "../../../services/userApi";
+import { authApiService } from "../../../services/authApi";
+import {
+  getProfilePictureUrl,
+  getUserInitials,
+} from "../../../utils/profileUtils";
+import { RootState, AppDispatch } from "../../../store";
+import { fetchUserSummary } from "../../../store/slices/userSlice";
+import { masterApiService, Department } from "../../../services/masterApi";
 
 // Initial empty users array - will be populated from API
-const initialUsers: User[] = []
+const initialUsers: User[] = [];
 
 // Mock audit logs
-const auditLogs = [];
+const auditLogs: any = [];
 
 export function UserManagement() {
-  const instanceId = useRef(Math.random().toString(36).substr(2, 9))
-  const dispatch = useDispatch<AppDispatch>()
-  const { summary, summaryLoading } = useSelector((state: RootState) => state.users)
-  const isMountedRef = useRef(false)
+  const instanceId = useRef(Math.random().toString(36).substr(2, 9));
+  const dispatch = useDispatch<AppDispatch>();
+  const { summary, summaryLoading } = useSelector(
+    (state: RootState) => state.users
+  );
+  const isMountedRef = useRef(false);
 
   // Component mount/unmount tracking
   useEffect(() => {
-    return () => {}
-  }, [])
+    return () => {};
+  }, []);
 
   // Fetch departments on component mount
   useEffect(() => {
     const loadDepartments = async () => {
       try {
-        const depts = await masterApiService.getDepartments()
-        setDepartments(depts)
+        const depts = await masterApiService.getDepartments();
+        setDepartments(depts);
       } catch (error) {
-        toast.error('Failed to load departments')
+        toast.error("Failed to load departments");
       }
-    }
+    };
 
-    loadDepartments()
-  }, [])
+    loadDepartments();
+  }, []);
 
   // Check if current user has permission to edit users
   const getCurrentUserPermissions = () => {
     try {
-      const currentUser = authApiService.getUserProfile()
+      const currentUser = authApiService.getUserProfile();
 
-      if (!currentUser) return { canEdit: false, canCreate: false }
+      if (!currentUser) return { canEdit: false, canCreate: false };
 
       // Get role permissions from userRoles
-      const roleKey = currentUser.role_id?.replace('role_', '') || ''
-      const userRole = userRoles[roleKey as keyof typeof userRoles]
+      const roleKey = currentUser.role_id?.replace("role_", "") || "";
+      const userRole = userRoles[roleKey as keyof typeof userRoles];
 
-      if (!userRole) return { canEdit: false, canCreate: false }
+      if (!userRole) return { canEdit: false, canCreate: false };
 
       // Check if user has all permissions or specific user management permissions
-      const hasAllPermissions = userRole.permissions.includes('*')
-      const canEditUsers = hasAllPermissions || userRole.permissions.includes('users:write') || userRole.permissions.includes('users:*')
-      const canCreateUsers = hasAllPermissions || userRole.permissions.includes('users:write') || userRole.permissions.includes('users:*')
+      const hasAllPermissions = userRole.permissions.includes("*");
+      const canEditUsers =
+        hasAllPermissions ||
+        userRole.permissions.includes("users:write") ||
+        userRole.permissions.includes("users:*");
+      const canCreateUsers =
+        hasAllPermissions ||
+        userRole.permissions.includes("users:write") ||
+        userRole.permissions.includes("users:*");
 
-      return { canEdit: canEditUsers, canCreate: canCreateUsers, role: userRole.name }
+      return {
+        canEdit: canEditUsers,
+        canCreate: canCreateUsers,
+        role: userRole.name,
+      };
     } catch (error) {
-      return { canEdit: false, canCreate: false }
+      return { canEdit: false, canCreate: false };
     }
-  }
+  };
 
-  const userPermissions = getCurrentUserPermissions()
+  const userPermissions = getCurrentUserPermissions();
 
-  const [users, setUsers] = useState<User[]>(initialUsers)
-  const [loading, setLoading] = useState(false)
+  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 10,
     total: 0,
     total_pages: 0,
     has_next: false,
-    has_prev: false
-  })
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedRole, setSelectedRole] = useState('all')
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [showCreateUser, setShowCreateUser] = useState(false)
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
+    has_prev: false,
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRole, setSelectedRole] = useState("all");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const [newUser, setNewUser] = useState<CreateUserRequest>({
-    name: '',
-    email: '',
-    role_id: 'role_developer',
-    user_profile: '',
+    name: "",
+    email: "",
+    role_id: "role_developer",
+    user_profile: "",
     user_profile_file: undefined,
     is_active: true,
-    department: '',
+    department: "",
     skills: [],
-    phone: '',
-    timezone: 'UTC',
-    password: ''
-  })
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [showEditUser, setShowEditUser] = useState(false)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [editUserProfileFile, setEditUserProfileFile] = useState<File | null>(null)
+    phone: "",
+    timezone: "UTC",
+    password: "",
+  });
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [editUserProfileFile, setEditUserProfileFile] = useState<File | null>(
+    null
+  );
 
   // Department and skill management states
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [newSkill, setNewSkill] = useState('')
-  const [editNewSkill, setEditNewSkill] = useState('')
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [newSkill, setNewSkill] = useState("");
+  const [editNewSkill, setEditNewSkill] = useState("");
 
   // Validation states
   const [createUserErrors, setCreateUserErrors] = useState({
-    email: '',
-    phone: '',
-    user_profile_file: ''
-  })
+    email: "",
+    phone: "",
+    user_profile_file: "",
+  });
   const [editUserErrors, setEditUserErrors] = useState({
-    email: '',
-    phone: ''
-  })
+    email: "",
+    phone: "",
+  });
 
   // Validation functions
   const validateEmail = (email: string): string => {
-    if (!email) return 'Email is required'
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) return 'Please enter a valid email address'
-    return ''
-  }
+    if (!email) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
 
   const validatePhone = (phone: string): string => {
-    if (!phone) return '' // Phone is optional
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
-    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
-      return 'Please enter a valid phone number'
+    if (!phone) return ""; // Phone is optional
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ""))) {
+      return "Please enter a valid phone number";
     }
-    return ''
-  }
+    return "";
+  };
 
   const validateUserProfileFile = (file: File | undefined): string => {
-    if (!file) return '' // File is optional
+    if (!file) return ""; // File is optional
 
     // Check file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
     if (!allowedTypes.includes(file.type)) {
-      return 'Please upload a JPEG or PNG image file'
+      return "Please upload a JPEG or PNG image file";
     }
 
     // Check file size (2MB = 2 * 1024 * 1024 bytes)
-    const maxSize = 2 * 1024 * 1024
+    const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
-      return 'File size must be less than 2MB'
+      return "File size must be less than 2MB";
     }
 
-    return ''
-  }
+    return "";
+  };
 
   const validateCreateUserForm = (): boolean => {
-    const emailError = validateEmail(newUser.email)
-    const phoneError = validatePhone(newUser.phone)
-    const userProfileFileError = validateUserProfileFile(newUser.user_profile_file)
+    const emailError = validateEmail(newUser.email);
+    const phoneError = validatePhone(newUser.phone);
+    const userProfileFileError = validateUserProfileFile(
+      newUser.user_profile_file
+    );
 
     setCreateUserErrors({
       email: emailError,
       phone: phoneError,
-      user_profile_file: userProfileFileError
-    })
+      user_profile_file: userProfileFileError,
+    });
 
-    return !emailError && !phoneError && !userProfileFileError
-  }
+    return !emailError && !phoneError && !userProfileFileError;
+  };
 
   // Handle user profile file selection
-  const handleUserProfileFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const handleUserProfileFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
 
     if (file) {
       // Validate file immediately
-      const error = validateUserProfileFile(file)
-      setCreateUserErrors({ ...createUserErrors, user_profile_file: error })
+      const error = validateUserProfileFile(file);
+      setCreateUserErrors({ ...createUserErrors, user_profile_file: error });
 
       if (!error) {
         // Create preview URL
-        const reader = new FileReader()
+        const reader = new FileReader();
         reader.onload = (e) => {
-          setAvatarPreview(e.target?.result as string)
-        }
-        reader.readAsDataURL(file)
+          setAvatarPreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
 
         // Update user state
-        setNewUser({ ...newUser, user_profile_file: file })
+        setNewUser({ ...newUser, user_profile_file: file });
       } else {
         // Clear preview and file if validation fails
-        setAvatarPreview(null)
-        setNewUser({ ...newUser, user_profile_file: undefined })
+        setAvatarPreview(null);
+        setNewUser({ ...newUser, user_profile_file: undefined });
       }
     } else {
       // Clear preview and file if no file selected
-      setAvatarPreview(null)
-      setNewUser({ ...newUser, user_profile_file: undefined })
-      setCreateUserErrors({ ...createUserErrors, user_profile_file: '' })
+      setAvatarPreview(null);
+      setNewUser({ ...newUser, user_profile_file: undefined });
+      setCreateUserErrors({ ...createUserErrors, user_profile_file: "" });
     }
-  }
+  };
 
   const validateEditUserForm = (): boolean => {
-    if (!editingUser) return false
+    if (!editingUser) return false;
 
-    const emailError = validateEmail(editingUser.email)
-    const phoneError = validatePhone(editingUser.phone)
+    const emailError = validateEmail(editingUser.email);
+    const phoneError = validatePhone(editingUser.phone);
 
     setEditUserErrors({
       email: emailError,
-      phone: phoneError
-    })
+      phone: phoneError,
+    });
 
-    return !emailError && !phoneError
-  }
+    return !emailError && !phoneError;
+  };
 
   // Skill management functions
   const handleAddSkill = () => {
-    const skillToAdd = newSkill.trim()
+    const skillToAdd = newSkill.trim();
     if (skillToAdd && !newUser.skills.includes(skillToAdd)) {
-      setNewUser(prev => ({
+      setNewUser((prev) => ({
         ...prev,
-        skills: [...prev.skills, skillToAdd]
-      }))
-      setNewSkill('')
+        skills: [...prev.skills, skillToAdd],
+      }));
+      setNewSkill("");
     } else if (newUser.skills.includes(skillToAdd)) {
-      toast.error('Skill already added')
+      toast.error("Skill already added");
     } else if (!skillToAdd) {
-      toast.error('Please enter a skill name')
+      toast.error("Please enter a skill name");
     }
-  }
+  };
 
   const handleRemoveSkill = (skill: string) => {
-    setNewUser(prev => ({
+    setNewUser((prev) => ({
       ...prev,
-      skills: prev.skills.filter(s => s !== skill)
-    }))
-  }
+      skills: prev.skills.filter((s) => s !== skill),
+    }));
+  };
 
   const handleAddEditSkill = () => {
-    if (!editingUser) return
+    if (!editingUser) return;
 
-    const skillToAdd = editNewSkill.trim()
+    const skillToAdd = editNewSkill.trim();
     if (skillToAdd && !editingUser.skills.includes(skillToAdd)) {
-      setEditingUser(prev => prev ? ({
-        ...prev,
-        skills: [...prev.skills, skillToAdd]
-      }) : null)
-      setEditNewSkill('')
+      setEditingUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              skills: [...prev.skills, skillToAdd],
+            }
+          : null
+      );
+      setEditNewSkill("");
     } else if (editingUser.skills.includes(skillToAdd)) {
-      toast.error('Skill already added')
+      toast.error("Skill already added");
     } else if (!skillToAdd) {
-      toast.error('Please enter a skill name')
+      toast.error("Please enter a skill name");
     }
-  }
+  };
 
   const handleRemoveEditSkill = (skill: string) => {
-    if (!editingUser) return
+    if (!editingUser) return;
 
-    setEditingUser(prev => prev ? ({
-      ...prev,
-      skills: prev.skills.filter(s => s !== skill)
-    }) : null)
-  }
+    setEditingUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            skills: prev.skills.filter((s) => s !== skill),
+          }
+        : null
+    );
+  };
 
   // Fetch users function
-  const fetchUsers = async (params: { page?: number; per_page?: number; search?: string; role_id?: string } = {}) => {
-    setLoading(true)
+  const fetchUsers = async (
+    params: {
+      page?: number;
+      per_page?: number;
+      search?: string;
+      role_id?: string;
+    } = {}
+  ) => {
+    setLoading(true);
     try {
       const response = await userApiService.getUsers({
         page: params.page || pagination.page,
         per_page: params.per_page || pagination.per_page,
-        search: params.search !== undefined ? params.search : (searchTerm || undefined),
-        role_id: params.role_id !== undefined ? params.role_id : (selectedRole !== 'all' ? `role_${selectedRole}` : undefined)
-      })
+        search:
+          params.search !== undefined ? params.search : searchTerm || undefined,
+        role_id:
+          params.role_id !== undefined
+            ? params.role_id
+            : selectedRole !== "all"
+            ? `role_${selectedRole}`
+            : undefined,
+      });
 
-      setUsers(response.items || [])
+      setUsers(response.items || []);
       setPagination({
         page: response.page,
         per_page: response.per_page,
         total: response.total,
         total_pages: response.total_pages,
         has_next: response.has_next,
-        has_prev: response.has_prev
-      })
+        has_prev: response.has_prev,
+      });
     } catch (error) {
-      toast.error('Failed to load users')
-      setUsers([]) // Ensure users is always an array
+      toast.error("Failed to load users");
+      setUsers([]); // Ensure users is always an array
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Initial fetch on component mount - only runs once
   useEffect(() => {
     const initialFetch = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
         const response = await userApiService.getUsers({
           page: 1,
-          per_page: 10
-        })
-        setUsers(response.items || [])
+          per_page: 10,
+        });
+        setUsers(response.items || []);
         setPagination({
           page: response.page,
           per_page: response.per_page,
           total: response.total,
           total_pages: response.total_pages,
           has_next: response.has_next,
-          has_prev: response.has_prev
-        })
+          has_prev: response.has_prev,
+        });
 
         // Fetch summary
-        dispatch(fetchUserSummary())
-        isMountedRef.current = true
+        dispatch(fetchUserSummary());
+        isMountedRef.current = true;
       } catch (error) {
-        toast.error('Failed to load users')
-        setUsers([])
+        toast.error("Failed to load users");
+        setUsers([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    initialFetch()
-  }, [dispatch])
+    initialFetch();
+  }, [dispatch]);
 
   // Debounced search effect - only run after component is mounted and when values actually change
   useEffect(() => {
     // Skip initial render
     if (!isMountedRef.current) {
-      return
+      return;
     }
 
     const timer = setTimeout(async () => {
-      setLoading(true)
+      setLoading(true);
       try {
         const response = await userApiService.getUsers({
           page: 1,
           per_page: pagination.per_page,
           search: searchTerm || undefined,
-          role_id: selectedRole !== 'all' ? `role_${selectedRole}` : undefined
-        })
+          role_id: selectedRole !== "all" ? `role_${selectedRole}` : undefined,
+        });
 
-        setUsers(response.items || [])
+        setUsers(response.items || []);
         setPagination({
           page: response.page,
           per_page: response.per_page,
           total: response.total,
           total_pages: response.total_pages,
           has_next: response.has_next,
-          has_prev: response.has_prev
-        })
+          has_prev: response.has_prev,
+        });
       } catch (error) {
-        toast.error('Failed to load users')
-        setUsers([])
+        toast.error("Failed to load users");
+        setUsers([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }, 500) // 500ms delay
+    }, 500); // 500ms delay
 
-    return () => clearTimeout(timer)
-  }, [searchTerm, selectedRole])
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedRole]);
 
   // Since we're doing server-side filtering, we don't need client-side filtering
-  const filteredUsers = Array.isArray(users) ? users : []
+  const filteredUsers = Array.isArray(users) ? users : [];
 
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
-    fetchUsers({ page: newPage, search: searchTerm || undefined, role_id: selectedRole !== 'all' ? `role_${selectedRole}` : undefined })
-  }
+    fetchUsers({
+      page: newPage,
+      search: searchTerm || undefined,
+      role_id: selectedRole !== "all" ? `role_${selectedRole}` : undefined,
+    });
+  };
 
   const handlePerPageChange = (perPage: number) => {
-    fetchUsers({ page: 1, per_page: perPage, search: searchTerm || undefined, role_id: selectedRole !== 'all' ? `role_${selectedRole}` : undefined })
-  }
+    fetchUsers({
+      page: 1,
+      per_page: perPage,
+      search: searchTerm || undefined,
+      role_id: selectedRole !== "all" ? `role_${selectedRole}` : undefined,
+    });
+  };
 
-  const filteredAuditLogs = auditLogs.slice(0, 10) // Show recent logs
+  const filteredAuditLogs = auditLogs.slice(0, 10); // Show recent logs
 
   const handleCreateUser = async () => {
     // Validate form before submission
     if (!validateCreateUserForm()) {
-      toast.error('Please fix the validation errors before submitting')
-      return
+      toast.error("Please fix the validation errors before submitting");
+      return;
     }
 
     try {
       const userData: CreateUserRequest = {
         ...newUser,
-        user_profile: newUser.user_profile || '/public/user-profile/default.png'
-      }
+        user_profile:
+          newUser.user_profile || "/public/user-profile/default.png",
+      };
 
-      await userApiService.createUser(userData)
+      await userApiService.createUser(userData);
 
       // Refresh the users list and summary
-      await fetchUsers()
+      await fetchUsers();
 
       setNewUser({
-        name: '',
-        email: '',
-        role_id: 'role_developer',
-        user_profile: '',
+        name: "",
+        email: "",
+        role_id: "role_developer",
+        user_profile: "",
         user_profile_file: undefined,
         is_active: true,
-        department: '',
+        department: "",
         skills: [],
-        phone: '',
-        timezone: 'UTC',
-        password: ''
-      })
-      setCreateUserErrors({ email: '', phone: '', user_profile_file: '' })
-      setAvatarPreview(null)
-      setShowCreateUser(false)
+        phone: "",
+        timezone: "UTC",
+        password: "",
+      });
+      setCreateUserErrors({ email: "", phone: "", user_profile_file: "" });
+      setAvatarPreview(null);
+      setShowCreateUser(false);
 
-      toast.success('User created successfully')
+      toast.success("User created successfully");
     } catch (error) {
-      toast.error('Failed to create user')
+      toast.error("Failed to create user");
     }
-  }
+  };
 
   const handleEditUser = async () => {
-    if (!editingUser) return
+    if (!editingUser) return;
 
     // Validate form before submission
     if (!validateEditUserForm()) {
-      toast.error('Please fix the validation errors before submitting')
-      return
+      toast.error("Please fix the validation errors before submitting");
+      return;
     }
 
     try {
@@ -464,8 +549,8 @@ export function UserManagement() {
         department: editingUser.department,
         skills: editingUser.skills,
         phone: editingUser.phone,
-        timezone: editingUser.timezone
-      }
+        timezone: editingUser.timezone,
+      };
 
       // Only add user_profile if there's no file being uploaded
       // (if file is uploaded, it will be handled separately)
@@ -473,58 +558,73 @@ export function UserManagement() {
         // Don't include user_profile at all - let backend keep existing image
       }
 
-      await userApiService.updateUser(editingUser.id, updateData, editUserProfileFile || undefined)
+      await userApiService.updateUser(
+        editingUser.id,
+        updateData,
+        editUserProfileFile || undefined
+      );
 
       // Refresh the users list
-      await fetchUsers()
+      await fetchUsers();
 
-      setEditingUser(null)
-      setEditUserErrors({ email: '', phone: '' })
-      setEditUserProfileFile(null)
-      setShowEditUser(false)
+      setEditingUser(null);
+      setEditUserErrors({ email: "", phone: "" });
+      setEditUserProfileFile(null);
+      setShowEditUser(false);
 
-      toast.success('User updated successfully')
+      toast.success("User updated successfully");
     } catch (error: any) {
       // Check for specific authorization errors
-      if (error.message?.includes('Authentication failed') || error.message?.includes('401') || error.message?.includes('403')) {
-        toast.error('You do not have permission to edit users. Please contact your administrator.')
-      } else if (error.message?.includes('Network')) {
-        toast.error('Network error. Please check your connection and try again.')
+      if (
+        error.message?.includes("Authentication failed") ||
+        error.message?.includes("401") ||
+        error.message?.includes("403")
+      ) {
+        toast.error(
+          "You do not have permission to edit users. Please contact your administrator."
+        );
+      } else if (error.message?.includes("Network")) {
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
       } else {
-        toast.error(`Failed to update user: ${error.message || 'Unknown error'}`)
+        toast.error(
+          `Failed to update user: ${error.message || "Unknown error"}`
+        );
       }
     }
-  }
+  };
 
   const handleToggleUserStatus = async (userId: string) => {
     try {
-      const user = users.find(u => u.id === userId)
-      if (!user) return
+      const user = users.find((u) => u.id === userId);
+      if (!user) return;
 
-      await userApiService.toggleUserStatus(userId, !user.is_active)
+      await userApiService.toggleUserStatus(userId, !user.is_active);
 
       // Refresh the users list
-      await fetchUsers()
+      await fetchUsers();
 
-      toast.success('User status updated')
+      toast.success("User status updated");
     } catch (error) {
-      toast.error('Failed to update user status')
+      toast.error("Failed to update user status");
     }
-  }
-
-
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'failed': return <XCircle className="w-4 h-4 text-red-500" />
-      default: return <AlertTriangle className="w-4 h-4 text-yellow-500" />
+      case "success":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "failed":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
-  }
+    return new Date(dateString).toLocaleString();
+  };
 
   return (
     <div className="space-y-6">
@@ -536,8 +636,12 @@ export function UserManagement() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.total_users || 0}</div>
-            <p className="text-xs text-muted-foreground">All registered users</p>
+            <div className="text-2xl font-bold">
+              {summary?.total_users || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              All registered users
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -546,17 +650,23 @@ export function UserManagement() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.active_users || 0}</div>
+            <div className="text-2xl font-bold">
+              {summary?.active_users || 0}
+            </div>
             <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Inactive Users
+            </CardTitle>
             <XCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.inactive_users || 0}</div>
+            <div className="text-2xl font-bold">
+              {summary?.inactive_users || 0}
+            </div>
             <p className="text-xs text-muted-foreground">Disabled accounts</p>
           </CardContent>
         </Card>
@@ -566,7 +676,9 @@ export function UserManagement() {
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.total_roles || 0}</div>
+            <div className="text-2xl font-bold">
+              {summary?.total_roles || 0}
+            </div>
             <p className="text-xs text-muted-foreground">System roles</p>
           </CardContent>
         </Card>
@@ -597,17 +709,29 @@ export function UserManagement() {
             >
               <option value="all">All Roles</option>
               {Object.entries(userRoles).map(([key, role]) => (
-                <option key={key} value={key}>{role.name}</option>
+                <option key={key} value={key}>
+                  {role.name}
+                </option>
               ))}
             </select>
             <Button
               onClick={() => {
-                setShowCreateUser(true)
-                setCreateUserErrors({ email: '', phone: '', user_profile_file: '' })
+                setShowCreateUser(true);
+                setCreateUserErrors({
+                  email: "",
+                  phone: "",
+                  user_profile_file: "",
+                });
               }}
               disabled={!userPermissions.canCreate}
               className="bg-[#28A745] hover:bg-[#218838]"
-              title={!userPermissions.canCreate ? `You don't have permission to Add users. Current role: ${userPermissions.role || 'Unknown'}` : 'Add new user'}
+              title={
+                !userPermissions.canCreate
+                  ? `You don't have permission to Add users. Current role: ${
+                      userPermissions.role || "Unknown"
+                    }`
+                  : "Add new user"
+              }
             >
               <UserPlus className="h-4 w-4" />
               <span>Add User</span>
@@ -639,32 +763,47 @@ export function UserManagement() {
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8">
-                            <AvatarImage src={getProfilePictureUrl(user.user_profile)} alt={user.name} />
+                            <AvatarImage
+                              src={getProfilePictureUrl(user.user_profile)}
+                              alt={user.name}
+                            />
                             <AvatarFallback className="bg-[#28A745] text-white text-xs">
                               {getUserInitials(user.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium text-sm">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {user.email}
+                            </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <Badge variant="outline" className="text-xs">
-                            {user.role?.name || user.role_id || 'Unknown'}
+                            {user.role?.name || user.role_id || "Unknown"}
                           </Badge>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-xs ${user.is_active ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
-                          {user.is_active ? 'Active' : 'Inactive'}
+                        <Badge
+                          className={`text-xs ${
+                            user.is_active
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-500 text-white"
+                          }`}
+                        >
+                          {user.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="text-xs">
-                          <p>{user.last_login ? formatDate(user.last_login) : 'Never'}</p>
+                          <p>
+                            {user.last_login
+                              ? formatDate(user.last_login)
+                              : "Never"}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -673,23 +812,39 @@ export function UserManagement() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setEditingUser(user)
-                              setEditUserErrors({ email: '', phone: '' })
-                              setEditUserProfileFile(null)
-                              setShowEditUser(true)
+                              setEditingUser(user);
+                              setEditUserErrors({ email: "", phone: "" });
+                              setEditUserProfileFile(null);
+                              setShowEditUser(true);
                             }}
                             className="h-8 w-8 p-0"
                             disabled={!userPermissions.canEdit}
-                            title={!userPermissions.canEdit ? `You don't have permission to edit users. Current role: ${userPermissions.role || 'Unknown'}` : 'Edit user'}
+                            title={
+                              !userPermissions.canEdit
+                                ? `You don't have permission to edit users. Current role: ${
+                                    userPermissions.role || "Unknown"
+                                  }`
+                                : "Edit user"
+                            }
                           >
-                            <Edit className={`h-4 w-4 ${userPermissions.canEdit ? 'text-blue-500' : 'text-gray-400'}`} />
+                            <Edit
+                              className={`h-4 w-4 ${
+                                userPermissions.canEdit
+                                  ? "text-blue-500"
+                                  : "text-gray-400"
+                              }`}
+                            />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleToggleUserStatus(user.id)}
                             className="h-8 w-8 p-0"
-                            title={user.is_active ? "Deactivate user" : "Activate user"}
+                            title={
+                              user.is_active
+                                ? "Deactivate user"
+                                : "Activate user"
+                            }
                           >
                             {user.is_active ? (
                               <Lock className="h-4 w-4 text-red-500" />
@@ -701,8 +856,8 @@ export function UserManagement() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setSelectedUser(user)
-                              setShowPermissionDialog(true)
+                              setSelectedUser(user);
+                              setShowPermissionDialog(true);
                             }}
                             className="h-8 w-8 p-0"
                             title="View permissions"
@@ -720,14 +875,21 @@ export function UserManagement() {
               {pagination.total > 0 && (
                 <div className="flex items-center justify-between px-2 py-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((pagination.page - 1) * pagination.per_page) + 1} to {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total} users
+                    Showing {(pagination.page - 1) * pagination.per_page + 1} to{" "}
+                    {Math.min(
+                      pagination.page * pagination.per_page,
+                      pagination.total
+                    )}{" "}
+                    of {pagination.total} users
                   </div>
                   <div className="flex items-center space-x-6 lg:space-x-8">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium">Rows per page</span>
                       <select
                         value={pagination.per_page}
-                        onChange={(e) => handlePerPageChange(Number(e.target.value))}
+                        onChange={(e) =>
+                          handlePerPageChange(Number(e.target.value))
+                        }
                         className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm"
                       >
                         <option value={10}>10</option>
@@ -755,8 +917,7 @@ export function UserManagement() {
                         onClick={() => handlePageChange(pagination.page - 1)}
                         disabled={!pagination.has_prev || loading}
                       >
-                        <span className="sr-only">Go to previous page</span>
-                        ⟨
+                        <span className="sr-only">Go to previous page</span>⟨
                       </Button>
                       <Button
                         variant="outline"
@@ -764,8 +925,7 @@ export function UserManagement() {
                         onClick={() => handlePageChange(pagination.page + 1)}
                         disabled={!pagination.has_next || loading}
                       >
-                        <span className="sr-only">Go to next page</span>
-                        ⟩
+                        <span className="sr-only">Go to next page</span>⟩
                       </Button>
                       <Button
                         variant="outline"
@@ -793,36 +953,53 @@ export function UserManagement() {
               </CardTitle>
               <CardDescription>
                 Configure permissions for each role in the system
-                {summaryLoading && <span className="text-blue-500"> (Loading user counts...)</span>}
-                {!summary && !summaryLoading && <span className="text-red-500"> (Unable to load user counts)</span>}
+                {summaryLoading && (
+                  <span className="text-blue-500">
+                    {" "}
+                    (Loading user counts...)
+                  </span>
+                )}
+                {!summary && !summaryLoading && (
+                  <span className="text-red-500">
+                    {" "}
+                    (Unable to load user counts)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-
               {Object.entries(userRoles).map(([roleKey, role]) => {
                 // Create a mapping between API role names and local role names
                 const getRoleCount = (roleName: string) => {
                   const apiRoleMapping: { [key: string]: string[] } = {
-                    'Super Admin': ['super_admin', 'Super Admin'],
-                    'Administrator': ['admin', 'Administrator'],
-                    'Project Manager': ['project_manager', 'Project Manager'],
-                    'Developer': ['developer', 'Developer'],
-                    'Tester': ['tester', 'Tester'],
-                    'Client': ['client', 'Client']
+                    "Super Admin": ["super_admin", "Super Admin"],
+                    Administrator: ["admin", "Administrator"],
+                    "Project Manager": ["project_manager", "Project Manager"],
+                    Developer: ["developer", "Developer"],
+                    Tester: ["tester", "Tester"],
+                    Client: ["client", "Client"],
                   };
 
                   // Find matching role from API response
-                  for (const [apiRole, localRoles] of Object.entries(apiRoleMapping)) {
-                    if (localRoles.includes(roleKey) || localRoles.includes(roleName)) {
-                      const found = summary?.role_counts.find(rc => rc.role_name === apiRole);
+                  for (const [apiRole, localRoles] of Object.entries(
+                    apiRoleMapping
+                  )) {
+                    if (
+                      localRoles.includes(roleKey) ||
+                      localRoles.includes(roleName)
+                    ) {
+                      const found = summary?.role_counts.find(
+                        (rc) => rc.role_name === apiRole
+                      );
                       if (found) return found.count;
                     }
                   }
 
                   // Fallback: try direct match with role name
-                  const directMatch = summary?.role_counts.find(rc =>
-                    rc.role_name.toLowerCase() === roleName.toLowerCase() ||
-                    rc.role_name.toLowerCase() === roleKey.toLowerCase()
+                  const directMatch = summary?.role_counts.find(
+                    (rc) =>
+                      rc.role_name.toLowerCase() === roleName.toLowerCase() ||
+                      rc.role_name.toLowerCase() === roleKey.toLowerCase()
                   );
 
                   return directMatch?.count || 0;
@@ -831,33 +1008,41 @@ export function UserManagement() {
                 const roleCount = getRoleCount(role.name);
 
                 return (
-                <div key={roleKey} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Badge className={`${role.color} text-white`}>
-                        {role.name}
+                  <div key={roleKey} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Badge className={`${role.color} text-white`}>
+                          {role.name}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {role.description}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {roleCount} user{roleCount !== 1 ? "s" : ""}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">{role.description}</span>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {roleCount} user{roleCount !== 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                  <div className="pl-4 space-y-2">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {role.permissions.includes('*') ? (
-                        <Badge variant="outline" className="text-xs">All Permissions</Badge>
-                      ) : (
-                        role.permissions.map((permission) => (
-                          <Badge key={permission} variant="outline" className="text-xs">
-                            {permission}
+                    <div className="pl-4 space-y-2">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {role.permissions.includes("*") ? (
+                          <Badge variant="outline" className="text-xs">
+                            All Permissions
                           </Badge>
-                        ))
-                      )}
+                        ) : (
+                          role.permissions.map((permission) => (
+                            <Badge
+                              key={permission}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {permission}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
                     </div>
+                    <Separator />
                   </div>
-                  <Separator />
-                </div>
                 );
               })}
             </CardContent>
@@ -865,7 +1050,10 @@ export function UserManagement() {
         </TabsContent>
       </Tabs>
       {/* User Permission Dialog */}
-      <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
+      <Dialog
+        open={showPermissionDialog}
+        onOpenChange={setShowPermissionDialog}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>User Permissions</DialogTitle>
@@ -877,25 +1065,41 @@ export function UserManagement() {
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-3 bg-muted/20 rounded-lg">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={getProfilePictureUrl(selectedUser.user_profile)} alt={selectedUser.name} />
+                  <AvatarImage
+                    src={getProfilePictureUrl(selectedUser.user_profile)}
+                    alt={selectedUser.name}
+                  />
                   <AvatarFallback className="bg-[#28A745] text-white">
                     {getUserInitials(selectedUser.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-medium">{selectedUser.name}</p>
-                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
-                  <Badge className={`text-xs ${userRoles[selectedUser.role?.name as keyof typeof userRoles]?.color} text-white`}>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedUser.email}
+                  </p>
+                  <Badge
+                    className={`text-xs ${
+                      userRoles[
+                        selectedUser.role?.name as keyof typeof userRoles
+                      ]?.color
+                    } text-white`}
+                  >
                     {selectedUser.role?.name}
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <h4 className="font-medium">Current Permissions</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {userRoles[selectedUser.role?.name as keyof typeof userRoles]?.permissions.map((permission) => (
-                    <div key={permission} className="flex items-center justify-between p-2 bg-muted/10 rounded">
+                  {userRoles[
+                    selectedUser.role?.name as keyof typeof userRoles
+                  ]?.permissions.map((permission) => (
+                    <div
+                      key={permission}
+                      className="flex items-center justify-between p-2 bg-muted/10 rounded"
+                    >
                       <span className="text-sm">{permission}</span>
                       <Switch checked={true} disabled />
                     </div>
@@ -922,7 +1126,9 @@ export function UserManagement() {
               <Input
                 id="name"
                 value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: e.target.value })
+                }
                 placeholder="John Doe"
               />
             </div>
@@ -933,18 +1139,21 @@ export function UserManagement() {
                 type="email"
                 value={newUser.email}
                 onChange={(e) => {
-                  setNewUser({ ...newUser, email: e.target.value })
+                  setNewUser({ ...newUser, email: e.target.value });
                   // Clear error when user starts typing
                   if (createUserErrors.email) {
-                    setCreateUserErrors({ ...createUserErrors, email: '' })
+                    setCreateUserErrors({ ...createUserErrors, email: "" });
                   }
                 }}
                 onBlur={() => {
-                  const emailError = validateEmail(newUser.email)
-                  setCreateUserErrors({ ...createUserErrors, email: emailError })
+                  const emailError = validateEmail(newUser.email);
+                  setCreateUserErrors({
+                    ...createUserErrors,
+                    email: emailError,
+                  });
                 }}
                 placeholder="john@company.com"
-                className={createUserErrors.email ? 'border-red-500' : ''}
+                className={createUserErrors.email ? "border-red-500" : ""}
               />
               {createUserErrors.email && (
                 <p className="text-sm text-red-500">{createUserErrors.email}</p>
@@ -956,7 +1165,9 @@ export function UserManagement() {
                 id="password"
                 type="password"
                 value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
                 placeholder="••••••••"
               />
             </div>
@@ -966,18 +1177,21 @@ export function UserManagement() {
                 id="phone"
                 value={newUser.phone}
                 onChange={(e) => {
-                  setNewUser({ ...newUser, phone: e.target.value })
+                  setNewUser({ ...newUser, phone: e.target.value });
                   // Clear error when user starts typing
                   if (createUserErrors.phone) {
-                    setCreateUserErrors({ ...createUserErrors, phone: '' })
+                    setCreateUserErrors({ ...createUserErrors, phone: "" });
                   }
                 }}
                 onBlur={() => {
-                  const phoneError = validatePhone(newUser.phone)
-                  setCreateUserErrors({ ...createUserErrors, phone: phoneError })
+                  const phoneError = validatePhone(newUser.phone);
+                  setCreateUserErrors({
+                    ...createUserErrors,
+                    phone: phoneError,
+                  });
                 }}
                 placeholder="+1 (555) 123-4567"
-                className={createUserErrors.phone ? 'border-red-500' : ''}
+                className={createUserErrors.phone ? "border-red-500" : ""}
               />
               {createUserErrors.phone && (
                 <p className="text-sm text-red-500">{createUserErrors.phone}</p>
@@ -988,7 +1202,9 @@ export function UserManagement() {
               <select
                 id="department"
                 value={newUser.department}
-                onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, department: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
               >
                 <option value="">Select Department</option>
@@ -1004,7 +1220,9 @@ export function UserManagement() {
               <select
                 id="timezone"
                 value={newUser.timezone}
-                onChange={(e) => setNewUser({ ...newUser, timezone: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, timezone: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
               >
                 <option value="UTC">UTC</option>
@@ -1022,11 +1240,15 @@ export function UserManagement() {
               <select
                 id="role"
                 value={newUser.role_id}
-                onChange={(e) => setNewUser({ ...newUser, role_id: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, role_id: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
               >
                 {Object.entries(userRoles).map(([key, role]) => (
-                  <option key={key} value={`role_${key}`}>{role.name}</option>
+                  <option key={key} value={`role_${key}`}>
+                    {role.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1039,13 +1261,17 @@ export function UserManagement() {
                     type="file"
                     accept="image/jpeg,image/jpg,image/png"
                     onChange={handleUserProfileFileChange}
-                    className={createUserErrors.user_profile_file ? 'border-red-500' : ''}
+                    className={
+                      createUserErrors.user_profile_file ? "border-red-500" : ""
+                    }
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Upload a JPEG or PNG image (max 2MB)
                   </p>
                   {createUserErrors.user_profile_file && (
-                    <p className="text-sm text-red-500 mt-1">{createUserErrors.user_profile_file}</p>
+                    <p className="text-sm text-red-500 mt-1">
+                      {createUserErrors.user_profile_file}
+                    </p>
                   )}
                 </div>
                 {avatarPreview && (
@@ -1065,9 +1291,11 @@ export function UserManagement() {
                 <div className="space-y-4">
                   {/* Current skills display */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Added Skills</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">
+                      Added Skills
+                    </h4>
                     <div className="flex flex-wrap gap-2 min-h-[40px]">
-                      {newUser.skills.length > 0 ? (
+                      {newUser.skills?.length > 0 ? (
                         newUser.skills.map((skill, index) => (
                           <Badge
                             key={index}
@@ -1087,23 +1315,27 @@ export function UserManagement() {
                           </Badge>
                         ))
                       ) : (
-                        <p className="text-sm text-gray-500 italic">No skills added yet</p>
+                        <p className="text-sm text-gray-500 italic">
+                          No skills added yet
+                        </p>
                       )}
                     </div>
                   </div>
 
                   {/* Add new skill */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Add Skills</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">
+                      Add Skills
+                    </h4>
                     <div className="flex space-x-3">
                       <Input
                         value={newSkill}
                         onChange={(e) => setNewSkill(e.target.value)}
                         placeholder="Type a skill and press Enter"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleAddSkill()
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddSkill();
                           }
                         }}
                         className="flex-1"
@@ -1128,7 +1360,9 @@ export function UserManagement() {
                 type="checkbox"
                 id="is_active"
                 checked={newUser.is_active}
-                onChange={(e) => setNewUser({ ...newUser, is_active: e.target.checked })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, is_active: e.target.checked })
+                }
                 className="w-4 h-4"
               />
               <Label htmlFor="is_active">User is active</Label>
@@ -1164,7 +1398,9 @@ export function UserManagement() {
                 <Input
                   id="edit-name"
                   value={editingUser.name}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, name: e.target.value })
+                  }
                   placeholder="John Doe"
                 />
               </div>
@@ -1175,18 +1411,18 @@ export function UserManagement() {
                   type="email"
                   value={editingUser.email}
                   onChange={(e) => {
-                    setEditingUser({ ...editingUser, email: e.target.value })
+                    setEditingUser({ ...editingUser, email: e.target.value });
                     // Clear error when user starts typing
                     if (editUserErrors.email) {
-                      setEditUserErrors({ ...editUserErrors, email: '' })
+                      setEditUserErrors({ ...editUserErrors, email: "" });
                     }
                   }}
                   onBlur={() => {
-                    const emailError = validateEmail(editingUser.email)
-                    setEditUserErrors({ ...editUserErrors, email: emailError })
+                    const emailError = validateEmail(editingUser.email);
+                    setEditUserErrors({ ...editUserErrors, email: emailError });
                   }}
                   placeholder="john@company.com"
-                  className={editUserErrors.email ? 'border-red-500' : ''}
+                  className={editUserErrors.email ? "border-red-500" : ""}
                 />
                 {editUserErrors.email && (
                   <p className="text-sm text-red-500">{editUserErrors.email}</p>
@@ -1198,18 +1434,18 @@ export function UserManagement() {
                   id="edit-phone"
                   value={editingUser.phone}
                   onChange={(e) => {
-                    setEditingUser({ ...editingUser, phone: e.target.value })
+                    setEditingUser({ ...editingUser, phone: e.target.value });
                     // Clear error when user starts typing
                     if (editUserErrors.phone) {
-                      setEditUserErrors({ ...editUserErrors, phone: '' })
+                      setEditUserErrors({ ...editUserErrors, phone: "" });
                     }
                   }}
                   onBlur={() => {
-                    const phoneError = validatePhone(editingUser.phone)
-                    setEditUserErrors({ ...editUserErrors, phone: phoneError })
+                    const phoneError = validatePhone(editingUser.phone);
+                    setEditUserErrors({ ...editUserErrors, phone: phoneError });
                   }}
                   placeholder="+1 (555) 123-4567"
-                  className={editUserErrors.phone ? 'border-red-500' : ''}
+                  className={editUserErrors.phone ? "border-red-500" : ""}
                 />
                 {editUserErrors.phone && (
                   <p className="text-sm text-red-500">{editUserErrors.phone}</p>
@@ -1220,7 +1456,12 @@ export function UserManagement() {
                 <select
                   id="edit-department"
                   value={editingUser.department}
-                  onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
+                  onChange={(e) =>
+                    setEditingUser({
+                      ...editingUser,
+                      department: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
                   <option value="">Select Department</option>
@@ -1236,7 +1477,9 @@ export function UserManagement() {
                 <select
                   id="edit-timezone"
                   value={editingUser.timezone}
-                  onChange={(e) => setEditingUser({ ...editingUser, timezone: e.target.value })}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, timezone: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
                   <option value="UTC">UTC</option>
@@ -1254,11 +1497,15 @@ export function UserManagement() {
                 <select
                   id="edit-role"
                   value={editingUser.role_id}
-                  onChange={(e) => setEditingUser({ ...editingUser, role_id: e.target.value })}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, role_id: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
                   {Object.entries(userRoles).map(([key, role]) => (
-                    <option key={key} value={`role_${key}`}>{role.name}</option>
+                    <option key={key} value={`role_${key}`}>
+                      {role.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -1268,17 +1515,24 @@ export function UserManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Current profile picture display */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-gray-700">Current Picture</h4>
+                      <h4 className="text-sm font-medium text-gray-700">
+                        Current Picture
+                      </h4>
                       <div className="flex items-center space-x-4">
                         <Avatar className="w-20 h-20 border-2 border-gray-200">
-                          <AvatarImage src={getProfilePictureUrl(editingUser.user_profile)} alt={editingUser.name} />
+                          <AvatarImage
+                            src={getProfilePictureUrl(editingUser.user_profile)}
+                            alt={editingUser.name}
+                          />
                           <AvatarFallback className="bg-[#28A745] text-white text-xl">
                             {getUserInitials(editingUser.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <p className="text-sm text-gray-600 break-all">
-                            {editingUser.user_profile ? editingUser.user_profile.split('/').pop() : 'Default image'}
+                            {editingUser.user_profile
+                              ? editingUser.user_profile.split("/").pop()
+                              : "Default image"}
                           </p>
                         </div>
                       </div>
@@ -1286,7 +1540,9 @@ export function UserManagement() {
 
                     {/* Upload new image option */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-gray-700">Upload New Picture</h4>
+                      <h4 className="text-sm font-medium text-gray-700">
+                        Upload New Picture
+                      </h4>
                       <div className="space-y-3">
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
                           <Input
@@ -1314,10 +1570,12 @@ export function UserManagement() {
                   <div className="space-y-4">
                     {/* Current skills display */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Current Skills</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">
+                        Current Skills
+                      </h4>
                       <div className="flex flex-wrap gap-2 min-h-[40px]">
-                        {editingUser.skills.length > 0 ? (
-                          editingUser.skills.map((skill, index) => (
+                        {editingUser.skills?.length > 0 ? (
+                          editingUser.skills?.map((skill, index) => (
                             <Badge
                               key={index}
                               variant="secondary"
@@ -1336,23 +1594,27 @@ export function UserManagement() {
                             </Badge>
                           ))
                         ) : (
-                          <p className="text-sm text-gray-500 italic">No skills added yet</p>
+                          <p className="text-sm text-gray-500 italic">
+                            No skills added yet
+                          </p>
                         )}
                       </div>
                     </div>
 
                     {/* Add new skill */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Skill</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">
+                        Add New Skill
+                      </h4>
                       <div className="flex space-x-3">
                         <Input
                           value={editNewSkill}
                           onChange={(e) => setEditNewSkill(e.target.value)}
                           placeholder="Type a skill and press Enter"
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault()
-                              handleAddEditSkill()
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddEditSkill();
                             }
                           }}
                           className="flex-1"
@@ -1377,7 +1639,12 @@ export function UserManagement() {
                   type="checkbox"
                   id="edit-is_active"
                   checked={editingUser.is_active}
-                  onChange={(e) => setEditingUser({ ...editingUser, is_active: e.target.checked })}
+                  onChange={(e) =>
+                    setEditingUser({
+                      ...editingUser,
+                      is_active: e.target.checked,
+                    })
+                  }
                   className="w-4 h-4"
                 />
                 <Label htmlFor="edit-is_active">User is active</Label>
@@ -1398,5 +1665,5 @@ export function UserManagement() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

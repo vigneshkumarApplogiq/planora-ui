@@ -104,14 +104,14 @@ export interface CreateStoryRequest {
   project_id: string;
   project_name?: string;
   sprint_id?: string;
-  assignee_id?: string;
+  assignee_id?: string | null;
   assignee_name?: string;
   reporter_id?: string;
   reporter_name?: string;
   story_points?: number;
   business_value?: string;
   labels?: string[];
-  acceptance_criteria?: string[];
+  acceptance_criteria?: string[] | null;
   subtasks?: SubTask[];
   comments?: Comment[];
   attached_files?: AttachedFile[];

@@ -26,6 +26,13 @@ export interface Customer {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  contractValue: number;
+  clientPortalAccess: boolean;
+  billingInfo: {
+    billingContact: string;
+    nextInvoice: string;
+    paymentTerms: string;
+  };
 }
 
 export interface CustomerListResponse {

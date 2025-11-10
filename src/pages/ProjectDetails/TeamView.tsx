@@ -1,17 +1,38 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import { Button } from '../../components/ui/button'
-import { Badge } from '../../components/ui/badge'
-import { Avatar, AvatarFallback } from '../../components/ui/avatar'
-import { Input } from '../../components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { Progress } from '../../components/ui/progress'
-import { userApiService, User } from '../../services/userApi'
-import { projectApiService, ProjectMember } from '../../services/projectApi'
-import { toast } from 'sonner'
-import { SessionStorageService } from '../../utils/sessionStorage'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
+import { Input } from "../../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import { Progress } from "../../components/ui/progress";
+import { userApiService, User } from "../../services/userApi";
+import { projectApiService, ProjectMember } from "../../services/projectApi";
+import { toast } from "sonner";
+import { SessionStorageService } from "../../utils/sessionStorage";
 import {
   Plus,
   Search,
@@ -30,80 +51,93 @@ import {
   Crown,
   Shield,
   User as UserIcon,
-  Settings
-} from 'lucide-react'
+  Settings,
+} from "lucide-react";
 
 interface TeamViewProps {
-  project: any
-  user: any
-  projectId?: string
+  project: any;
+  user: any;
+  projectId?: string;
 }
 
 interface TeamMember extends User {
-  workload?: number
-  availability?: string
-  currentTasks?: number
-  completedTasks?: number
-  hoursLogged?: number
-  teamLead?: boolean
-  joinDate?: string
+  workload?: number;
+  availability?: string;
+  currentTasks?: number;
+  completedTasks?: number;
+  hoursLogged?: number;
+  teamLead?: boolean;
+  joinDate?: string;
 }
 
 // TODO: All team data is now fetched from API - no mock data needed
-export function TeamView({ project, user, projectId: propProjectId }: TeamViewProps) {
+export function TeamView({
+  project,
+  user,
+  projectId: propProjectId,
+}: TeamViewProps) {
   // Get effective project ID from props or session storage
-  const effectiveProjectId = SessionStorageService.getEffectiveProjectId(propProjectId)
+  const effectiveProjectId =
+    SessionStorageService.getEffectiveProjectId(propProjectId);
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterRole, setFilterRole] = useState('all')
-  const [filterAvailability, setFilterAvailability] = useState('all')
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
-  const [showAddMember, setShowAddMember] = useState(false)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [projectMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [availableUsers, setAvailableUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
+  const [filterAvailability, setFilterAvailability] = useState("all");
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [projectMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Load project members when component mounts
   useEffect(() => {
     if (effectiveProjectId) {
-      fetchTeamMembers()
+      fetchTeamMembers();
     }
-  }, [effectiveProjectId])
+  }, [effectiveProjectId]);
 
   // Load available users when add member modal opens
   useEffect(() => {
     if (showAddMember) {
-      fetchAvailableUsers()
+      fetchAvailableUsers();
     }
-  }, [showAddMember])
+  }, [showAddMember]);
 
   const fetchTeamMembers = async () => {
     if (!effectiveProjectId) {
-      console.warn('No project ID available for fetching team members')
-      setLoading(false)
-      return
+      console.warn("No project ID available for fetching team members");
+      setLoading(false);
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
       // Use the actual API endpoint that returns the project members array
-      const response = await projectApiService.getProjectMembersV2(effectiveProjectId)
+      const response = await projectApiService.getProjectMembersV2(
+        effectiveProjectId
+      );
 
       // Convert ProjectMember data to TeamMember format
       const members: TeamMember[] = response.map((member) => {
         // Calculate workload based on capacity (8 hours/day is typical)
-        const maxCapacity = member.capacity || 8
-        const currentHours = member.hours || 0
-        const workloadPercentage = maxCapacity > 0 ? Math.min(Math.round((currentHours / maxCapacity) * 100), 100) : 0
+        const maxCapacity = member.capacity || 8;
+        const currentHours = member.hours || 0;
+        const workloadPercentage =
+          maxCapacity > 0
+            ? Math.min(Math.round((currentHours / maxCapacity) * 100), 100)
+            : 0;
 
         // Determine availability based on active tasks and workload
-        let availability = 'available'
+        let availability = "available";
         if (workloadPercentage >= 90 || (member.active_tasks || 0) >= 5) {
-          availability = 'busy'
-        } else if (workloadPercentage >= 75 || (member.active_tasks || 0) >= 3) {
-          availability = 'available'
+          availability = "busy";
+        } else if (
+          workloadPercentage >= 75 ||
+          (member.active_tasks || 0) >= 3
+        ) {
+          availability = "available";
         }
 
         const teamMember: TeamMember = {
@@ -112,19 +146,19 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
           email: member.member_email,
           role: {
             name: member.role_name,
-            description: '',
+            description: "",
             permissions: [],
             is_active: true,
             id: member.role_id,
-            created_at: '',
-            updated_at: ''
+            created_at: "",
+            updated_at: "",
           },
           role_id: member.role_id,
           is_active: member.is_active,
-          department: '', // Not provided in API response
+          department: "", // Not provided in API response
           skills: [], // Not provided in API response
-          phone: '', // Not provided in API response
-          timezone: '', // Not provided in API response
+          phone: "", // Not provided in API response
+          timezone: "", // Not provided in API response
           last_login: null,
           created_at: member.created_at,
           updated_at: member.updated_at,
@@ -135,89 +169,107 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
           currentTasks: member.active_tasks || 0,
           completedTasks: member.completed || 0,
           hoursLogged: member.hours || 0,
-          teamLead: member.role_id === 'role_project_manager', // Mark project managers as team leads
-          joinDate: member.joined_at
-        }
-        return teamMember
-      })
+          teamLead: member.role_id === "role_project_manager", // Mark project managers as team leads
+          joinDate: member.joined_at,
+        };
+        return teamMember;
+      });
 
-      setTeamMembers(members)
-      toast.success(`Loaded ${members.length} project team members`)
+      setTeamMembers(members);
+      toast.success(`Loaded ${members.length} project team members`);
     } catch (error) {
       // TODO: Handle error properly - show error message to user
-      console.error('Error fetching team members:', error)
-      toast.error('Failed to load team members')
-      setTeamMembers([])
+      console.error("Error fetching team members:", error);
+      toast.error("Failed to load team members");
+      setTeamMembers([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchAvailableUsers = async () => {
     try {
-      setLoadingUsers(true)
+      setLoadingUsers(true);
       // Fetch users excluding admin and project manager roles
       const response = await userApiService.getUsers({
         is_active: true,
-        per_page: 100 // Get more users to show options
-      })
+        per_page: 100, // Get more users to show options
+      });
 
       // Filter out admin and project manager roles
-      const filteredUsers = response.items.filter(user => {
-        const roleName = user.role.name.toLowerCase()
-        return !roleName.includes('admin') &&
-               !roleName.includes('project manager') &&
-               !roleName.includes('manager')
-      })
+      const filteredUsers = response.items.filter((user) => {
+        const roleName = user.role.name.toLowerCase();
+        return (
+          !roleName.includes("admin") &&
+          !roleName.includes("project manager") &&
+          !roleName.includes("manager")
+        );
+      });
 
       // Also filter out users who are already in the project
-      const currentMemberIds = projectMembers.map(member => member.id)
-      const availableUsers = filteredUsers.filter(user => !currentMemberIds.includes(user.id))
+      const currentMemberIds = projectMembers.map((member) => member.id);
+      const availableUsers = filteredUsers.filter(
+        (user) => !currentMemberIds.includes(user.id)
+      );
 
-      setAvailableUsers(availableUsers)
+      setAvailableUsers(availableUsers);
     } catch (error) {
-      console.error('Error fetching available users:', error)
-      toast.error('Failed to load available users')
-      setAvailableUsers([])
+      console.error("Error fetching available users:", error);
+      toast.error("Failed to load available users");
+      setAvailableUsers([]);
     } finally {
-      setLoadingUsers(false)
+      setLoadingUsers(false);
     }
-  }
+  };
 
   const getAvailabilityColor = (availability: string) => {
     switch (availability) {
-      case 'available': return 'bg-green-100 text-green-800 border-green-300'
-      case 'busy': return 'bg-red-100 text-red-800 border-red-300'
-      case 'away': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'offline': return 'bg-gray-100 text-gray-800 border-gray-300'
-      default: return 'bg-gray-100 text-gray-800 border-gray-300'
+      case "available":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "busy":
+        return "bg-red-100 text-red-800 border-red-300";
+      case "away":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "offline":
+        return "bg-gray-100 text-gray-800 border-gray-300";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300";
     }
-  }
+  };
 
   const getRoleIcon = (role: string) => {
-    if (role.includes('Lead') || role.includes('Manager') || role.includes('Master')) {
-      return <Crown className="w-4 h-4 text-yellow-600" />
-    } else if (role.includes('Owner')) {
-      return <Shield className="w-4 h-4 text-blue-600" />
+    if (
+      role.includes("Lead") ||
+      role.includes("Manager") ||
+      role.includes("Master")
+    ) {
+      return <Crown className="w-4 h-4 text-yellow-600" />;
+    } else if (role.includes("Owner")) {
+      return <Shield className="w-4 h-4 text-blue-600" />;
     } else {
-      return <UserIcon className="w-4 h-4 text-gray-600" />
+      return <UserIcon className="w-4 h-4 text-gray-600" />;
     }
-  }
+  };
 
   const getWorkloadColor = (workload: number) => {
-    if (workload >= 90) return 'text-red-600'
-    if (workload >= 75) return 'text-yellow-600'
-    return 'text-green-600'
-  }
+    if (workload >= 90) return "text-red-600";
+    if (workload >= 75) return "text-yellow-600";
+    return "text-green-600";
+  };
 
-  const filteredMembers = projectMembers.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.role.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = filterRole === 'all' || member.role.name.toLowerCase().includes(filterRole.toLowerCase())
-    const matchesAvailability = filterAvailability === 'all' || member.availability === filterAvailability
+  const filteredMembers = projectMembers.filter((member) => {
+    const matchesSearch =
+      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.role.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole =
+      filterRole === "all" ||
+      member.role.name.toLowerCase().includes(filterRole.toLowerCase());
+    const matchesAvailability =
+      filterAvailability === "all" ||
+      member.availability === filterAvailability;
 
-    return matchesSearch && matchesRole && matchesAvailability
-  })
+    return matchesSearch && matchesRole && matchesAvailability;
+  });
 
   const TeamMemberCard = ({ member }: { member: TeamMember }) => (
     <Card
@@ -235,7 +287,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
                     // Hide the image and show fallback on error
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
               )}
@@ -256,21 +308,31 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                 <h3 className="font-semibold text-foreground">{member.name}</h3>
                 <div className="flex items-center space-x-2 mt-1">
                   {getRoleIcon(member.role.name)}
-                  <span className="text-sm text-muted-foreground">{member.role.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {member.role.name}
+                  </span>
                 </div>
               </div>
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                 <MoreVertical className="w-3 h-3" />
               </Button>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Badge variant="outline" className={getAvailabilityColor(member.availability || 'available')}>
-                  {member.availability || 'available'}
+                <Badge
+                  variant="outline"
+                  className={getAvailabilityColor(
+                    member.availability || "available"
+                  )}
+                >
+                  {member.availability || "available"}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  Workload: <span className={getWorkloadColor(member.workload || 0)}>{member.workload || 0}%</span>
+                  Workload:{" "}
+                  <span className={getWorkloadColor(member.workload || 0)}>
+                    {member.workload || 0}%
+                  </span>
                 </span>
               </div>
 
@@ -301,11 +363,11 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   const MemberDetailsModal = ({ member }: { member: TeamMember }) => (
     <Dialog open={!!member} onOpenChange={() => setSelectedMember(null)}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl  max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <Avatar className="w-12 h-12">
@@ -315,7 +377,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                   alt={member.name}
                   className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
               )}
@@ -325,11 +387,13 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
             </Avatar>
             <div>
               <span>{member.name}</span>
-              <p className="text-sm text-muted-foreground font-normal">{member.role.name}</p>
+              <p className="text-sm text-muted-foreground font-normal">
+                {member.role.name}
+              </p>
             </div>
           </DialogTitle>
         </DialogHeader>
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -337,7 +401,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
             <TabsTrigger value="skills">Skills</TabsTrigger>
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
@@ -347,23 +411,27 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                 <CardContent className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{member.email}</span>
+                    <span className="text-sm">{member.email || "N/A"}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{member.phone}</span>
+                    <span className="text-sm">{member.phone || "N/A"}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{member.department || 'Not specified'}</span>
+                    <span className="text-sm">
+                      {member.department || "Not specified"}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Joined {new Date(member.created_at).toLocaleDateString()}</span>
+                    <span className="text-sm">
+                      Joined {new Date(member.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Performance Metrics</CardTitle>
@@ -372,31 +440,39 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                   <div>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span>Current Workload</span>
-                      <span className={getWorkloadColor(member.workload || 0)}>{member.workload || 0}%</span>
+                      <span className={getWorkloadColor(member.workload || 0)}>
+                        {member.workload || 0}%
+                      </span>
                     </div>
                     <Progress value={member.workload || 0} className="h-2" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="text-center p-3 bg-muted rounded">
-                      <div className="text-2xl font-semibold text-[#007BFF]">{member.currentTasks || 0}</div>
+                      <div className="text-2xl font-semibold text-[#007BFF]">
+                        {member.currentTasks || 0}
+                      </div>
                       <div className="text-muted-foreground">Active Tasks</div>
                     </div>
                     <div className="text-center p-3 bg-muted rounded">
-                      <div className="text-2xl font-semibold text-[#28A745]">{member.completedTasks || 0}</div>
+                      <div className="text-2xl font-semibold text-[#28A745]">
+                        {member.completedTasks || 0}
+                      </div>
                       <div className="text-muted-foreground">Completed</div>
                     </div>
                   </div>
 
                   <div className="text-center p-3 bg-muted rounded">
-                    <div className="text-2xl font-semibold text-[#6F42C1]">{member.hoursLogged || 0}</div>
+                    <div className="text-2xl font-semibold text-[#6F42C1]">
+                      {member.hoursLogged || 0}
+                    </div>
                     <div className="text-muted-foreground">Hours Logged</div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="tasks" className="space-y-4">
             <div className="text-center text-muted-foreground">
               <Target className="w-12 h-12 mx-auto mb-2" />
@@ -404,7 +480,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
               <p className="text-sm">Integration with task management needed</p>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="skills" className="space-y-4">
             <div>
               <h4 className="font-medium mb-3">Skills & Expertise</h4>
@@ -416,7 +492,9 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                     </Badge>
                   ))
                 ) : (
-                  <span className="text-sm text-muted-foreground">No skills listed</span>
+                  <span className="text-sm text-muted-foreground">
+                    No skills listed
+                  </span>
                 )}
               </div>
             </div>
@@ -426,21 +504,31 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
             <div>
               <h4 className="font-medium mb-3">Role Permissions</h4>
               <div className="space-y-2">
-                {member.role.permissions && member.role.permissions.length > 0 ? (
+                {member.role.permissions &&
+                member.role.permissions.length > 0 ? (
                   member.role.permissions.map((permission: string) => (
-                    <div key={permission} className="flex items-center space-x-2">
+                    <div
+                      key={permission}
+                      className="flex items-center space-x-2"
+                    >
                       <Shield className="w-4 h-4 text-green-600" />
-                      <span className="text-sm">{permission.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                      <span className="text-sm">
+                        {permission
+                          .replace("_", " ")
+                          .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                      </span>
                     </div>
                   ))
                 ) : (
-                  <span className="text-sm text-muted-foreground">No specific permissions listed</span>
+                  <span className="text-sm text-muted-foreground">
+                    No specific permissions listed
+                  </span>
                 )}
               </div>
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline">
             <Edit className="w-4 h-4 mr-2" />
@@ -453,7 +541,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 
   return (
     <div className="space-y-6">
@@ -461,9 +549,11 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Team</h2>
-          <p className="text-muted-foreground">Manage team members and their roles</p>
+          <p className="text-muted-foreground">
+            Manage team members and their roles
+          </p>
         </div>
-        
+
         <Button
           className="bg-[#28A745] hover:bg-[#218838]"
           onClick={() => setShowAddMember(true)}
@@ -484,7 +574,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
             className="pl-9 w-64"
           />
         </div>
-        
+
         <Select value={filterRole} onValueChange={setFilterRole}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Role" />
@@ -498,8 +588,11 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
             <SelectItem value="owner">Product Owner</SelectItem>
           </SelectContent>
         </Select>
-        
-        <Select value={filterAvailability} onValueChange={setFilterAvailability}>
+
+        <Select
+          value={filterAvailability}
+          onValueChange={setFilterAvailability}
+        >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -517,14 +610,19 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-semibold text-[#007BFF]">{projectMembers.length}</div>
+            <div className="text-2xl font-semibold text-[#007BFF]">
+              {projectMembers.length}
+            </div>
             <div className="text-xs text-muted-foreground">Total Members</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-semibold text-[#28A745]">
-              {projectMembers.filter(m => m.availability === 'available').length}
+              {
+                projectMembers.filter((m) => m.availability === "available")
+                  .length
+              }
             </div>
             <div className="text-xs text-muted-foreground">Available</div>
           </CardContent>
@@ -532,7 +630,10 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-semibold text-[#FFC107]">
-              {projectMembers.reduce((sum, m) => sum + (m.currentTasks || 0), 0)}
+              {projectMembers.reduce(
+                (sum, m) => sum + (m.currentTasks || 0),
+                0
+              )}
             </div>
             <div className="text-xs text-muted-foreground">Active Tasks</div>
           </CardContent>
@@ -541,8 +642,14 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-semibold text-[#6F42C1]">
               {projectMembers.length > 0
-                ? Math.round(projectMembers.reduce((sum, m) => sum + (m.workload || 0), 0) / projectMembers.length)
-                : 0}%
+                ? Math.round(
+                    projectMembers.reduce(
+                      (sum, m) => sum + (m.workload || 0),
+                      0
+                    ) / projectMembers.length
+                  )
+                : 0}
+              %
             </div>
             <div className="text-xs text-muted-foreground">Avg Workload</div>
           </CardContent>
@@ -554,7 +661,9 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
         {loading ? (
           <div className="col-span-full flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#28A745] mb-4"></div>
-            <p className="text-gray-500 dark:text-gray-400">Loading team members...</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Loading team members...
+            </p>
           </div>
         ) : filteredMembers.length === 0 ? (
           <div className="col-span-full text-center py-20">
@@ -589,7 +698,8 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
           <DialogHeader>
             <DialogTitle>Associate Team Members</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              Associate existing users with this project. Only users not already on this project team are shown.
+              Associate existing users with this project. Only users not already
+              on this project team are shown.
             </p>
           </DialogHeader>
 
@@ -597,14 +707,19 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
             {loadingUsers ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#28A745] mb-4"></div>
-                <p className="text-gray-500 dark:text-gray-400">Loading available users...</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Loading available users...
+                </p>
               </div>
             ) : availableUsers.length === 0 ? (
               <div className="text-center py-20">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No users available to associate</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  No users available to associate
+                </h3>
                 <p className="text-muted-foreground">
-                  All eligible users are already associated with this project, or no additional users are available.
+                  All eligible users are already associated with this project,
+                  or no additional users are available.
                 </p>
               </div>
             ) : (
@@ -614,7 +729,7 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                     placeholder="Search available users..."
                     className="w-full"
                     onChange={(e) => {
-                      const searchValue = e.target.value.toLowerCase()
+                      const searchValue = e.target.value.toLowerCase();
                     }}
                   />
                 </div>
@@ -630,14 +745,21 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                           // In real implementation, this would call an API to associate the user with the project
                           // For example: await projectApiService.addTeamMember(effectiveProjectId, user.id)
 
-                          toast.success(`${user.name} has been associated with the project`)
-                          setShowAddMember(false)
+                          toast.success(
+                            `${user.name} has been associated with the project`
+                          );
+                          setShowAddMember(false);
 
                           // Refresh the team members to show the newly associated user
-                          fetchTeamMembers()
+                          fetchTeamMembers();
                         } catch (error) {
-                          console.error('Error associating user with project:', error)
-                          toast.error(`Failed to associate ${user.name} with the project`)
+                          console.error(
+                            "Error associating user with project:",
+                            error
+                          );
+                          toast.error(
+                            `Failed to associate ${user.name} with the project`
+                          );
                         }
                       }}
                     >
@@ -650,7 +772,8 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                                 alt={user.name}
                                 className="w-full h-full object-cover rounded-full"
                                 onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
                                 }}
                               />
                             )}
@@ -660,13 +783,19 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-sm">{user.name}</h4>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {user.email}
+                            </p>
                             <div className="flex items-center space-x-2 mt-1">
                               {getRoleIcon(user.role.name)}
-                              <span className="text-xs text-muted-foreground">{user.role.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {user.role.name}
+                              </span>
                             </div>
                             {user.department && (
-                              <p className="text-xs text-muted-foreground">{user.department}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {user.department}
+                              </p>
                             )}
                           </div>
                           <div className="text-right">
@@ -691,5 +820,5 @@ export function TeamView({ project, user, projectId: propProjectId }: TeamViewPr
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { getApiUrl } from '../config/api';
 
 export interface LoginRequest {
@@ -15,6 +16,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
+  avatar: string;
   role_id: string;
   user_profile: string;
   is_active: boolean;
@@ -154,6 +156,8 @@ export class AuthApiService {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('token_type');
     localStorage.removeItem('user_profile');
+    alert('You have been logged out');
+    // window.location.href = '/login';
   }
 
   isAuthenticated(): boolean {

@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import { getApiUrl } from "../config/api";
 
 export interface AssigneeDetail {
   id: string;
@@ -57,6 +57,8 @@ export interface Story {
   deliverable_id?: string;
   deliverable_name?: string;
   files?: any[];
+  image_url?: string;
+  due_date?: string;
 }
 
 export interface SubTask {
@@ -127,6 +129,7 @@ export interface CreateStoryRequest {
   milestone_name?: string;
   deliverable_id?: string;
   deliverable_name?: string;
+  due_date?: string;
 }
 
 export interface UpdateStoryRequest extends Partial<CreateStoryRequest> {
@@ -143,20 +146,22 @@ export interface StoriesResponse {
   has_prev: boolean;
 }
 
-
 export class StoriesApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  private async makeRequest<T>(
+    endpoint: string,
+    options?: RequestInit
+  ): Promise<T> {
     const url = getApiUrl(endpoint);
 
     const token = authApiService.getAccessToken();
 
     const defaultHeaders: HeadersInit = {
-      ...(token && { Authorization: `Bearer ${token}` })
+      ...(token && { Authorization: `Bearer ${token}` }),
     };
 
     // Don't set Content-Type for FormData - browser will set it automatically
     if (!(options?.body instanceof FormData)) {
-      defaultHeaders['Content-Type'] = 'application/json';
+      defaultHeaders["Content-Type"] = "application/json";
     }
 
     const response = await fetch(url, {
@@ -174,11 +179,11 @@ export class StoriesApiService {
           const newToken = authApiService.getAccessToken();
 
           const retryHeaders: HeadersInit = {
-            ...(newToken && { Authorization: `Bearer ${newToken}` })
+            ...(newToken && { Authorization: `Bearer ${newToken}` }),
           };
 
           if (!(options?.body instanceof FormData)) {
-            retryHeaders['Content-Type'] = 'application/json';
+            retryHeaders["Content-Type"] = "application/json";
           }
 
           const retryResponse = await fetch(url, {
@@ -195,12 +200,15 @@ export class StoriesApiService {
         } catch (refreshError) {
           authApiService.clearTokens();
           authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
+          throw new Error("Authentication failed. Please login again.");
         }
       }
 
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        errorData.detail ||
+          `API Error: ${response.status} ${response.statusText}`
+      );
     }
 
     return response.json();
@@ -219,21 +227,21 @@ export class StoriesApiService {
     });
 
     if (projectId) {
-      params.append('project_id', projectId);
+      params.append("project_id", projectId);
     }
 
-    if (status && status !== 'all') {
-      params.append('status', status);
+    if (status && status !== "all") {
+      params.append("status", status);
     }
 
-    if (assigneeId && assigneeId !== 'all' && assigneeId !== 'unassigned') {
-      params.append('assignee_id', assigneeId);
-    } else if (assigneeId === 'unassigned') {
-      params.append('assignee_id', '');
+    if (assigneeId && assigneeId !== "all" && assigneeId !== "unassigned") {
+      params.append("assignee_id", assigneeId);
+    } else if (assigneeId === "unassigned") {
+      params.append("assignee_id", "");
     }
 
     const queryString = params.toString();
-    const endpoint = `/api/v1/stories${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/stories${queryString ? `?${queryString}` : ""}`;
 
     return this.makeRequest<StoriesResponse>(endpoint);
   }
@@ -243,35 +251,38 @@ export class StoriesApiService {
   }
 
   async createStory(storyData: CreateStoryRequest): Promise<Story> {
-    return this.makeRequest<Story>('/api/v1/stories/', {
-      method: 'POST',
+    return this.makeRequest<Story>("/api/v1/stories/", {
+      method: "POST",
       body: JSON.stringify(storyData),
     });
   }
 
-  async updateStory(id: string, storyData: Partial<CreateStoryRequest>): Promise<Story> {
+  async updateStory(
+    id: string,
+    storyData: Partial<CreateStoryRequest>
+  ): Promise<Story> {
     return this.makeRequest<Story>(`/api/v1/stories/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(storyData),
     });
   }
 
   async deleteStory(id: string): Promise<void> {
     return this.makeRequest<void>(`/api/v1/stories/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   async updateStoryStatus(id: string, status: string): Promise<Story> {
     return this.makeRequest<Story>(`/api/v1/stories/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ status }),
     });
   }
 
   async updateStoryProgress(id: string, progress: number): Promise<Story> {
     return this.makeRequest<Story>(`/api/v1/stories/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ progress }),
     });
   }

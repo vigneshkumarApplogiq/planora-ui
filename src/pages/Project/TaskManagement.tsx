@@ -1,28 +1,24 @@
-import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../../components/ui/dialog";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Textarea } from "../../components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
+  Calendar as CalendarIcon,
+  CheckCircle,
+  Clock,
+  Edit,
+  FileText,
+  Image as ImageIcon,
+  Plus,
+  Save,
+  Target,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../../components/ui/avatar";
+import { Button } from "../../components/ui/button";
+import { Calendar } from "../../components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -30,47 +26,42 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../components/ui/tabs";
-import { Calendar } from "../../components/ui/calendar";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "../../components/ui/popover";
 import { Progress } from "../../components/ui/progress";
-import { Separator } from "../../components/ui/separator";
-import { cn } from "../../components/ui/utils";
-import { format } from "date-fns";
-import { toast } from "sonner@2.0.3";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import { Textarea } from "../../components/ui/textarea";
+import { cn } from "../../components/ui/utils";
+import {
+  CreateStoryRequest,
   storiesApiService,
   Story,
-  CreateStoryRequest,
 } from "../../services/storiesApi";
-import { userApiService, User } from "../../services/userApi";
-import {
-  Plus,
-  Calendar as CalendarIcon,
-  Upload,
-  X,
-  Edit,
-  Trash2,
-  Save,
-  FileText,
-  Image as ImageIcon,
-  Users,
-  Clock,
-  Flag,
-  Target,
-  CheckCircle,
-  AlertTriangle,
-  MoreHorizontal,
-  Eye,
-} from "lucide-react";
+import { User, userApiService } from "../../services/userApi";
+import { Capitalize } from "../../utils/textTransform";
 
 interface TaskManagementProps {
   projectId: string;
@@ -355,9 +346,9 @@ export function TaskManagement({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "To Do":
+      case "Todo":
         return "text-gray-600";
-      case "In Progress":
+      case "In-progress":
         return "text-blue-600";
       case "Review":
         return "text-orange-600";
@@ -368,8 +359,10 @@ export function TaskManagement({
     }
   };
 
-  const statusOptions = ["To Do", "In Progress", "Review", "Done"];
-  const priorityOptions = ["Low", "Medium", "High", "Critical"];
+  console.log(taskForm, "FormData");
+
+  const statusOptions = ["todo", "in-progress", "review", "done"];
+  const priorityOptions = ["low", "medium", "high", "critical"];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -384,7 +377,7 @@ export function TaskManagement({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6  overflow-y-auto">
           {/* Header with Create Task Button */}
           <div className="flex items-center justify-between">
             <div>
@@ -397,7 +390,7 @@ export function TaskManagement({
             </div>
             <Button
               onClick={() => setShowCreateTask(true)}
-              className="bg-[#28A745] hover:bg-[#218838]"
+              className="bg-[#28A745] hover:bg-[#218838] text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Task
@@ -405,7 +398,7 @@ export function TaskManagement({
           </div>
 
           {/* Tasks Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-4">
             {loadingStories ? (
               <div className="col-span-full text-center py-8">
                 <div className="text-muted-foreground">Loading tasks...</div>
@@ -435,15 +428,19 @@ export function TaskManagement({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <Badge className={getPriorityColor(task.priority)}>
-                            {task.priority}
+                          <Badge
+                            className={getPriorityColor(
+                              Capitalize(task.priority)
+                            )}
+                          >
+                            {Capitalize(task.priority)}
                           </Badge>
                           <span
                             className={`text-sm font-medium ${getStatusColor(
-                              task.status
+                              Capitalize(task.status)
                             )}`}
                           >
-                            {task.status}
+                            {Capitalize(task.status)?.replace("-", " ")}
                           </span>
                         </div>
                         <CardTitle className="text-sm font-semibold line-clamp-2">
@@ -681,7 +678,7 @@ export function TaskManagement({
                                     getPriorityColor(priority).split(" ")[0]
                                   }`}
                                 />
-                                <span>{priority}</span>
+                                <span>{Capitalize(priority)}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -811,7 +808,7 @@ export function TaskManagement({
                               ? new Date(taskForm.due_date)
                               : undefined
                           }
-                          onSelect={(date) => {
+                          onSelect={(date: Date) => {
                             if (date) {
                               handleInputChange(
                                 "due_date",
@@ -821,7 +818,7 @@ export function TaskManagement({
                             }
                           }}
                           initialFocus
-                          disabled={(date) =>
+                          disabled={(date: Date) =>
                             taskForm.start_date
                               ? date <= new Date(taskForm.start_date)
                               : false
@@ -967,7 +964,7 @@ export function TaskManagement({
               <Button
                 onClick={handleCreateTask}
                 disabled={isLoading}
-                className="bg-[#28A745] hover:bg-[#218838]"
+                className="bg-[#28A745] hover:bg-[#218838] text-white"
               >
                 {isLoading ? (
                   <>
@@ -1094,7 +1091,7 @@ export function TaskManagement({
                         <SelectContent>
                           {statusOptions.map((status) => (
                             <SelectItem key={status} value={status}>
-                              {status}
+                              {Capitalize(status)?.replace("-", " ")}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1105,7 +1102,7 @@ export function TaskManagement({
                       <Label htmlFor="edit-priority">Priority</Label>
                       <Select
                         value={taskForm.priority}
-                        onValueChange={(value) =>
+                        onValueChange={(value: string) =>
                           handleInputChange("priority", value)
                         }
                       >
@@ -1121,7 +1118,7 @@ export function TaskManagement({
                                     getPriorityColor(priority).split(" ")[0]
                                   }`}
                                 />
-                                <span>{priority}</span>
+                                <span>{Capitalize(priority)}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -1253,7 +1250,7 @@ export function TaskManagement({
                               ? new Date(taskForm.due_date)
                               : undefined
                           }
-                          onSelect={(date) => {
+                          onSelect={(date: Date) => {
                             if (date) {
                               handleInputChange(
                                 "due_date",
@@ -1263,7 +1260,7 @@ export function TaskManagement({
                             }
                           }}
                           initialFocus
-                          disabled={(date) =>
+                          disabled={(date: Date) =>
                             taskForm.start_date
                               ? date <= new Date(taskForm.start_date)
                               : false

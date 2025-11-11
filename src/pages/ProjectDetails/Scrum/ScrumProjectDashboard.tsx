@@ -1,27 +1,15 @@
+import { Calendar, PlayCircle, Target, Timer, Users } from "lucide-react";
+import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
+import { Badge } from "../../../components/ui/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "../../../components/ui/card";
-import { Badge } from "../../../components/ui/badge";
 import { Progress } from "../../../components/ui/progress";
-import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
-import { Button } from "../../../components/ui/button";
-import {
-  Zap,
-  TrendingUp,
-  Users,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Target,
-  BarChart3,
-  GitBranch,
-  ArrowRight,
-  PlayCircle,
-  Timer,
-} from "lucide-react";
+import { dashboardApiService } from "../../../services/dashboardApi";
+import { useEffect, useState } from "react";
 
 interface ScrumProjectDashboardProps {
   project: any;
@@ -72,6 +60,20 @@ export function ScrumProjectDashboard({
   const currentVelocity = velocityTrend[velocityTrend.length - 1];
   const previousVelocity = velocityTrend[velocityTrend.length - 2];
   const velocityChange = currentVelocity - previousVelocity;
+
+  const [DashboardData, setDashboardData] = useState<any>([]);
+
+  console.log(project, "askugdhahsdjkhsdjkhaskd");
+
+  useEffect(() => {
+    const fetchDashboarddata = async () => {
+      const data = await dashboardApiService.getScrumdashboardbyId(project.id);
+      setDashboardData(data);
+      console.log(data, "dashboarddata");
+    };
+
+    fetchDashboarddata();
+  }, []);
 
   const sprintCompletionRate = Math.round(
     (mockScrumData.currentSprint.completedStoryPoints /
@@ -177,7 +179,9 @@ export function ScrumProjectDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-center mb-6">
-              <div className="text-3xl font-bold text-[#007BFF]">4</div>
+              <div className="text-3xl font-bold text-[#007BFF]">
+                {DashboardData?.sprint_metrics?.sprints_completed}
+              </div>
               <div className="text-sm text-muted-foreground">
                 Sprints Completed
               </div>
@@ -218,14 +222,14 @@ export function ScrumProjectDashboard({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mockScrumData.upcomingEvents.map((event, index) => (
+            {mockScrumData.upcomingEvents.map((event: any, index) => (
               <div
                 key={index}
                 className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-[#DC3545]/10 rounded-lg">
-                    {event.type.includes("Daily") ? (
+                    {event?.type.includes("Daily") ? (
                       <Timer className="w-4 h-4 text-[#DC3545]" />
                     ) : event.type.includes("Planning") ? (
                       <Target className="w-4 h-4 text-[#DC3545]" />
@@ -264,8 +268,8 @@ export function ScrumProjectDashboard({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {project?.team?.length > 0 ? (
-              project.team.map((member: any) => (
+            {project?.team_members_detail?.length > 0 ? (
+              project.team_members_detail?.map((member: any) => (
                 <div
                   key={member.id}
                   className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"

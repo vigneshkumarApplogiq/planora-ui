@@ -1,9 +1,62 @@
-import { useState, useEffect } from "react";
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
-import { Progress } from "../../components/ui/progress";
+import { format } from "date-fns";
+import { useFormik } from "formik";
+import {
+  AlertTriangle,
+  BarChart3,
+  Calendar as CalendarDays,
+  Calendar as CalendarIcon,
+  CheckSquare,
+  DollarSign,
+  FileText,
+  Filter,
+  Folder,
+  GitBranch,
+  Grid3X3,
+  List,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  Save,
+  Search,
+  Settings,
+  Target,
+  Trash2,
+  Users,
+  X,
+  Zap,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import * as Yup from "yup";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Calendar as CalendarComponent } from "../../components/ui/calendar";
+import { Card } from "../../components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../components/ui/popover";
+import { Progress } from "../../components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { Separator } from "../../components/ui/separator";
+import { Switch } from "../../components/ui/switch";
 import {
   Table,
   TableBody,
@@ -13,88 +66,30 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "../../components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
-import { Calendar as CalendarComponent } from "../../components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../../components/ui/popover";
-import { Separator } from "../../components/ui/separator";
-import { Switch } from "../../components/ui/switch";
-import { Label } from "../../components/ui/label";
 import { cn } from "../../components/ui/utils";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { ProjectTemplates } from "./ProjectTemplates";
-import { TaskManagement } from "./TaskManagement";
-import { Project } from "../../mock-data/projects";
-import { customerApiService, Customer } from "../../services/customerApi";
-import { userApiService, User } from "../../services/userApi";
 import { useProjectMasters } from "../../hooks/useProjectMasters";
 import { useProjectOwners } from "../../hooks/useProjectOwners";
+import { Project } from "../../mock-data/projects";
+import { Customer, customerApiService } from "../../services/customerApi";
+import { CreateProjectRequest } from "../../services/projectApi";
+import { User, userApiService } from "../../services/userApi";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
-  fetchProjects,
-  createProject,
-  setFilters,
-  setPagination,
   clearError,
+  createProject,
+  fetchProjects,
+  setFilters,
 } from "../../store/slices/projectSlice";
-import { CreateProjectRequest } from "../../services/projectApi";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import {
-  Plus,
-  Search,
-  Filter,
-  Calendar,
-  Users,
-  Target,
-  Clock,
-  MoreHorizontal,
-  Folder,
-  TrendingUp,
-  AlertTriangle,
-  GitBranch,
-  Flag,
-  Copy,
-  Settings,
-  FileText,
-  Zap,
-  BarChart3,
-  Calendar as CalendarIcon,
-  PlayCircle,
-  PauseCircle,
-  Grid3X3,
-  List,
-  X,
-  Trash2,
-  Save,
-  DollarSign,
-  Calendar as CalendarDays,
-  CheckSquare,
-} from "lucide-react";
+import { ProjectTemplates } from "./ProjectTemplates";
+import { TaskManagement } from "./TaskManagement";
+
+import { Capitalize } from "../../utils/textTransform";
 
 // Add computed properties for UI display
 const addComputedProperties = (project: Project) => ({
@@ -454,7 +449,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
   });
   console.log(filteredProjects, "filteredProjects");
 
-  const getPriorityColor = (priority: string, color: string) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "Urgent":
         return "bg-[#491280] text-white";
@@ -1024,7 +1019,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                   className="hover:shadow-lg transition-shadow cursor-pointer group"
                   onClick={() => onProjectSelect?.(project.id)}
                 >
-                  <div className="p-6">
+                  <div className="p-4">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -1034,16 +1029,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           </h3>
                           <Badge
                             className={getPriorityColor(
-                              project.priority,
-                              project?.color
+                              Capitalize(project.priority)
                             )}
                           >
-                            {project.priority}
+                            {Capitalize(project.priority)}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {/* <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                           {project.description}
-                        </p>
+                        </p> */}
                         <div className="flex items-center space-x-3">
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {getMethodologyIcon(project.methodology)}
@@ -1243,7 +1237,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       </TableCell>
 
                       {/* Sticky action buttons */}
-                      <TableCell className="sticky right-0 bg-white shadow-[-2px_0_4px_rgba(0,0,0,0.05)] z-10">
+                      <TableCell className="sticky right-0  z-10">
                         <div className="flex space-x-1">
                           <Button
                             variant="ghost"

@@ -378,7 +378,7 @@ export function ProjectDetails({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[#F8F9FA] dark:bg-background">
       {/* Top Header */}
       <header
         className="fixed top-0 left-0 right-0 z-50 border-b border-gray-500/30 dark:border-gray-500/50 shadow-xl backdrop-blur-md"
@@ -561,18 +561,18 @@ export function ProjectDetails({
       <div className="fixed top-16 left-0 right-0 bottom-0 flex">
         {/* Fixed Sidebar */}
         <div
-          className="w-48 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
+          className="w-48 bg-[#F8F9FA] dark:bg-background border-r 
                flex-shrink-0 flex flex-col  "
         >
           {/* Project Information */}
           <div className="p-3 border-b border-gray-100 dark:border-gray-700 overflow-y-auto">
-            <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 truncate">
+            <h1 className="text-sm font-semibold text-foreground  mb-2 truncate">
               {project.name}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-xs mb-2 line-clamp-2">
+            <p className="text-muted-foreground text-xs mb-2 line-clamp-2">
               {project.description || "Project description"}
             </p>
-            <div className="flex gap-2 text-gray-500 dark:text-gray-400 text-xs mb-2 line-clamp-2">
+            <div className="flex gap-2 text-muted-foreground text-xs mb-2 line-clamp-2">
               {getMethodologyIcon(project.methodology)}
               {project.methodology}
             </div>
@@ -627,8 +627,8 @@ export function ProjectDetails({
                 w-full flex items-center space-x-2 px-2 py-2 rounded-lg text-xs font-medium text-left transition-colors
                 ${
                   isActive
-                    ? "bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "bg-green-100 text-foreground dark:bg-green-900"
+                    : "text-muted-foreground  "
                 }
               `}
                   >
@@ -639,10 +639,10 @@ export function ProjectDetails({
               })}
             </nav>
             <div className="p-3 border-t border-gray-100 dark:border-gray-700">
-              <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
+              <div className="text-xs font-medium text-foreground mb-1">
                 Progress
               </div>
-              <div className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
+              <div className="text-lg font-bold text-foreground mb-1">
                 {project.progress || 75}%
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -658,7 +658,7 @@ export function ProjectDetails({
         </div>
 
         {/* Main Content */}
-        <div className=" flex-1 bg-white dark:bg-gray-800 overflow-y-auto ml-48">
+        <div className=" flex-1 bg-[#F8F9FA] dark:bg-background overflow-y-auto ml-48">
           <div className="p-4">{renderActiveView()}</div>
         </div>
       </div>

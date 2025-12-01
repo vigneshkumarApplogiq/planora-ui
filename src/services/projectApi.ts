@@ -122,6 +122,11 @@ export interface ProjectMember {
   role_name: string;
 }
 
+export interface addTeamMember {
+  member_id: string;
+  role_id: string;
+  project_id: string;
+}
 export type ProjectMembersResponse = ProjectMember[];
 
 export interface MyProjectPermissions {
@@ -288,6 +293,16 @@ export class ProjectApiService {
     return response.data;
   }
 
+  async addTeamMember(memberData: addTeamMember): Promise<void> {
+    const response = await axiosInstance.post<void>(`/api/v1/projects/members/`, memberData);
+    return response.data;
+  }
+
+  async removeMember(projectId: string, memberId: string): Promise<void> {
+    const response = await axiosInstance.delete<void>(`/api/v1/projects/members/${projectId}/${memberId}`);
+    return response.data;
+  }
+
   async updateProjectStatus(id: string, status: string): Promise<Project> {
     const response = await axiosInstance.patch<Project>(
       `/api/v1/projects/${id}`,
@@ -429,9 +444,8 @@ export class ProjectApiService {
       if (params.limit) searchParams.append("limit", params.limit.toString());
 
       const queryString = searchParams.toString();
-      const endpoint = `/api/v1/time-entries${
-        queryString ? `?${queryString}` : ""
-      }`;
+      const endpoint = `/api/v1/time-entries${queryString ? `?${queryString}` : ""
+        }`;
       const response = await axiosInstance.get<any[]>(endpoint);
       const data = response.data;
       return { success: true, data };
@@ -453,9 +467,8 @@ export class ProjectApiService {
       if (params.period) searchParams.append("period", params.period);
 
       const queryString = searchParams.toString();
-      const endpoint = `/api/v1/time-tracking/summary${
-        queryString ? `?${queryString}` : ""
-      }`;
+      const endpoint = `/api/v1/time-tracking/summary${queryString ? `?${queryString}` : ""
+        }`;
       const response = await axiosInstance.get<any>(endpoint);
       const data = response.data;
       return { success: true, data };

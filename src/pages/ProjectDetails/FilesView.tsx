@@ -332,7 +332,7 @@ export function FilesView({ project, user }: FilesViewProps) {
         toast.success("File deleted successfully");
         loadFiles();
       } else {
-        await filesApiService.deleteFolder(deletingItem.id);
+        await filesApiService.deleteFolder(projectId, deletingItem?.id);
         toast.success("Folder deleted successfully");
         loadFolders();
         if (selectedFolder === deletingItem.id) {
@@ -416,8 +416,8 @@ export function FilesView({ project, user }: FilesViewProps) {
     const iconBgColor = file.content_type.includes("pdf")
       ? "bg-red-50"
       : file.content_type.startsWith("image/")
-      ? "bg-green-50"
-      : "bg-blue-50";
+        ? "bg-green-50"
+        : "bg-blue-50";
 
     return (
       <Card className="hover:shadow-lg transition-all duration-200 border">
@@ -678,11 +678,10 @@ export function FilesView({ project, user }: FilesViewProps) {
             <CardContent className="p-2 max-h-64 overflow-y-auto">
               <div className="space-y-0.5">
                 <button
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                    selectedFolder === undefined
-                      ? "bg-foreground text-primary-foreground"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${selectedFolder === undefined
+                    ? "bg-foreground text-primary-foreground"
+                    : "text-gray-700 hover:bg-gray-100"
+                    }`}
                   onClick={() => setSelectedFolder(undefined)}
                 >
                   <FolderOpen className="w-4 h-4 mr-2.5 flex-shrink-0" />
@@ -691,11 +690,10 @@ export function FilesView({ project, user }: FilesViewProps) {
                 {folders.map((folder) => (
                   <div
                     key={folder.id}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-all group ${
-                      selectedFolder === folder.id
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-all group ${selectedFolder === folder.id
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     <button
                       className="flex items-center flex-1 text-left font-medium min-w-0"
@@ -736,11 +734,10 @@ export function FilesView({ project, user }: FilesViewProps) {
             <CardContent className="p-2 max-h-64 overflow-y-auto">
               <div className="space-y-0.5">
                 <button
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                    selectedCategory === "all"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-all ${selectedCategory === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-gray-700 hover:bg-gray-100"
+                    }`}
                   onClick={() => setSelectedCategory("all")}
                 >
                   <span className="truncate">All Categories</span>
@@ -751,11 +748,10 @@ export function FilesView({ project, user }: FilesViewProps) {
                 {fileCategories.map((categoryItem) => (
                   <button
                     key={categoryItem.category}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                      selectedCategory === categoryItem.category
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-all ${selectedCategory === categoryItem.category
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50"
+                      }`}
                     onClick={() => setSelectedCategory(categoryItem.category)}
                   >
                     <span className="truncate">{categoryItem.category}</span>
@@ -905,11 +901,10 @@ export function FilesView({ project, user }: FilesViewProps) {
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25 hover:border-primary/50"
-              }`}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDragging
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50"
+                }`}
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />

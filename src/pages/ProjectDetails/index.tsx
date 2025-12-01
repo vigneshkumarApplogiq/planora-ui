@@ -99,7 +99,8 @@ export function ProjectDetails({
   const activeView = searchParams.get("view") || "dashboard";
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [darkMode, setDarkMode] = useState(getInitialTheme());
+  // const [darkMode, setDarkMode] = useState(getInitialTheme());
+  const [darkMode, setDarkMode] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Load master project data once at parent level

@@ -983,15 +983,14 @@ export function TasksView({
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div
-                    className={`h-1.5 rounded-full transition-all ${
-                      task.progress === 100
-                        ? "bg-green-500"
-                        : task.progress >= 70
+                    className={`h-1.5 rounded-full transition-all ${task.progress === 100
+                      ? "bg-green-500"
+                      : task.progress >= 70
                         ? "bg-blue-500"
                         : task.progress >= 40
-                        ? "bg-yellow-500"
-                        : "bg-orange-500"
-                    }`}
+                          ? "bg-yellow-500"
+                          : "bg-orange-500"
+                      }`}
                     style={{ width: `${task.progress}%` }}
                   />
                 </div>
@@ -1011,17 +1010,15 @@ export function TasksView({
                     )}
                     <div className="flex flex-col">
                       <span
-                        className={`text-[11px] font-semibold ${
-                          isOverdue() ? "text-red-600" : "text-gray-700"
-                        }`}
+                        className={`text-[11px] font-semibold ${isOverdue() ? "text-red-600" : "text-gray-700"
+                          }`}
                       >
                         {formatDueDate()}
                       </span>
                       {getDaysUntilDue() !== null && task.status !== "done" && (
                         <span
-                          className={`text-[9px] ${
-                            isOverdue() ? "text-red-500" : "text-gray-500"
-                          }`}
+                          className={`text-[9px] ${isOverdue() ? "text-red-500" : "text-gray-500"
+                            }`}
                         >
                           {getDaysUntilDue()! < 0
                             ? `${Math.abs(getDaysUntilDue()!)}d overdue`
@@ -1167,15 +1164,14 @@ export function TasksView({
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div
-                  className={`h-1.5 rounded-full transition-all ${
-                    task.progress === 100
-                      ? "bg-green-500"
-                      : task.progress >= 70
+                  className={`h-1.5 rounded-full transition-all ${task.progress === 100
+                    ? "bg-green-500"
+                    : task.progress >= 70
                       ? "bg-blue-500"
                       : task.progress >= 40
-                      ? "bg-yellow-500"
-                      : "bg-orange-500"
-                  }`}
+                        ? "bg-yellow-500"
+                        : "bg-orange-500"
+                    }`}
                   style={{ width: `${task.progress}%` }}
                 />
               </div>
@@ -1195,17 +1191,15 @@ export function TasksView({
                   )}
                   <div className="flex flex-col">
                     <span
-                      className={`text-[11px] font-semibold ${
-                        isOverdue() ? "text-red-600" : "text-gray-700"
-                      }`}
+                      className={`text-[11px] font-semibold ${isOverdue() ? "text-red-600" : "text-gray-700"
+                        }`}
                     >
                       {formatDueDate()}
                     </span>
                     {getDaysUntilDue() !== null && task.status !== "done" && (
                       <span
-                        className={`text-[9px] ${
-                          isOverdue() ? "text-red-500" : "text-gray-500"
-                        }`}
+                        className={`text-[9px] ${isOverdue() ? "text-red-500" : "text-gray-500"
+                          }`}
                       >
                         {getDaysUntilDue()! < 0
                           ? `${Math.abs(getDaysUntilDue()!)}d overdue`
@@ -1282,11 +1276,10 @@ export function TasksView({
 
         <div
           ref={dropRef}
-          className={`space-y-3 min-h-[400px] transition-all duration-200 rounded-lg p-2 ${
-            isOver
-              ? "bg-blue-50 border-2 border-dashed border-blue-400 shadow-inner"
-              : ""
-          }`}
+          className={`space-y-3 min-h-[400px] transition-all duration-200 rounded-lg p-2 ${isOver
+            ? "bg-blue-50 border-2 border-dashed border-blue-400 shadow-inner"
+            : ""
+            }`}
         >
           {tasks.map((task) => (
             <DraggableTaskCard key={task.id} task={task} columnId={column.id} />
@@ -1408,13 +1401,12 @@ export function TasksView({
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div
-                        className={`h-1.5 rounded-full ${
-                          task.progress === 100
-                            ? "bg-green-500"
-                            : task.progress >= 70
+                        className={`h-1.5 rounded-full ${task.progress === 100
+                          ? "bg-green-500"
+                          : task.progress >= 70
                             ? "bg-blue-500"
                             : "bg-yellow-500"
-                        }`}
+                          }`}
                         style={{ width: `${task.progress}%` }}
                       />
                     </div>
@@ -1459,27 +1451,25 @@ export function TasksView({
                     )}
                     <div className="flex flex-col items-end">
                       <span
-                        className={`text-[11px] font-semibold ${
-                          isOverdue(task.due_date, task.status)
-                            ? "text-red-600"
-                            : "text-gray-700"
-                        }`}
+                        className={`text-[11px] font-semibold ${isOverdue(task.due_date, task.status)
+                          ? "text-red-600"
+                          : "text-gray-700"
+                          }`}
                       >
                         {formatDueDate(task.due_date)}
                       </span>
                       {getDaysUntilDue(task.due_date) !== null &&
                         task.status !== "done" && (
                           <span
-                            className={`text-[9px] ${
-                              isOverdue(task.due_date, task.status)
-                                ? "text-red-500"
-                                : "text-gray-500"
-                            }`}
+                            className={`text-[9px] ${isOverdue(task.due_date, task.status)
+                              ? "text-red-500"
+                              : "text-gray-500"
+                              }`}
                           >
                             {getDaysUntilDue(task.due_date)! < 0
                               ? `${Math.abs(
-                                  getDaysUntilDue(task.due_date)!
-                                )}d overdue`
+                                getDaysUntilDue(task.due_date)!
+                              )}d overdue`
                               : `${getDaysUntilDue(task.due_date)}d left`}
                           </span>
                         )}
@@ -1672,9 +1662,8 @@ export function TasksView({
                             )}
                             <div className="flex flex-col">
                               <span
-                                className={`text-sm font-medium ${
-                                  overdue ? "text-red-600" : ""
-                                }`}
+                                className={`text-sm font-medium ${overdue ? "text-red-600" : ""
+                                  }`}
                               >
                                 {new Date(task.due_date).toLocaleDateString(
                                   "en-GB",
@@ -1684,9 +1673,8 @@ export function TasksView({
                               {daysUntilDue !== null &&
                                 task.status !== "done" && (
                                   <span
-                                    className={`text-xs ${
-                                      overdue ? "text-red-500" : "text-gray-500"
-                                    }`}
+                                    className={`text-xs ${overdue ? "text-red-500" : "text-gray-500"
+                                      }`}
                                   >
                                     {daysUntilDue < 0
                                       ? `${Math.abs(daysUntilDue)}d overdue`
@@ -1811,19 +1799,19 @@ export function TasksView({
               <SelectItem value="unassigned">Unassigned</SelectItem>
               {projectTeamMembers.length > 0
                 ? projectTeamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                    </SelectItem>
-                  ))
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name}
+                  </SelectItem>
+                ))
                 : Array.from(
-                    new Set(
-                      tasks.map((task) => task.assignee_name).filter(Boolean)
-                    )
-                  ).map((assignee) => (
-                    <SelectItem key={assignee} value={assignee}>
-                      {assignee}
-                    </SelectItem>
-                  ))}
+                  new Set(
+                    tasks.map((task) => task.assignee_name).filter(Boolean)
+                  )
+                ).map((assignee) => (
+                  <SelectItem key={assignee} value={assignee}>
+                    {assignee}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
 
@@ -1847,6 +1835,7 @@ export function TasksView({
         </div>
 
         <Tabs
+          defaultValue="table"
           onValueChange={(value: string) =>
             setViewMode(value as "board" | "list" | "table")
           }
@@ -1901,7 +1890,7 @@ export function TasksView({
             <div className="text-2xl font-semibold text-[#DC3545]">
               {Math.round(
                 tasks.reduce((sum, t) => sum + (t.progress || 0), 0) /
-                  Math.max(tasks.length, 1)
+                Math.max(tasks.length, 1)
               )}
               %
             </div>
@@ -2027,7 +2016,7 @@ export function TasksView({
 
       {/* Create Task Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
@@ -2179,11 +2168,10 @@ export function TasksView({
 
             {/* Sprint and Assignee - Hide sprint for Kanban methodology */}
             <div
-              className={`grid gap-4 ${
-                project?.methodology === "Kanban"
-                  ? "grid-cols-1"
-                  : "grid-cols-2"
-              }`}
+              className={`grid gap-4 ${project?.methodology === "Kanban"
+                ? "grid-cols-1"
+                : "grid-cols-2"
+                }`}
             >
               {project?.methodology !== "Kanban" && (
                 <div>
@@ -2310,48 +2298,48 @@ export function TasksView({
               <Label>Acceptance Criteria</Label>
               <div className="space-y-2">
                 {Array.isArray(createTaskData.acceptance_criteria) &&
-                createTaskData.acceptance_criteria.length > 0
+                  createTaskData.acceptance_criteria.length > 0
                   ? createTaskData.acceptance_criteria.map(
-                      (criteria, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center space-x-2"
+                    (criteria, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center space-x-2"
+                      >
+                        <Input
+                          placeholder="Enter acceptance criteria"
+                          value={criteria}
+                          onChange={(e) => {
+                            const newCriteria = [
+                              ...(createTaskData.acceptance_criteria || []),
+                            ];
+                            newCriteria[index] = e.target.value;
+                            setCreateTaskData({
+                              ...createTaskData,
+                              acceptance_criteria: newCriteria,
+                            });
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newCriteria =
+                              createTaskData.acceptance_criteria?.filter(
+                                (_, i) => i !== index
+                              ) || [];
+                            setCreateTaskData({
+                              ...createTaskData,
+                              acceptance_criteria: newCriteria,
+                            });
+                          }}
+                          className="text-red-600 hover:text-red-700"
                         >
-                          <Input
-                            placeholder="Enter acceptance criteria"
-                            value={criteria}
-                            onChange={(e) => {
-                              const newCriteria = [
-                                ...(createTaskData.acceptance_criteria || []),
-                              ];
-                              newCriteria[index] = e.target.value;
-                              setCreateTaskData({
-                                ...createTaskData,
-                                acceptance_criteria: newCriteria,
-                              });
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const newCriteria =
-                                createTaskData.acceptance_criteria?.filter(
-                                  (_, i) => i !== index
-                                ) || [];
-                              setCreateTaskData({
-                                ...createTaskData,
-                                acceptance_criteria: newCriteria,
-                              });
-                            }}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     )
+                  )
                   : null}
                 <Button
                   type="button"
@@ -2387,11 +2375,10 @@ export function TasksView({
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${isDragging
+                  ? "border-primary bg-primary/5"
+                  : "border-muted-foreground/25 hover:border-primary/50"
+                  }`}
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
@@ -2480,10 +2467,10 @@ export function TasksView({
 
             {(availableStatuses.length === 0 ||
               availablePriorities.length === 0) && (
-              <div className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center">
-                ⚠️ Master data is loading. Please wait...
-              </div>
-            )}
+                <div className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center">
+                  ⚠️ Master data is loading. Please wait...
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>

@@ -33,7 +33,8 @@ interface MainLayoutProps {
 export function MainLayout({ user, onLogout }: MainLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(getInitialTheme());
+  // const [darkMode, setDarkMode] = useState(getInitialTheme());
+  const [darkMode, setDarkMode] = useState(false);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);

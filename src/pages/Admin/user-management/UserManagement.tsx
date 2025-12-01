@@ -94,7 +94,7 @@ export function UserManagement() {
 
   // Component mount/unmount tracking
   useEffect(() => {
-    return () => {};
+    return () => { };
   }, []);
 
   // Fetch departments on component mount
@@ -323,18 +323,18 @@ export function UserManagement() {
   const handleAddEditSkill = () => {
     if (!editingUser) return;
 
-    const skillToAdd = editNewSkill.trim();
-    if (skillToAdd && !editingUser.skills.includes(skillToAdd)) {
+    const skillToAdd = editNewSkill?.trim();    
+    if (skillToAdd && !editingUser?.skills?.includes(skillToAdd)) {
       setEditingUser((prev) =>
         prev
           ? {
-              ...prev,
-              skills: [...prev.skills, skillToAdd],
-            }
+            ...prev,
+            skills: [...prev.skills, skillToAdd],
+          }
           : null
       );
       setEditNewSkill("");
-    } else if (editingUser.skills.includes(skillToAdd)) {
+    } else if (editingUser?.skills?.includes(skillToAdd)) {
       toast.error("Skill already added");
     } else if (!skillToAdd) {
       toast.error("Please enter a skill name");
@@ -347,9 +347,9 @@ export function UserManagement() {
     setEditingUser((prev) =>
       prev
         ? {
-            ...prev,
-            skills: prev.skills.filter((s) => s !== skill),
-          }
+          ...prev,
+          skills: prev.skills.filter((s) => s !== skill),
+        }
         : null
     );
   };
@@ -374,8 +374,8 @@ export function UserManagement() {
           params.role_id !== undefined
             ? params.role_id
             : selectedRole !== "all"
-            ? `role_${selectedRole}`
-            : undefined,
+              ? `role_${selectedRole}`
+              : undefined,
       });
 
       setUsers(response.items || []);
@@ -726,9 +726,8 @@ export function UserManagement() {
               className="bg-[#28A745] hover:bg-[#218838]"
               title={
                 !userPermissions.canCreate
-                  ? `You don't have permission to Add users. Current role: ${
-                      userPermissions.role || "Unknown"
-                    }`
+                  ? `You don't have permission to Add users. Current role: ${userPermissions.role || "Unknown"
+                  }`
                   : "Add new user"
               }
             >
@@ -787,11 +786,10 @@ export function UserManagement() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          className={`text-xs ${
-                            user.is_active
-                              ? "bg-green-500 text-white"
-                              : "bg-gray-500 text-white"
-                          }`}
+                          className={`text-xs ${user.is_active
+                            ? "bg-green-500 text-white"
+                            : "bg-gray-500 text-white"
+                            }`}
                         >
                           {user.is_active ? "Active" : "Inactive"}
                         </Badge>
@@ -820,18 +818,16 @@ export function UserManagement() {
                             disabled={!userPermissions.canEdit}
                             title={
                               !userPermissions.canEdit
-                                ? `You don't have permission to edit users. Current role: ${
-                                    userPermissions.role || "Unknown"
-                                  }`
+                                ? `You don't have permission to edit users. Current role: ${userPermissions.role || "Unknown"
+                                }`
                                 : "Edit user"
                             }
                           >
                             <Edit
-                              className={`h-4 w-4 ${
-                                userPermissions.canEdit
-                                  ? "text-blue-500"
-                                  : "text-gray-400"
-                              }`}
+                              className={`h-4 w-4 ${userPermissions.canEdit
+                                ? "text-blue-500"
+                                : "text-gray-400"
+                                }`}
                             />
                           </Button>
                           <Button
@@ -1078,11 +1074,10 @@ export function UserManagement() {
                     {selectedUser.email}
                   </p>
                   <Badge
-                    className={`text-xs ${
-                      userRoles[
-                        selectedUser.role?.name as keyof typeof userRoles
-                      ]?.color
-                    } text-white`}
+                    className={`text-xs ${userRoles[
+                      selectedUser.role?.name as keyof typeof userRoles
+                    ]?.color
+                      } text-white`}
                   >
                     {selectedUser.role?.name}
                   </Badge>

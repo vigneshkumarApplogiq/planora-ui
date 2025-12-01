@@ -257,6 +257,20 @@ export function TeamView({
     return "text-green-600";
   };
 
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      await projectApiService.removeMember(project.id, memberId).then(res => {
+        console.log(res, "Remove Team Member");
+        toast.success("Member removed successfully");
+        setSelectedMember(null)
+        fetchTeamMembers();
+      });
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast.error("Failed to remove member");
+    }
+  }
+
   const filteredMembers = projectMembers.filter((member) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -505,7 +519,7 @@ export function TeamView({
               <h4 className="font-medium mb-3">Role Permissions</h4>
               <div className="space-y-2">
                 {member.role.permissions &&
-                member.role.permissions.length > 0 ? (
+                  member.role.permissions.length > 0 ? (
                   member.role.permissions.map((permission: string) => (
                     <div
                       key={permission}
@@ -534,7 +548,7 @@ export function TeamView({
             <Edit className="w-4 h-4 mr-2" />
             Edit Member
           </Button>
-          <Button variant="outline" className="text-red-600 hover:text-red-700">
+          <Button variant="outline" onClick={() => handleRemoveMember(member.id)} className="text-red-600 hover:text-red-700">
             <Trash2 className="w-4 h-4 mr-2" />
             Remove from Project
           </Button>
@@ -643,11 +657,11 @@ export function TeamView({
             <div className="text-2xl font-semibold text-[#6F42C1]">
               {projectMembers.length > 0
                 ? Math.round(
-                    projectMembers.reduce(
-                      (sum, m) => sum + (m.workload || 0),
-                      0
-                    ) / projectMembers.length
-                  )
+                  projectMembers.reduce(
+                    (sum, m) => sum + (m.workload || 0),
+                    0
+                  ) / projectMembers.length
+                )
                 : 0}
               %
             </div>
@@ -744,14 +758,22 @@ export function TeamView({
                         try {
                           // In real implementation, this would call an API to associate the user with the project
                           // For example: await projectApiService.addTeamMember(effectiveProjectId, user.id)
+                          const memberData = {
+                            member_id: user.id,
+                            role_id: user.role.id,
+                            project_id: project.id,
+                          }
+                          await projectApiService.addTeamMember(memberData).then(res => {
+                            console.log(res, "Add Team Member");
+                            toast.success(
+                              `${user.name} has been associated with the project`
+                            );
+                            setShowAddMember(false);
 
-                          toast.success(
-                            `${user.name} has been associated with the project`
-                          );
-                          setShowAddMember(false);
+                            // Refresh the team members to show the newly associated user
+                            fetchTeamMembers();
+                          });
 
-                          // Refresh the team members to show the newly associated user
-                          fetchTeamMembers();
                         } catch (error) {
                           console.error(
                             "Error associating user with project:",

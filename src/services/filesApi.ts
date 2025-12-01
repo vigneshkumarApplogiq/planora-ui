@@ -255,8 +255,8 @@ export class FilesApiService {
     return response.data;
   }
 
-  async deleteFolder(id: string): Promise<void> {
-    const response = await axiosInstance.delete<void>(`/api/v1/folders/${id}`);
+  async deleteFolder(projectId: string, id: string): Promise<void> {
+    const response = await axiosInstance.delete<void>(`/api/v1/files/projects/${projectId}/folders/${id}`);
     return response.data;
   }
 

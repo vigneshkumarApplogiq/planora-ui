@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface UserRole {
   name: string;
@@ -90,7 +90,7 @@ export interface CreateSprintRequest {
   project_id: string;
   scrum_master_id: string;
   team_size: number;
-  burndown_trend: 'On Track' | 'Behind' | 'Ahead';
+  burndown_trend: "On Track" | "Behind" | "Ahead";
 }
 
 export interface UpdateSprintRequest extends Partial<CreateSprintRequest> {}
@@ -114,85 +114,24 @@ export interface SprintsQueryParams {
   scrum_master_id?: string;
 }
 
-
 export class SprintApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${token}`
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            throw new Error('Failed to get new token after refresh');
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status} ${retryResponse.statusText}`);
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   async getSprints(params: SprintsQueryParams = {}): Promise<SprintsResponse> {
     const searchParams = new URLSearchParams();
 
-    if (params.page !== undefined) searchParams.append('page', params.page.toString());
-    if (params.per_page !== undefined) searchParams.append('per_page', params.per_page.toString());
-    if (params.search) searchParams.append('search', params.search);
-    if (params.status) searchParams.append('status', params.status);
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.scrum_master_id) searchParams.append('scrum_master_id', params.scrum_master_id);
+    if (params.page !== undefined)
+      searchParams.append("page", params.page.toString());
+    if (params.per_page !== undefined)
+      searchParams.append("per_page", params.per_page.toString());
+    if (params.search) searchParams.append("search", params.search);
+    if (params.status) searchParams.append("status", params.status);
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.scrum_master_id)
+      searchParams.append("scrum_master_id", params.scrum_master_id);
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/sprints${queryString ? `?${queryString}` : ''}`;
-
-    const response = await this.makeRequest<SprintsResponse>(endpoint);
+    const endpoint = `/api/v1/sprints${queryString ? `?${queryString}` : ""}`;
+    const res = await axiosInstance.get<SprintsResponse>(endpoint);
+    const response = res.data;
 
     if (response && Array.isArray(response.items)) {
       return response;
@@ -210,34 +149,40 @@ export class SprintApiService {
   }
 
   async getSprintById(id: string): Promise<Sprint> {
-    return this.makeRequest<Sprint>(`/api/v1/sprints/${id}`);
+    const response = await axiosInstance.get<Sprint>(`/api/v1/sprints/${id}`);
+    return response.data;
   }
 
   async createSprint(sprintData: CreateSprintRequest): Promise<Sprint> {
-    return this.makeRequest<Sprint>('/api/v1/sprints/', {
-      method: 'POST',
-      body: JSON.stringify(sprintData),
-    });
+    const response = await axiosInstance.post<Sprint>(
+      "/api/v1/sprints/",
+      sprintData
+    );
+    return response.data;
   }
 
-  async updateSprint(id: string, sprintData: UpdateSprintRequest): Promise<Sprint> {
-    return this.makeRequest<Sprint>(`/api/v1/sprints/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(sprintData),
-    });
+  async updateSprint(
+    id: string,
+    sprintData: UpdateSprintRequest
+  ): Promise<Sprint> {
+    const response = await axiosInstance.put<Sprint>(
+      `/api/v1/sprints/${id}`,
+      sprintData
+    );
+    return response.data;
   }
 
   async deleteSprint(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/sprints/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/sprints/${id}`);
+    return response.data;
   }
 
   async updateSprintStatus(id: string, status: string): Promise<Sprint> {
-    return this.makeRequest<Sprint>(`/api/v1/sprints/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+    const response = await axiosInstance.patch<Sprint>(
+      `/api/v1/sprints/${id}`,
+      { status }
+    );
+    return response.data;
   }
 
   async getSprintsByProject(projectId: string): Promise<Sprint[]> {
@@ -246,7 +191,10 @@ export class SprintApiService {
   }
 
   async getActiveSprintsByProject(projectId: string): Promise<Sprint[]> {
-    const response = await this.getSprints({ project_id: projectId, status: 'Active' });
+    const response = await this.getSprints({
+      project_id: projectId,
+      status: "Active",
+    });
     return response.items;
   }
 

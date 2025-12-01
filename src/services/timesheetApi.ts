@@ -1,5 +1,4 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import axiosInstance from "../config/api";
 
 export interface TimeEntryAttachment {
   id: string;
@@ -23,9 +22,19 @@ export interface TimeEntry {
   hours: number;
   description: string;
   notes?: string;
-  activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fix' | 'research' | 'planning' | 'deployment';
+  activity_type:
+    | "development"
+    | "testing"
+    | "design"
+    | "review"
+    | "meeting"
+    | "documentation"
+    | "bug_fix"
+    | "research"
+    | "planning"
+    | "deployment";
   billable: boolean;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  status: "draft" | "submitted" | "approved" | "rejected";
   approved: boolean;
   approved_by?: string;
   approved_at?: string;
@@ -48,12 +57,23 @@ export interface CreateTimeEntryRequest {
   hours: number;
   description: string;
   notes?: string;
-  activity_type: 'development' | 'testing' | 'design' | 'review' | 'meeting' | 'documentation' | 'bug_fix' | 'research' | 'planning' | 'deployment';
+  activity_type:
+    | "development"
+    | "testing"
+    | "design"
+    | "review"
+    | "meeting"
+    | "documentation"
+    | "bug_fix"
+    | "research"
+    | "planning"
+    | "deployment";
   billable?: boolean;
-  status?: 'draft' | 'submitted';
+  status?: "draft" | "submitted";
 }
 
-export interface UpdateTimeEntryRequest extends Partial<CreateTimeEntryRequest> {
+export interface UpdateTimeEntryRequest
+  extends Partial<CreateTimeEntryRequest> {
   approved?: boolean;
 }
 
@@ -90,323 +110,261 @@ export interface TimeEntriesQueryParams {
 }
 
 export class TimesheetApiService {
-  // Helper method to verify token before making requests
-  private verifyAuth(): { token: string; tokenType: string } | null {
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      console.error('❌ [TimesheetAPI] Authentication required - no token found');
-      return null;
-    }
-
-    return { token, tokenType: tokenType || 'bearer' };
-  }
-
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    // Ensure we always have token for authenticated endpoints
-    if (!token) {
-      console.error('❌ [TimesheetAPI] No access token found in localStorage!');
-    }
-
-    const defaultHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Add authorization header if token exists
-    if (token) {
-      defaultHeaders['Authorization'] = `${tokenType} ${token}`;
-    } else {
-      console.warn('⚠️ [TimesheetAPI] Making request WITHOUT authorization token!');
-    }
-
-    const finalHeaders: HeadersInit = {
-      ...defaultHeaders,
-      ...options?.headers,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: finalHeaders,
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          // First check if we have a refresh token
-          const refreshToken = authApiService.getRefreshToken();
-          if (!refreshToken) {
-            console.warn('⚠️ [TimesheetAPI] No refresh token available, skipping refresh attempt');
-            throw new Error('No refresh token available');
-          }
-
-          await authApiService.refreshToken();
-
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            console.error('❌ [TimesheetAPI] Token refresh succeeded but no new token found');
-            throw new Error('Failed to get new token after refresh');
-          }
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          console.error('❌ [TimesheetAPI] Retry request failed after token refresh');
-          throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status}`);
-        } catch (refreshError) {
-          // Only clear tokens if refresh explicitly failed (not just network error)
-          console.error('❌ [TimesheetAPI] Token refresh error:', refreshError);
-
-          // Check if this is a genuine auth failure vs network/other error
-          const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
-          if (errorMessage.includes('refresh') || errorMessage.includes('token') || errorMessage.includes('Authentication')) {
-            console.warn('⚠️ [TimesheetAPI] Clearing tokens due to authentication failure');
-            authApiService.clearTokens();
-            authApiService.clearUserProfile();
-            throw new Error('Authentication failed. Please login again.');
-          }
-
-          // For other errors, don't clear tokens
-          console.warn('⚠️ [TimesheetAPI] Request failed but keeping tokens (might be network/server error)');
-          throw new Error(errorMessage || 'Request failed');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ [TimesheetAPI] API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorData,
-        endpoint: url
-      });
-      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getTimeEntries(params: TimeEntriesQueryParams = {}): Promise<TimeEntriesResponse> {
+  async getTimeEntries(
+    params: TimeEntriesQueryParams = {}
+  ): Promise<TimeEntriesResponse> {
     const searchParams = new URLSearchParams();
 
-    if (params.user_id) searchParams.append('user_id', params.user_id);
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.start_date) searchParams.append('start_date', params.start_date);
-    if (params.end_date) searchParams.append('end_date', params.end_date);
-    if (params.approved !== undefined) searchParams.append('approved', params.approved.toString());
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params.user_id) searchParams.append("user_id", params.user_id);
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.start_date) searchParams.append("start_date", params.start_date);
+    if (params.end_date) searchParams.append("end_date", params.end_date);
+    if (params.approved !== undefined)
+      searchParams.append("approved", params.approved.toString());
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.per_page)
+      searchParams.append("per_page", params.per_page.toString());
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/timesheet/entries${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/timesheet/entries${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TimeEntriesResponse>(endpoint);
 
-    return this.makeRequest<TimeEntriesResponse>(endpoint);
+    return response.data;
   }
 
-  async getMyTimeEntries(params: Omit<TimeEntriesQueryParams, 'user_id'> = {}): Promise<TimeEntriesResponse> {
+  async getMyTimeEntries(
+    params: Omit<TimeEntriesQueryParams, "user_id"> = {}
+  ): Promise<TimeEntriesResponse> {
     const searchParams = new URLSearchParams();
 
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.start_date) searchParams.append('start_date', params.start_date);
-    if (params.end_date) searchParams.append('end_date', params.end_date);
-    if (params.approved !== undefined) searchParams.append('approved', params.approved.toString());
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.start_date) searchParams.append("start_date", params.start_date);
+    if (params.end_date) searchParams.append("end_date", params.end_date);
+    if (params.approved !== undefined)
+      searchParams.append("approved", params.approved.toString());
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.per_page)
+      searchParams.append("per_page", params.per_page.toString());
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/timesheet/my-entries${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<TimeEntriesResponse>(endpoint);
+    const endpoint = `/api/v1/timesheet/my-entries${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TimeEntriesResponse>(endpoint);
+    return response.data;
   }
 
   async getTimeEntryById(id: string): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>(`/api/v1/timesheet/entries/${id}`);
+    const response = await axiosInstance.get<TimeEntry>(
+      `/api/v1/timesheet/entries/${id}`
+    );
+    return response.data;
   }
 
   async createTimeEntry(data: CreateTimeEntryRequest): Promise<TimeEntry> {
-
-    return this.makeRequest<TimeEntry>('/api/v1/timesheet/my-entries/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const response = await axiosInstance.post<TimeEntry>(
+      "/api/v1/timesheet/entries",
+      data
+    );
+    return response.data;
   }
 
-  async updateTimeEntry(id: string, data: UpdateTimeEntryRequest): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>(`/api/v1/timesheet/entries/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+  async updateTimeEntry(
+    id: string,
+    data: UpdateTimeEntryRequest
+  ): Promise<TimeEntry> {
+    const response = await axiosInstance.put<TimeEntry>(
+      `/api/v1/timesheet/entries/${id}`,
+      data
+    );
+    return response.data;
   }
 
   async deleteTimeEntry(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/timesheet/entries/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(
+      `/api/v1/timesheet/entries/${id}`
+    );
+    return response.data;
   }
 
-  async getTimesheetSummary(params: TimeEntriesQueryParams = {}): Promise<TimesheetSummary> {
+  async getTimesheetSummary(
+    params: TimeEntriesQueryParams = {}
+  ): Promise<TimesheetSummary> {
     const searchParams = new URLSearchParams();
 
-    if (params.user_id) searchParams.append('user_id', params.user_id);
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.start_date) searchParams.append('start_date', params.start_date);
-    if (params.end_date) searchParams.append('end_date', params.end_date);
+    if (params.user_id) searchParams.append("user_id", params.user_id);
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.start_date) searchParams.append("start_date", params.start_date);
+    if (params.end_date) searchParams.append("end_date", params.end_date);
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/timesheet/summary${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/timesheet/summary${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TimesheetSummary>(endpoint);
 
-    return this.makeRequest<TimesheetSummary>(endpoint);
+    return response.data;
   }
 
-  async getMyTimesheetSummary(params: Omit<TimeEntriesQueryParams, 'user_id'> = {}): Promise<TimesheetSummary> {
+  async getMyTimesheetSummary(
+    params: Omit<TimeEntriesQueryParams, "user_id"> = {}
+  ): Promise<TimesheetSummary> {
     const searchParams = new URLSearchParams();
 
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.start_date) searchParams.append('start_date', params.start_date);
-    if (params.end_date) searchParams.append('end_date', params.end_date);
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.start_date) searchParams.append("start_date", params.start_date);
+    if (params.end_date) searchParams.append("end_date", params.end_date);
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/timesheet/my-summary${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<TimesheetSummary>(endpoint);
+    const endpoint = `/api/v1/timesheet/my-summary${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TimesheetSummary>(endpoint);
+    return response.data;
   }
 
   async approveTimeEntry(id: string): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>(`/api/v1/timesheet/entries/${id}/approve`, {
-      method: 'POST',
-    });
+    const response = await axiosInstance.post<TimeEntry>(
+      `/api/v1/timesheet/entries/${id}/approve`
+    );
+    return response.data;
   }
 
   async rejectTimeEntry(id: string, reason?: string): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>(`/api/v1/timesheet/entries/${id}/reject`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
+    const response = await axiosInstance.post<TimeEntry>(
+      `/api/v1/timesheet/entries/${id}/reject`,
+      { reason }
+    );
+    return response.data;
   }
 
   // Task-specific time logging
-  async logTimeForTask(taskId: string, hours: number, description: string, activityType: CreateTimeEntryRequest['activity_type']): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>(`/api/v1/tasks/${taskId}/log-time`, {
-      method: 'POST',
-      body: JSON.stringify({
+  async logTimeForTask(
+    taskId: string,
+    hours: number,
+    description: string,
+    activityType: CreateTimeEntryRequest["activity_type"]
+  ): Promise<TimeEntry> {
+    const response = await axiosInstance.post<TimeEntry>(
+      `/api/v1/tasks/${taskId}/log-time`,
+      {
         hours,
         description,
         activity_type: activityType,
-        date: new Date().toISOString().split('T')[0]
-      }),
-    });
+        date: new Date().toISOString().split("T")[0],
+      }
+    );
+    return response.data;
   }
 
   async getTaskTimeEntries(taskId: string): Promise<TimeEntry[]> {
-    return this.makeRequest<TimeEntry[]>(`/api/v1/tasks/${taskId}/time-entries`);
+    const response = await axiosInstance.get<TimeEntry[]>(
+      `/api/v1/tasks/${taskId}/time-entries`
+    );
+    return response.data;
   }
 
   // Submit time entries for approval
   async submitTimeEntry(id: string): Promise<TimeEntry> {
-    return this.makeRequest<TimeEntry>(`/api/v1/timesheet/entries/${id}/submit`, {
-      method: 'POST',
-    });
+    const response = await axiosInstance.post<TimeEntry>(
+      `/api/v1/timesheet/entries/${id}/submit`
+    );
+    return response.data;
   }
 
   async submitMultipleEntries(ids: string[]): Promise<TimeEntry[]> {
-    return this.makeRequest<TimeEntry[]>('/api/v1/timesheet/entries/submit-bulk', {
-      method: 'POST',
-      body: JSON.stringify({ entry_ids: ids }),
-    });
+    const response = await axiosInstance.post<TimeEntry[]>(
+      `/api/v1/timesheet/entries/submit-bulk`,
+      { entry_ids: ids }
+    );
+    return response.data;
   }
 
   // Get pending approvals (for managers)
-  async getPendingApprovals(params: TimeEntriesQueryParams = {}): Promise<TimeEntriesResponse> {
+  async getPendingApprovals(
+    params: TimeEntriesQueryParams = {}
+  ): Promise<TimeEntriesResponse> {
     const searchParams = new URLSearchParams();
 
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.start_date) searchParams.append('start_date', params.start_date);
-    if (params.end_date) searchParams.append('end_date', params.end_date);
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.start_date) searchParams.append("start_date", params.start_date);
+    if (params.end_date) searchParams.append("end_date", params.end_date);
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.per_page)
+      searchParams.append("per_page", params.per_page.toString());
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/timesheet/pending-approvals${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<TimeEntriesResponse>(endpoint);
+    const endpoint = `/api/v1/timesheet/pending-approvals${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TimeEntriesResponse>(endpoint);
+    return response.data;
   }
 
   // Bulk approve/reject
   async bulkApprove(ids: string[]): Promise<TimeEntry[]> {
-    return this.makeRequest<TimeEntry[]>('/api/v1/timesheet/entries/approve-bulk', {
-      method: 'POST',
-      body: JSON.stringify({ entry_ids: ids }),
-    });
+    const response = await axiosInstance.post<TimeEntry[]>(
+      "/api/v1/timesheet/entries/approve-bulk",
+      { entry_ids: ids }
+    );
+    return response.data;
   }
 
   async bulkReject(ids: string[], reason?: string): Promise<TimeEntry[]> {
-    return this.makeRequest<TimeEntry[]>('/api/v1/timesheet/entries/reject-bulk', {
-      method: 'POST',
-      body: JSON.stringify({ entry_ids: ids, reason }),
-    });
+    const response = await axiosInstance.post<TimeEntry[]>(
+      "/api/v1/timesheet/entries/reject-bulk",
+      { entry_ids: ids, reason }
+    );
+    return response.data;
   }
 
   // File attachments
-  async uploadAttachment(entryId: string, file: File): Promise<TimeEntryAttachment> {
+  async uploadAttachment(
+    entryId: string,
+    file: File
+  ): Promise<TimeEntryAttachment> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
-    const url = getApiUrl(`/api/v1/timesheet/entries/${entryId}/attachments`);
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
+    const url = `/api/v1/timesheet/entries/${entryId}/attachments`;
+    const response = await axiosInstance.post<TimeEntryAttachment>(
+      url,
+      formData
+    );
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `${tokenType} ${token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to upload attachment');
-    }
-
-    return response.json();
+    return response.data;
   }
 
   async deleteAttachment(entryId: string, attachmentId: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/timesheet/entries/${entryId}/attachments/${attachmentId}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(
+      `/api/v1/timesheet/entries/${entryId}/attachments/${attachmentId}`
+    );
+    return response.data;
   }
 
   // Get entries by status
-  async getEntriesByStatus(status: TimeEntry['status'], params: TimeEntriesQueryParams = {}): Promise<TimeEntriesResponse> {
+  async getEntriesByStatus(
+    status: TimeEntry["status"],
+    params: TimeEntriesQueryParams = {}
+  ): Promise<TimeEntriesResponse> {
     const searchParams = new URLSearchParams();
 
-    searchParams.append('status', status);
-    if (params.project_id) searchParams.append('project_id', params.project_id);
-    if (params.start_date) searchParams.append('start_date', params.start_date);
-    if (params.end_date) searchParams.append('end_date', params.end_date);
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+    searchParams.append("status", status);
+    if (params.project_id) searchParams.append("project_id", params.project_id);
+    if (params.start_date) searchParams.append("start_date", params.start_date);
+    if (params.end_date) searchParams.append("end_date", params.end_date);
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.per_page)
+      searchParams.append("per_page", params.per_page.toString());
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/timesheet/my-entries${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<TimeEntriesResponse>(endpoint);
+    const endpoint = `/api/v1/timesheet/my-entries${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TimeEntriesResponse>(endpoint);
+    return response.data;
   }
 }
 

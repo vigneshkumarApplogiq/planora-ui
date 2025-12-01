@@ -173,126 +173,107 @@ export interface KanbanDashboardResponse {
   generated_at: string;
 }
 
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
-
+import axiosInstance from "../config/api";
 
 export class CustomerApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    // Get the access token for authorization
-    const token = authApiService.getAccessToken();
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` })
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      // Handle unauthorized/forbidden errors
-      if (response.status === 401 || response.status === 403) {
-        // Token might be expired, try to refresh
-        try {
-          await authApiService.refreshToken();
-          // Retry the request with new token
-          const newToken = authApiService.getAccessToken();
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              ...(newToken && { Authorization: `Bearer ${newToken}` }),
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-        } catch (refreshError) {
-          // Refresh failed, user needs to login again
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   async createCustomer(customerData: CreateCustomerRequest): Promise<Customer> {
-    return this.makeRequest<Customer>('/api/v1/customers', {
-      method: 'POST',
-      body: JSON.stringify(customerData),
-    });
+    const response = await axiosInstance.post<Customer>(
+      "/api/v1/customers",
+      customerData
+    );
+
+    return response.data;
   }
 
-  async updateCustomer(id: string, customerData: UpdateCustomerRequest): Promise<Customer> {
-    return this.makeRequest<Customer>(`/api/v1/customers/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(customerData),
-    });
+  async updateCustomer(
+    id: string,
+    customerData: UpdateCustomerRequest
+  ): Promise<Customer> {
+    const response = await axiosInstance.put<Customer>(
+      `/api/v1/customers/${id}`,
+      customerData
+    );
+    return response.data;
   }
 
   async getCustomerById(id: string): Promise<Customer> {
-    return this.makeRequest<Customer>(`/api/v1/customers/${id}`);
+    const response = await axiosInstance.get<Customer>(
+      `/api/v1/customers/${id}`
+    );
+    return response.data;
   }
 
   async deleteCustomer(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/customers/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(
+      `/api/v1/customers/${id}`
+    );
+    return response.data;
   }
 
-  async getCustomers(params?: CustomerListParams): Promise<CustomerListResponse> {
+  async getCustomers(
+    params?: CustomerListParams
+  ): Promise<CustomerListResponse> {
     const searchParams = new URLSearchParams();
 
-    if (params?.page !== undefined) searchParams.append('page', params.page.toString());
-    if (params?.size !== undefined) searchParams.append('size', params.size.toString());
-    if (params?.search) searchParams.append('search', params.search);
-    if (params?.status && params.status !== 'All') searchParams.append('status', params.status);
-    if (params?.industry && params.industry !== 'All') searchParams.append('industry', params.industry);
-    if (params?.priority && params.priority !== 'All') searchParams.append('priority', params.priority);
+    if (params?.page !== undefined)
+      searchParams.append("page", params.page.toString());
+    if (params?.size !== undefined)
+      searchParams.append("size", params.size.toString());
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.status && params.status !== "All")
+      searchParams.append("status", params.status);
+    if (params?.industry && params.industry !== "All")
+      searchParams.append("industry", params.industry);
+    if (params?.priority && params.priority !== "All")
+      searchParams.append("priority", params.priority);
 
     const queryString = searchParams.toString();
-    const endpoint = queryString ? `/api/v1/customers/?${queryString}` : '/api/v1/customers/';
-
-    return this.makeRequest<CustomerListResponse>(endpoint);
+    const endpoint = queryString
+      ? `/api/v1/customers/?${queryString}`
+      : "/api/v1/customers/";
+    const response = await axiosInstance.get<CustomerListResponse>(endpoint);
+    return response.data;
   }
 
   // Legacy method for backward compatibility
   async getAllCustomers(): Promise<Customer[]> {
-    const response = await this.getCustomers({ size: 100 }); // Get a large number to simulate "all"
+    const response = await this.getCustomers({ size: 100 });
     return response.customers;
   }
 
   // Kanban Dashboard API Methods
-  async getKanbanDashboard(projectId: string): Promise<KanbanDashboardResponse> {
-    return this.makeRequest<KanbanDashboardResponse>(`/api/v1/dashboard/kanban/${projectId}`);
+  async getKanbanDashboard(
+    projectId: string
+  ): Promise<KanbanDashboardResponse> {
+    const response = await axiosInstance.get<KanbanDashboardResponse>(
+      `/api/v1/dashboard/kanban/${projectId}`
+    );
+    return response.data;
   }
 
-  async getKanbanTaskDashboard(projectId: string): Promise<KanbanTaskDashboard> {
-    return this.makeRequest<KanbanTaskDashboard>(`/api/v1/dashboard/kanban/${projectId}/tasks`);
+  async getKanbanTaskDashboard(
+    projectId: string
+  ): Promise<KanbanTaskDashboard> {
+    const response = await axiosInstance.get<KanbanTaskDashboard>(
+      `/api/v1/dashboard/kanban/${projectId}/tasks`
+    );
+    return response.data;
   }
 
   async getKanbanBugDashboard(projectId: string): Promise<KanbanBugDashboard> {
-    return this.makeRequest<KanbanBugDashboard>(`/api/v1/dashboard/kanban/${projectId}/bugs`);
+    const response = await axiosInstance.get<KanbanBugDashboard>(
+      `/api/v1/dashboard/kanban/${projectId}/bugs`
+    );
+    return response.data;
   }
 
-  async getKanbanTeamPerformance(projectId: string): Promise<KanbanTeamPerformance> {
-    return this.makeRequest<KanbanTeamPerformance>(`/api/v1/dashboard/kanban/${projectId}/team-performance`);
+  async getKanbanTeamPerformance(
+    projectId: string
+  ): Promise<KanbanTeamPerformance> {
+    const response = await axiosInstance.get<KanbanTeamPerformance>(
+      `/api/v1/dashboard/kanban/${projectId}/team-performance`
+    );
+    return response.data;
   }
 }
 

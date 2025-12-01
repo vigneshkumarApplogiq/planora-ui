@@ -684,7 +684,7 @@ export function NativeDragDropKanban({
               <SelectContent>
                 <SelectItem value="all">All Priority</SelectItem>
                 {masterData?.priorities && masterData.priorities.length > 0 ? (
-                  masterData.priorities.map((priority) => (
+                  masterData.priorities.map((priority: any) => (
                     <SelectItem
                       key={priority.id}
                       value={priority.name.toLowerCase()}
@@ -725,7 +725,7 @@ export function NativeDragDropKanban({
                 <SelectItem value="all">All Assignees</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {projectTeamMembers && projectTeamMembers.length > 0 ? (
-                  projectTeamMembers.map((member) => (
+                  projectTeamMembers?.map((member: any) => (
                     <SelectItem key={member.id} value={member.id}>
                       {member.name}
                     </SelectItem>
@@ -743,7 +743,7 @@ export function NativeDragDropKanban({
 
       {/* Board Statistics */}
       <div className="grid grid-cols-6 gap-6">
-        {columns.map((column) => {
+        {columns?.map((column: any) => {
           const columnTasks = getTasksForColumn(column.status);
           return (
             <Card key={column.id} className="overflow-x-auto">
@@ -772,8 +772,8 @@ export function NativeDragDropKanban({
       </div>
 
       {/* Kanban Board */}
-      <div className="flex gap-6 overflow-x-auto pb-4">
-        {columns.map((column) => (
+      <div className="flex gap-4 overflow-x-auto pb-2">
+        {columns?.map((column: any) => (
           <Column
             key={column.id}
             title={column.title}

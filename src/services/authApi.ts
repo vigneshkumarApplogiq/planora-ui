@@ -1,5 +1,4 @@
-import { toast } from 'sonner';
-import { getApiUrl } from '../config/api';
+import axiosInstance from "../config/api";
 
 export interface LoginRequest {
   email: string;
@@ -28,135 +27,78 @@ export interface UserProfile {
   created_at: string;
   updated_at: string;
 }
-
 export class AuthApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
-
-    const mergedHeaders = {
-      ...defaultHeaders,
-      ...options?.headers,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: mergedHeaders,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    return this.makeRequest<LoginResponse>('/api/v1/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
+    const response = await axiosInstance.post<LoginResponse>(
+      "/api/v1/auth/login",
+      credentials
+    );
+    return response.data;
   }
 
   async getCurrentUser(): Promise<UserProfile> {
-    const token = this.getAccessToken();
-    const tokenType = this.getTokenType();
-
-    if (!token) {
-      throw new Error('No access token available');
-    }
-
-    return this.makeRequest<UserProfile>('/api/v1/auth/me', {
-      headers: {
-        Authorization: `${tokenType} ${token}`,
-      },
-    });
-  }
-
-  async refreshToken(): Promise<LoginResponse> {
-    const refreshToken = this.getRefreshToken();
-    const tokenType = this.getTokenType();
-
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    return this.makeRequest<LoginResponse>('/api/v1/auth/refresh', {
-      method: 'POST',
-      headers: {
-        Authorization: `${tokenType} ${refreshToken}`,
-      },
-    });
+    const response = await axiosInstance.get<UserProfile>("/api/v1/auth/me");
+    return response.data;
   }
 
   async logout(): Promise<void> {
-    const token = this.getAccessToken();
-    const tokenType = this.getTokenType();
-
-    if (token) {
-      try {
-        await this.makeRequest<void>('/api/v1/auth/logout', {
-          method: 'POST',
-          headers: {
-            Authorization: `${tokenType} ${token}`,
-          },
-        });
-      } catch (error) {
-        console.warn('⚠️ [AuthAPI] Logout API call failed:', error);
-        // Logout API call failed - ignore error and continue with cleanup
-      }
+    try {
+      await axiosInstance.post<void>("/api/v1/auth/logout");
+    } catch (error) {
+      console.warn("⚠️ [AuthAPI] Logout API call failed:", error);
+      // Continue with cleanup even if API call fails
     }
     this.clearTokens();
   }
 
   // Token management
   setTokens(tokens: LoginResponse): void {
-    
-    localStorage.setItem('access_token', tokens.access_token);
-    localStorage.setItem('refresh_token', tokens.refresh_token);
-    localStorage.setItem('token_type', tokens.token_type);
+    localStorage.setItem("access_token", tokens.access_token);
+    localStorage.setItem("refresh_token", tokens.refresh_token);
+    localStorage.setItem("token_type", tokens.token_type);
 
     // Verify tokens were saved
-    const savedAccessToken = localStorage.getItem('access_token');
-    const savedRefreshToken = localStorage.getItem('refresh_token');
-    const savedTokenType = localStorage.getItem('token_type');
-
+    const savedAccessToken = localStorage.getItem("access_token");
     if (!savedAccessToken || savedAccessToken !== tokens.access_token) {
-      console.error('❌ [AuthAPI] CRITICAL: Token was NOT saved correctly to localStorage!');
-      console.error('❌ [AuthAPI] This could be a browser storage issue or localStorage is disabled');
+      console.error(
+        "❌ [AuthAPI] CRITICAL: Token was NOT saved correctly to localStorage!"
+      );
+      console.error(
+        "❌ [AuthAPI] This could be a browser storage issue or localStorage is disabled"
+      );
     }
   }
 
   getAccessToken(): string | null {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
     if (!token) {
-      console.warn('⚠️ [AuthAPI] getAccessToken() called but no token found in localStorage');
+      console.warn(
+        "⚠️ [AuthAPI] getAccessToken() called but no token found in localStorage"
+      );
     }
     return token;
   }
 
   getRefreshToken(): string | null {
-    const token = localStorage.getItem('refresh_token');
+    const token = localStorage.getItem("refresh_token");
     if (!token) {
-      console.warn('⚠️ [AuthAPI] getRefreshToken() called but no token found in localStorage');
+      console.warn(
+        "⚠️ [AuthAPI] getRefreshToken() called but no token found in localStorage"
+      );
     }
     return token;
   }
 
   getTokenType(): string | null {
-    return localStorage.getItem('token_type') || 'bearer';
+    return localStorage.getItem("token_type") || "Bearer";
   }
 
   clearTokens(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('token_type');
-    localStorage.removeItem('user_profile');
-    alert('You have been logged out');
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("token_type");
+    localStorage.removeItem("user_profile");
+    // alert("You have been logged out");
     // window.location.href = '/login';
   }
 
@@ -166,7 +108,7 @@ export class AuthApiService {
 
     try {
       // Check if token is expired
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split(".")[1]));
       const currentTime = Date.now() / 1000;
       return payload.exp > currentTime;
     } catch (error) {
@@ -176,16 +118,16 @@ export class AuthApiService {
 
   // User profile storage
   setUserProfile(user: UserProfile): void {
-    localStorage.setItem('user_profile', JSON.stringify(user));
+    localStorage.setItem("user_profile", JSON.stringify(user));
   }
 
   getUserProfile(): UserProfile | null {
-    const profile = localStorage.getItem('user_profile');
+    const profile = localStorage.getItem("user_profile");
     return profile ? JSON.parse(profile) : null;
   }
 
   clearUserProfile(): void {
-    localStorage.removeItem('user_profile');
+    localStorage.removeItem("user_profile");
   }
 }
 

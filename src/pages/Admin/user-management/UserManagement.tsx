@@ -498,8 +498,7 @@ export function UserManagement() {
     try {
       const userData: CreateUserRequest = {
         ...newUser,
-        user_profile:
-          newUser.user_profile || "/public/user-profile/default.png",
+        user_profile: newUser.user_profile || "",
       };
 
       await userApiService.createUser(userData);

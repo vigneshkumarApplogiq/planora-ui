@@ -660,9 +660,9 @@ export function FilesView({ project, user }: FilesViewProps) {
         <div className="w-64 flex-shrink-0 space-y-4">
           {/* Folders Card */}
           <Card className="border shadow-sm">
-            <CardHeader className="pb-3 px-4 pt-4 border-b bg-gray-50">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-gray-900">
+            <CardHeader className="p-4 border-b bg-background">
+              <div className="flex items-center justify-between ">
+                <CardTitle className="text-sm text-foreground font-semibold ">
                   Folders
                 </CardTitle>
                 <Button
@@ -678,9 +678,9 @@ export function FilesView({ project, user }: FilesViewProps) {
             <CardContent className="p-2 max-h-64 overflow-y-auto">
               <div className="space-y-0.5">
                 <button
-                  className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                     selectedFolder === undefined
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-foreground text-primary-foreground"
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                   onClick={() => setSelectedFolder(undefined)}
@@ -728,8 +728,8 @@ export function FilesView({ project, user }: FilesViewProps) {
 
           {/* Categories Card */}
           <Card className="border shadow-sm">
-            <CardHeader className="pb-3 px-4 pt-4 border-b bg-gray-50">
-              <CardTitle className="text-sm font-semibold text-gray-900">
+            <CardHeader className="pb-3 px-4 pt-4 border-b bg-background">
+              <CardTitle className="text-sm font-semibold text-foreground">
                 Categories
               </CardTitle>
             </CardHeader>
@@ -770,8 +770,8 @@ export function FilesView({ project, user }: FilesViewProps) {
 
           {/* Quick Actions Card */}
           <Card className="border shadow-sm">
-            <CardHeader className="pb-3 px-4 pt-4 border-b bg-gray-50">
-              <CardTitle className="text-sm font-semibold text-gray-900">
+            <CardHeader className="pb-3 px-4 pt-4 border-b bg-background">
+              <CardTitle className="text-sm font-semibold text-foreground">
                 Quick Actions
               </CardTitle>
             </CardHeader>

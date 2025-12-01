@@ -69,6 +69,7 @@ import { ActivityView } from "./ActivityView";
 import { ProjectSettings } from "./ProjectSettings";
 import { ProjectEditModal } from "./ProjectEditModal";
 import { Epic } from "./Scrum/Epic";
+import { getInitialTheme } from "../../utils/themeUtils";
 
 interface ProjectDetailsProps {
   projectId: string;
@@ -92,13 +93,13 @@ export function ProjectDetails({
     selectedProjectLoading: loading,
     error,
   } = useAppSelector((state) => state.projects);
-  console.log(project, "projectsadddddddddd");
+  console.log(project, user, "projectsadddddddddd");
 
   // Get active view from URL search params, default to 'dashboard'
   const activeView = searchParams.get("view") || "dashboard";
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(getInitialTheme());
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Load master project data once at parent level
@@ -146,6 +147,7 @@ export function ProjectDetails({
     } else {
       document.documentElement.classList.remove("dark");
     }
+    localStorage.setItem("darkmode", darkMode ? "true" : "false");
   }, [darkMode]);
 
   // Close user menu when clicking outside
@@ -380,10 +382,7 @@ export function ProjectDetails({
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-background">
       {/* Top Header */}
-      <header
-        className="fixed top-0 left-0 right-0 z-50 border-b border-gray-500/30 dark:border-gray-500/50 shadow-xl backdrop-blur-md"
-        style={{ backgroundColor: "#262626" }}
-      >
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-gray-500/30 dark:border-gray-500/50 ">
         <div className="flex items-center justify-between px-6 h-16">
           {/* Left side - Logo and Back */}
           <div className="flex items-center space-x-4">
@@ -396,10 +395,10 @@ export function ProjectDetails({
                 />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-white drop-shadow-sm">
+                <h1 className="text-xl font-semibold text-foreground drop-shadow-sm">
                   Planora
                 </h1>
-                <p className="text-xs text-gray-200 -mt-0.5 drop-shadow-sm">
+                <p className="text-xs text-muted-foreground -mt-0.5 drop-shadow-sm">
                   Project Management
                 </p>
               </div>
@@ -408,7 +407,7 @@ export function ProjectDetails({
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="flex items-center text-gray-200 hover:text-white hover:bg-gray-700/50 -ml-2"
+              className="flex cursor-pointer items-center text-foreground hover:bg-muted -ml-2"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Projects
@@ -419,9 +418,8 @@ export function ProjectDetails({
           <div className="flex items-center space-x-3">
             {/* Search */}
             <Button
-              variant="outline"
               size="sm"
-              className="relative min-w-[200px] justify-start text-gray-200 bg-gray-700/40 border-gray-500/40 hover:bg-gray-700/60 hover:text-white backdrop-blur-sm"
+              className="relative cursor-pointer min-w-[200px] justify-start text-muted-foreground bg-muted  hover:bg-muted hover:text-muted-foreground "
             >
               <Search className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Search in project...</span>
@@ -430,7 +428,7 @@ export function ProjectDetails({
             {/* Quick Create */}
             <Button
               size="sm"
-              className="bg-gradient-to-r from-[#28A745] to-[#20943a] hover:from-[#218838] hover:to-[#1e7e34] text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              className="bg-gradient-to-r from-[#28A745] to-[#20943a] hover:from-[#218838] hover:to-[#1e7e34] text-white  transition-all duration-200"
             >
               <Plus className="w-4 h-4 mr-1" />
               Create
@@ -438,9 +436,8 @@ export function ProjectDetails({
 
             {/* Notifications */}
             <Button
-              variant="outline"
               size="sm"
-              className="relative bg-gray-700/40 border-gray-500/40 hover:bg-gray-700/60 text-white hover:text-white backdrop-blur-sm"
+              className="relative bg-muted  hover:bg-muted text-foreground cursor-pointer"
             >
               <Bell className="w-4 h-4" />
               <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#DC3545] to-[#c82333] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">
@@ -450,10 +447,13 @@ export function ProjectDetails({
 
             {/* Dark Mode Toggle */}
             <Button
-              variant="outline"
               size="sm"
-              onClick={() => setDarkMode(!darkMode)}
-              className="bg-gray-700/40 border-gray-500/40 hover:bg-gray-700/60 text-white hover:text-white backdrop-blur-sm"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDarkMode((prev) => !prev);
+              }}
+              className="bg-muted  hover:bg-muted text-foreground cursor-pointer"
             >
               {darkMode ? (
                 <Sun className="w-4 h-4" />
@@ -465,10 +465,9 @@ export function ProjectDetails({
             {/* User Menu */}
             <div className="relative user-menu">
               <Button
-                variant="outline"
                 size="sm"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 bg-gray-700/40 border-gray-500/40 hover:bg-gray-700/60 text-white hover:text-white backdrop-blur-sm px-3 py-2 h-10"
+                className="flex items-center space-x-3 bg-muted  hover:bg-muted cursor-pointer text-foreground backdrop-blur-sm px-3 py-2 h-10"
               >
                 <Avatar className="w-8 h-8 ring-2 ring-green-600/50">
                   <AvatarImage
@@ -480,10 +479,10 @@ export function ProjectDetails({
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-white drop-shadow-sm">
+                  <p className="text-sm font-medium text-foreground drop-shadow-sm">
                     {user?.name}
                   </p>
-                  <p className="text-xs text-gray-200 -mt-0.5 drop-shadow-sm">
+                  <p className="text-xs text-muted-foreground -mt-0.5 drop-shadow-sm">
                     {user?.role
                       ?.replace("_", " ")
                       .replace(/\b\w/g, (l: string) => l.toUpperCase())}
@@ -492,10 +491,7 @@ export function ProjectDetails({
               </Button>
 
               {showUserMenu && (
-                <div
-                  className="absolute right-0 top-12 w-80 rounded-2xl shadow-2xl z-[60] backdrop-blur-md border border-gray-500/50"
-                  style={{ backgroundColor: "#262626" }}
-                >
+                <div className="absolute right-0 top-12 w-80 bg-[#F8F9FA] dark:bg-background rounded-2xl shadow-2xl z-[60] backdrop-blur-md border border-gray-500/50">
                   <div className="p-6 border-b border-gray-500/50">
                     <div className="flex items-center space-x-4">
                       <Avatar className="w-14 h-14 ring-4 ring-green-600/30">
@@ -508,10 +504,10 @@ export function ProjectDetails({
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <p className="font-semibold text-white drop-shadow-sm text-base">
+                        <p className="font-semibold text-foreground drop-shadow-sm text-base">
                           {user?.name}
                         </p>
-                        <p className="text-sm text-gray-200 mb-2 drop-shadow-sm">
+                        <p className="text-sm text-muted-foreground mb-2 drop-shadow-sm">
                           {user?.email}
                         </p>
                         <Badge
@@ -529,7 +525,7 @@ export function ProjectDetails({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start h-11 px-4 rounded-xl text-white hover:text-white hover:bg-gray-700/50 transition-all duration-200"
+                      className="w-full justify-start h-11 px-4 rounded-xl text-foreground hover:text-foreground hover:bg-gray-700/50 transition-all duration-200"
                       onClick={() => {
                         navigate("/profile");
                         setShowUserMenu(false);
@@ -543,7 +539,7 @@ export function ProjectDetails({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full justify-start h-11 px-4 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-500/20 transition-all duration-200"
+                        className="w-full justify-start h-11 px-4 rounded-xl text-red-400 hover:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 transition-all duration-200"
                         onClick={onLogout}
                       >
                         <LogOut className="w-5 h-5 mr-3" />
@@ -561,7 +557,7 @@ export function ProjectDetails({
       <div className="fixed top-16 left-0 right-0 bottom-0 flex">
         {/* Fixed Sidebar */}
         <div
-          className="w-48 bg-[#F8F9FA] dark:bg-background border-r 
+          className="w-48 bg-background border-r 
                flex-shrink-0 flex flex-col  "
         >
           {/* Project Information */}

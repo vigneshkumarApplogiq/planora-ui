@@ -1,13 +1,29 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Textarea } from '../../components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { Badge } from '../../components/ui/badge'
-import { Switch } from '../../components/ui/switch'
-import { Label } from '../../components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { Badge } from "../../components/ui/badge";
+import { Switch } from "../../components/ui/switch";
+import { Label } from "../../components/ui/label";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
 import {
   Settings,
   Shield,
@@ -16,52 +32,56 @@ import {
   Archive,
   Trash2,
   Save,
-  AlertTriangle
-} from 'lucide-react'
-import { projectApiService } from '../../services/projectApi'
-import { customerApiService } from '../../services/customerApi'
-import { toast } from 'sonner'
+  AlertTriangle,
+} from "lucide-react";
+import { projectApiService } from "../../services/projectApi";
+import { customerApiService } from "../../services/customerApi";
+import { toast } from "sonner";
 
 interface ProjectSettingsProps {
-  project: any
-  user: any
-  onProjectUpdate?: (updatedProject: any) => void
+  project: any;
+  user: any;
+  onProjectUpdate?: (updatedProject: any) => void;
 }
 
-export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSettingsProps) {
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
+export function ProjectSettings({
+  project,
+  user,
+  onProjectUpdate,
+}: ProjectSettingsProps) {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [projectData, setProjectData] = useState({
-    name: '',
-    description: '',
-    methodology: '',
-    status: '',
-    priority: '',
+    name: "",
+    description: "",
+    methodology: "",
+    status: "",
+    priority: "",
     budget: 0,
     spent: 0,
     progress: 0,
-    start_date: '',
-    end_date: '',
-    customer: '',
-    customer_id: '',
-    project_type: '',
+    start_date: "",
+    end_date: "",
+    customer: "",
+    customer_id: "",
+    project_type: "",
     tags: [] as string[],
-    color: '',
-    team_lead_id: ''
-  })
+    color: "",
+    team_lead_id: "",
+  });
 
-  const [tagInput, setTagInput] = useState('')
-  const [customers, setCustomers] = useState<any[]>([])
-  const [projectTypes, setProjectTypes] = useState<any[]>([])
-  const [loadingMasterData, setLoadingMasterData] = useState(false)
+  const [tagInput, setTagInput] = useState("");
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [projectTypes, setProjectTypes] = useState<any[]>([]);
+  const [loadingMasterData, setLoadingMasterData] = useState(false);
 
   const [permissions, setPermissions] = useState({
     publicProject: false,
     guestAccess: false,
     timeTracking: true,
     fileSharing: true,
-    taskCreation: true
-  })
+    taskCreation: true,
+  });
 
   const [notifications, setNotifications] = useState({
     taskUpdates: true,
@@ -69,141 +89,169 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
     comments: true,
     mentions: true,
     deadlines: true,
-    statusChanges: true
-  })
+    statusChanges: true,
+  });
 
   // Load master data (customers and project types) on mount
   useEffect(() => {
     const loadMasterData = async () => {
-      setLoadingMasterData(true)
+      setLoadingMasterData(true);
       try {
         // Load customers
-        const customersData = await customerApiService.getAllCustomers()
-        setCustomers(customersData)
+        const customersData = await customerApiService.getAllCustomers();
+        setCustomers(customersData);
 
         // Load project types from project masters
-        const projectMasters = await projectApiService.getProjectMasters()
+        const projectMasters = await projectApiService.getProjectMasters();
         if (projectMasters && projectMasters.types) {
-          setProjectTypes(projectMasters.types)
+          setProjectTypes(projectMasters.types);
         }
       } catch (error) {
-        console.error('Failed to load master data:', error)
+        console.error("Failed to load master data:", error);
       } finally {
-        setLoadingMasterData(false)
+        setLoadingMasterData(false);
       }
-    }
+    };
 
-    loadMasterData()
-  }, [])
+    loadMasterData();
+  }, []);
 
   // Load project data on mount and when project changes
   useEffect(() => {
     if (project && project.id) {
       setProjectData({
-        name: project.name || '',
-        description: project.description || '',
-        methodology: project.methodology || '',
-        status: project.status || '',
-        priority: project.priority || '',
+        name: project.name || "",
+        description: project.description || "",
+        methodology: project.methodology || "",
+        status: project.status || "",
+        priority: project.priority || "",
         budget: project.budget || 0,
         spent: project.spent || 0,
         progress: project.progress || 0,
-        start_date: project.start_date || '',
-        end_date: project.end_date || '',
-        customer: project.customer || '',
-        customer_id: project.customer_id || '',
-        project_type: project.project_type || '',
+        start_date: project.start_date || "",
+        end_date: project.end_date || "",
+        customer: project.customer || "",
+        customer_id: project.customer_id || "",
+        project_type: project.project_type || "",
         tags: project.tags || [],
-        color: project.color || '',
-        team_lead_id: project.team_lead_id || ''
-      })
+        color: project.color || "",
+        team_lead_id: project.team_lead_id || "",
+      });
 
       // Load permissions if available in project data
       if (project.permissions) {
         setPermissions({
           publicProject: project.permissions.public_project || false,
           guestAccess: project.permissions.guest_access || false,
-          timeTracking: project.permissions.time_tracking !== undefined ? project.permissions.time_tracking : true,
-          fileSharing: project.permissions.file_sharing !== undefined ? project.permissions.file_sharing : true,
-          taskCreation: project.permissions.task_creation !== undefined ? project.permissions.task_creation : true
-        })
+          timeTracking:
+            project.permissions.time_tracking !== undefined
+              ? project.permissions.time_tracking
+              : true,
+          fileSharing:
+            project.permissions.file_sharing !== undefined
+              ? project.permissions.file_sharing
+              : true,
+          taskCreation:
+            project.permissions.task_creation !== undefined
+              ? project.permissions.task_creation
+              : true,
+        });
       }
 
       // Load notifications if available in project data
       if (project.notifications) {
         setNotifications({
-          taskUpdates: project.notifications.task_updates !== undefined ? project.notifications.task_updates : true,
-          fileUploads: project.notifications.file_uploads !== undefined ? project.notifications.file_uploads : true,
-          comments: project.notifications.comments !== undefined ? project.notifications.comments : true,
-          mentions: project.notifications.mentions !== undefined ? project.notifications.mentions : true,
-          deadlines: project.notifications.deadlines !== undefined ? project.notifications.deadlines : true,
-          statusChanges: project.notifications.status_changes !== undefined ? project.notifications.status_changes : true
-        })
+          taskUpdates:
+            project.notifications.task_updates !== undefined
+              ? project.notifications.task_updates
+              : true,
+          fileUploads:
+            project.notifications.file_uploads !== undefined
+              ? project.notifications.file_uploads
+              : true,
+          comments:
+            project.notifications.comments !== undefined
+              ? project.notifications.comments
+              : true,
+          mentions:
+            project.notifications.mentions !== undefined
+              ? project.notifications.mentions
+              : true,
+          deadlines:
+            project.notifications.deadlines !== undefined
+              ? project.notifications.deadlines
+              : true,
+          statusChanges:
+            project.notifications.status_changes !== undefined
+              ? project.notifications.status_changes
+              : true,
+        });
       }
     }
-  }, [project])
+  }, [project]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !projectData.tags.includes(tagInput.trim())) {
-      setProjectData({ ...projectData, tags: [...projectData.tags, tagInput.trim()] })
-      setTagInput('')
+      setProjectData({
+        ...projectData,
+        tags: [...projectData.tags, tagInput.trim()],
+      });
+      setTagInput("");
     }
-  }
+  };
 
   const handleRemoveTag = (tagToRemove: string) => {
     setProjectData({
       ...projectData,
-      tags: projectData.tags.filter(tag => tag !== tagToRemove)
-    })
-  }
-
+      tags: projectData.tags.filter((tag) => tag !== tagToRemove),
+    });
+  };
 
   const methodologyOptions = [
-    { value: 'agile', label: 'Agile' },
-    { value: 'kanban', label: 'Kanban' },
-    { value: 'waterfall', label: 'Waterfall' }
-  ]
+    { value: "agile", label: "Agile" },
+    { value: "kanban", label: "Kanban" },
+    { value: "waterfall", label: "Waterfall" },
+  ];
 
   const statusOptions = [
-    { value: 'planning', label: 'Planning' },
-    { value: 'active', label: 'Active' },
-    { value: 'on-hold', label: 'On Hold' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' }
-  ]
+    { value: "planning", label: "Planning" },
+    { value: "active", label: "Active" },
+    { value: "on-hold", label: "On Hold" },
+    { value: "completed", label: "Completed" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
 
   const priorityOptions = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'critical', label: 'Critical' }
-  ]
-
+    { value: "low", label: "Low" },
+    { value: "medium", label: "Medium" },
+    { value: "high", label: "High" },
+    { value: "critical", label: "Critical" },
+  ];
 
   const handleSave = async () => {
     if (!project || !project.id) {
-      toast.error('Project ID not found')
-      return
+      toast.error("Project ID not found");
+      return;
     }
 
     // Validation
     if (!projectData.name.trim()) {
-      toast.error('Project name is required')
-      return
+      toast.error("Project name is required");
+      return;
     }
 
     // Validate dates
     if (projectData.start_date && projectData.end_date) {
-      const startDate = new Date(projectData.start_date)
-      const endDate = new Date(projectData.end_date)
+      const startDate = new Date(projectData.start_date);
+      const endDate = new Date(projectData.end_date);
       if (endDate < startDate) {
-        toast.error('End date cannot be before start date')
-        return
+        toast.error("End date cannot be before start date");
+        return;
       }
     }
 
     try {
-      setSaving(true)
+      setSaving(true);
 
       // Prepare comprehensive update data with all fields
       const updateData = {
@@ -243,7 +291,7 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
           guest_access: permissions.guestAccess,
           time_tracking: permissions.timeTracking,
           file_sharing: permissions.fileSharing,
-          task_creation: permissions.taskCreation
+          task_creation: permissions.taskCreation,
         },
 
         // Notification settings
@@ -253,75 +301,80 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
           comments: notifications.comments,
           mentions: notifications.mentions,
           deadlines: notifications.deadlines,
-          status_changes: notifications.statusChanges
-        }
-      }
+          status_changes: notifications.statusChanges,
+        },
+      };
 
-      const updatedProject = await projectApiService.updateProject(project.id, updateData)
-      
+      const updatedProject = await projectApiService.updateProject(
+        project.id,
+        updateData
+      );
 
       // Notify parent component about the update
       if (updatedProject && onProjectUpdate) {
-        onProjectUpdate(updatedProject)
+        onProjectUpdate(updatedProject);
       }
 
       // Update local state with the response from API
       if (updatedProject) {
-        toast.success('Project settings updated successfully')
+        toast.success("Project settings updated successfully");
       }
     } catch (error: any) {
-      console.error('Failed to update project:', error)
-      toast.error(error?.message || 'Failed to update project settings')
+      console.error("Failed to update project:", error);
+      toast.error(error?.message || "Failed to update project settings");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleArchiveProject = async () => {
-    if (!project || !project.id) return
+    if (!project || !project.id) return;
 
-    if (!window.confirm('Are you sure you want to archive this project? It will be hidden from active projects.')) {
-      return
+    if (
+      !window.confirm(
+        "Are you sure you want to archive this project? It will be hidden from active projects."
+      )
+    ) {
+      return;
     }
 
     try {
-      await projectApiService.updateProject(project.id, { status: 'archived' })
-      toast.success('Project archived successfully')
+      await projectApiService.updateProject(project.id, { status: "archived" });
+      toast.success("Project archived successfully");
       setTimeout(() => {
-        window.location.href = '/projects'
-      }, 1500)
+        window.location.href = "/projects";
+      }, 1500);
     } catch (error) {
-      console.error('Failed to archive project:', error)
-      toast.error('Failed to archive project')
+      console.error("Failed to archive project:", error);
+      toast.error("Failed to archive project");
     }
-  }
+  };
 
   const handleDeleteProject = async () => {
-    if (!project || !project.id) return
+    if (!project || !project.id) return;
 
     const projectName = window.prompt(
       `This action cannot be undone. Type "${project.name}" to confirm deletion:`
-    )
+    );
 
     if (projectName !== project.name) {
       if (projectName !== null) {
-        toast.error('Project name does not match')
+        toast.error("Project name does not match");
       }
-      return
+      return;
     }
 
     try {
-      await projectApiService.deleteProject(project.id)
-      toast.success('Project deleted successfully')
+      await projectApiService.deleteProject(project.id);
+      toast.success("Project deleted successfully");
       setTimeout(() => {
-        window.location.href = '/projects'
-      }, 1500)
+        window.location.href = "/projects";
+      }, 1500);
     } catch (error) {
-      console.error('Failed to delete project:', error)
-      toast.error('Failed to delete project')
+      console.error("Failed to delete project:", error);
+      toast.error("Failed to delete project");
     }
-  }
-
+  };
 
   return (
     <div className="space-y-6">
@@ -329,16 +382,18 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Project Settings</h2>
-          <p className="text-muted-foreground">Manage project configuration and team access</p>
+          <p className="text-muted-foreground">
+            Manage project configuration and team access
+          </p>
         </div>
-        
+
         <Button
           onClick={handleSave}
           className="bg-[#28A745] hover:bg-[#218838]"
           disabled={saving}
         >
           <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 
@@ -366,26 +421,39 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                   <Input
                     id="projectName"
                     value={projectData.name}
-                    onChange={(e) => setProjectData({ ...projectData, name: e.target.value })}
+                    onChange={(e) =>
+                      setProjectData({ ...projectData, name: e.target.value })
+                    }
                     className="mt-1"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="customer">Customer</Label>
                   <Select
                     value={projectData.customer_id}
                     onValueChange={(value: string) => {
-                      const selectedCustomer = customers.find(c => c.id === value)
+                      const selectedCustomer = customers.find(
+                        (c) => c.id === value
+                      );
                       setProjectData({
                         ...projectData,
                         customer_id: value,
-                        customer: selectedCustomer?.name || ''
-                      })
+                        customer: selectedCustomer?.name || "",
+                      });
                     }}
                   >
-                    <SelectTrigger className="mt-1" disabled={loadingMasterData}>
-                      <SelectValue placeholder={loadingMasterData ? 'Loading customers...' : 'Select customer'} />
+                    <SelectTrigger
+                      className="mt-1"
+                      disabled={loadingMasterData}
+                    >
+                      <SelectValue
+                        placeholder={
+                          loadingMasterData
+                            ? "Loading customers..."
+                            : "Select customer"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {customers.map((customer) => (
@@ -403,7 +471,12 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                 <Textarea
                   id="description"
                   value={projectData.description}
-                  onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
+                  onChange={(e) =>
+                    setProjectData({
+                      ...projectData,
+                      description: e.target.value,
+                    })
+                  }
                   className="mt-1 min-h-[100px]"
                 />
               </div>
@@ -413,7 +486,9 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                   <Label htmlFor="methodology">Methodology</Label>
                   <Select
                     value={projectData.methodology}
-                    onValueChange={(value: string) => setProjectData({ ...projectData, methodology: value })}
+                    onValueChange={(value: string) =>
+                      setProjectData({ ...projectData, methodology: value })
+                    }
                     disabled
                   >
                     <SelectTrigger className="mt-1">
@@ -433,7 +508,9 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={projectData.status}
-                    onValueChange={(value: string) => setProjectData({ ...projectData, status: value })}
+                    onValueChange={(value: string) =>
+                      setProjectData({ ...projectData, status: value })
+                    }
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -452,7 +529,9 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                   <Label htmlFor="priority">Priority</Label>
                   <Select
                     value={projectData.priority}
-                    onValueChange={(value: string) => setProjectData({ ...projectData, priority: value })}
+                    onValueChange={(value: string) =>
+                      setProjectData({ ...projectData, priority: value })
+                    }
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -475,7 +554,12 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     id="start_date"
                     type="date"
                     value={projectData.start_date}
-                    onChange={(e) => setProjectData({ ...projectData, start_date: e.target.value })}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        start_date: e.target.value,
+                      })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -486,7 +570,12 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     id="end_date"
                     type="date"
                     value={projectData.end_date}
-                    onChange={(e) => setProjectData({ ...projectData, end_date: e.target.value })}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        end_date: e.target.value,
+                      })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -499,7 +588,12 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     id="budget"
                     type="number"
                     value={projectData.budget}
-                    onChange={(e) => setProjectData({ ...projectData, budget: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        budget: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -510,7 +604,12 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     id="spent"
                     type="number"
                     value={projectData.spent}
-                    onChange={(e) => setProjectData({ ...projectData, spent: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        spent: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -523,7 +622,12 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     min="0"
                     max="100"
                     value={projectData.progress}
-                    onChange={(e) => setProjectData({ ...projectData, progress: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setProjectData({
+                        ...projectData,
+                        progress: parseInt(e.target.value) || 0,
+                      })
+                    }
                     className="mt-1"
                   />
                 </div>
@@ -534,10 +638,21 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                   <Label htmlFor="project_type">Project Type</Label>
                   <Select
                     value={projectData.project_type}
-                    onValueChange={(value: string) => setProjectData({ ...projectData, project_type: value })}
+                    onValueChange={(value: string) =>
+                      setProjectData({ ...projectData, project_type: value })
+                    }
                   >
-                    <SelectTrigger className="mt-1" disabled={loadingMasterData}>
-                      <SelectValue placeholder={loadingMasterData ? 'Loading project types...' : 'Select project type'} />
+                    <SelectTrigger
+                      className="mt-1"
+                      disabled={loadingMasterData}
+                    >
+                      <SelectValue
+                        placeholder={
+                          loadingMasterData
+                            ? "Loading project types..."
+                            : "Select project type"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {projectTypes.map((type) => (
@@ -555,14 +670,24 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     <Input
                       id="color"
                       type="color"
-                      value={projectData.color || '#3b82f6'}
-                      onChange={(e) => setProjectData({ ...projectData, color: e.target.value })}
+                      value={projectData.color || "#3b82f6"}
+                      onChange={(e) =>
+                        setProjectData({
+                          ...projectData,
+                          color: e.target.value,
+                        })
+                      }
                       className="w-20 h-10"
                     />
                     <Input
                       type="text"
-                      value={projectData.color || '#3b82f6'}
-                      onChange={(e) => setProjectData({ ...projectData, color: e.target.value })}
+                      value={projectData.color || "#3b82f6"}
+                      onChange={(e) =>
+                        setProjectData({
+                          ...projectData,
+                          color: e.target.value,
+                        })
+                      }
                       className="flex-1"
                       placeholder="#3b82f6"
                     />
@@ -578,20 +703,28 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAddTag()
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
                       }
                     }}
                     placeholder="Add a tag and press Enter"
                   />
-                  <Button type="button" onClick={handleAddTag} variant="outline">
+                  <Button
+                    type="button"
+                    onClick={handleAddTag}
+                    variant="outline"
+                  >
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {projectData.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="px-3 py-1">
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="px-3 py-1"
+                    >
                       {tag}
                       <button
                         onClick={() => handleRemoveTag(tag)}
@@ -607,7 +740,6 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
           </Card>
         </TabsContent>
 
-
         <TabsContent value="permissions" className="space-y-6">
           {/* Permissions */}
           <Card>
@@ -622,55 +754,75 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Public Project</Label>
-                    <p className="text-sm text-muted-foreground">Allow anyone in the organization to view this project</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow anyone in the organization to view this project
+                    </p>
                   </div>
                   <Switch
                     checked={permissions.publicProject}
-                    onCheckedChange={(checked: boolean) => setPermissions({ ...permissions, publicProject: checked })}
+                    onCheckedChange={(checked: boolean) =>
+                      setPermissions({ ...permissions, publicProject: checked })
+                    }
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Allow Guest Access</Label>
-                    <p className="text-sm text-muted-foreground">Allow external users to access limited project data</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow external users to access limited project data
+                    </p>
                   </div>
                   <Switch
                     checked={permissions.guestAccess}
-                    onCheckedChange={(checked: boolean) => setPermissions({ ...permissions, guestAccess: checked })}
+                    onCheckedChange={(checked: boolean) =>
+                      setPermissions({ ...permissions, guestAccess: checked })
+                    }
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Enable Time Tracking</Label>
-                    <p className="text-sm text-muted-foreground">Allow team members to track time on tasks</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow team members to track time on tasks
+                    </p>
                   </div>
                   <Switch
                     checked={permissions.timeTracking}
-                    onCheckedChange={(checked: boolean) => setPermissions({ ...permissions, timeTracking: checked })}
+                    onCheckedChange={(checked: boolean) =>
+                      setPermissions({ ...permissions, timeTracking: checked })
+                    }
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Enable File Sharing</Label>
-                    <p className="text-sm text-muted-foreground">Allow team members to upload and share files</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow team members to upload and share files
+                    </p>
                   </div>
                   <Switch
                     checked={permissions.fileSharing}
-                    onCheckedChange={(checked: boolean) => setPermissions({ ...permissions, fileSharing: checked })}
+                    onCheckedChange={(checked: boolean) =>
+                      setPermissions({ ...permissions, fileSharing: checked })
+                    }
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Allow Task Creation</Label>
-                    <p className="text-sm text-muted-foreground">Allow team members to create new tasks</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow team members to create new tasks
+                    </p>
                   </div>
                   <Switch
                     checked={permissions.taskCreation}
-                    onCheckedChange={(checked: boolean) => setPermissions({ ...permissions, taskCreation: checked })}
+                    onCheckedChange={(checked: boolean) =>
+                      setPermissions({ ...permissions, taskCreation: checked })
+                    }
                   />
                 </div>
               </div>
@@ -692,14 +844,21 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
                 {Object.entries(notifications).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between">
                     <div>
-                      <Label>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Label>
+                      <Label>
+                        {key
+                          .replace(/([A-Z])/g, " $1")
+                          .replace(/^./, (str) => str.toUpperCase())}
+                      </Label>
                       <p className="text-sm text-muted-foreground">
-                        Get notified when {key.replace(/([A-Z])/g, ' $1').toLowerCase()} occur
+                        Get notified when{" "}
+                        {key.replace(/([A-Z])/g, " $1").toLowerCase()} occur
                       </p>
                     </div>
                     <Switch
                       checked={value}
-                      onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, [key]: checked })}
+                      onCheckedChange={(checked: boolean) =>
+                        setNotifications({ ...notifications, [key]: checked })
+                      }
                     />
                   </div>
                 ))}
@@ -721,7 +880,9 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
               <div className="space-y-4">
                 <div>
                   <Label>Project Template</Label>
-                  <p className="text-sm text-muted-foreground mb-2">Save this project as a template for future use</p>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Save this project as a template for future use
+                  </p>
                   <Button variant="outline">
                     <Archive className="w-4 h-4 mr-2" />
                     Create Template
@@ -730,15 +891,17 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
 
                 <div className="border-t pt-4">
                   <Label>Export Project Data</Label>
-                  <p className="text-sm text-muted-foreground mb-2">Download all project data as a backup</p>
-                  <Button variant="outline">
-                    Export Data
-                  </Button>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Download all project data as a backup
+                  </p>
+                  <Button variant="outline">Export Data</Button>
                 </div>
 
                 <div className="border-t pt-4">
                   <Label>Archive Project</Label>
-                  <p className="text-sm text-muted-foreground mb-2">Archive this project to hide it from active projects</p>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Archive this project to hide it from active projects
+                  </p>
                   <Button variant="outline" onClick={handleArchiveProject}>
                     <Archive className="w-4 h-4 mr-2" />
                     Archive Project
@@ -749,7 +912,7 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
           </Card>
 
           {/* Danger Zone */}
-          <Card className="border-red-200 dark:border-red-800">
+          <Card className=" border-2  border-red-200 dark:border-red-800">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-red-600">
                 <AlertTriangle className="w-5 h-5" />
@@ -757,10 +920,11 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Delete Project</Label>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Permanently delete this project and all associated data. This action cannot be undone.
+                  Permanently delete this project and all associated data. This
+                  action cannot be undone.
                 </p>
                 <Button variant="destructive" onClick={handleDeleteProject}>
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -772,5 +936,5 @@ export function ProjectSettings({ project, user, onProjectUpdate }: ProjectSetti
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

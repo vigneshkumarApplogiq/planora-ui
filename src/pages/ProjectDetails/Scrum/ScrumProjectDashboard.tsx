@@ -272,7 +272,7 @@ export function ScrumProjectDashboard({
               project.team_members_detail?.map((member: any) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
                 >
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-10 h-10">
@@ -283,7 +283,7 @@ export function ScrumProjectDashboard({
                     <div>
                       <div className="font-medium">{member.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {member.role}
+                        {member.role_name}
                       </div>
                     </div>
                   </div>

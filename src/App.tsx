@@ -72,7 +72,7 @@ export default function App() {
         setAuthLoading(false);
       }
     };
-
+    localStorage.setItem("darkmode", "true");
     checkAuth();
   }, []);
 

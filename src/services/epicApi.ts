@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface Epic {
   title: string;
@@ -123,35 +123,7 @@ export interface UpdateEpicRequest extends Partial<CreateEpicRequest> {
   id: string;
 }
 
-
 export class EpicApiService {
-  private baseUrl = getApiUrl('/api/v1/epics');
-
-  private async makeRequest<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const token = authApiService.getAccessToken();
-    const fullUrl = `${this.baseUrl}${endpoint}`;
-
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Epic API Error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  }
-
   async getEpics(
     page: number = 1,
     per_page: number = 50,
@@ -166,43 +138,49 @@ export class EpicApiService {
       per_page: per_page.toString(),
     });
 
-    if (project_id) params.append('project_id', project_id);
-    if (status) params.append('status', status);
-    if (priority) params.append('priority', priority);
-    if (assignee_id) params.append('assignee_id', assignee_id);
-    if (search) params.append('search', search);
+    if (project_id) params.append("project_id", project_id);
+    if (status) params.append("status", status);
+    if (priority) params.append("priority", priority);
+    if (assignee_id) params.append("assignee_id", assignee_id);
+    if (search) params.append("search", search);
 
-    const url = `/?${params.toString()}`;
-
-    return this.makeRequest<EpicsResponse>(url);
+    const url = `/api/v1/epics/?${params.toString()}`;
+    const response = await axiosInstance.get<EpicsResponse>(url);
+    console.log("responsadasdsadsde: ", response, url);
+    return response.data;
   }
 
   async getEpic(id: string): Promise<Epic> {
-    return this.makeRequest<Epic>(`/${id}`);
+    const response = await axiosInstance.get<Epic>(`/api/v1/epics/${id}`);
+    return response.data;
   }
 
   async createEpic(epicData: CreateEpicRequest): Promise<Epic> {
-    return this.makeRequest<Epic>('/', {
-      method: 'POST',
-      body: JSON.stringify(epicData),
-    });
+    const response = await axiosInstance.post<Epic>("/api/v1/epics/", epicData);
+    return response.data;
   }
 
-  async updateEpic(id: string, epicData: Partial<CreateEpicRequest>): Promise<Epic> {
-    return this.makeRequest<Epic>(`/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(epicData),
-    });
+  async updateEpic(
+    id: string,
+    epicData: Partial<CreateEpicRequest>
+  ): Promise<Epic> {
+    const response = await axiosInstance.put<Epic>(
+      `/api/v1/epics/${id}`,
+      epicData
+    );
+    return response.data;
   }
 
   async deleteEpic(id: string): Promise<void> {
-    return this.makeRequest<void>(`/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/epics/${id}`);
+    return response.data;
   }
 
   async getEpicsByProject(projectId: string): Promise<EpicsResponse> {
-    return this.makeRequest<EpicsResponse>(`/project/${projectId}`);
+    const response = await axiosInstance.get<EpicsResponse>(
+      `/project/${projectId}`
+    );
+    return response.data;
   }
 }
 

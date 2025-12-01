@@ -1,5 +1,4 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import axiosInstance, { getApiUrl } from "../config/api";
 
 // ============ Types & Interfaces ============
 
@@ -163,79 +162,32 @@ export interface DateRangeParams {
 }
 
 export interface ReportParams extends DateRangeParams {
-  report_type?: 'all' | 'flow' | 'cycle' | 'wip' | 'team';
+  report_type?: "all" | "flow" | "cycle" | "wip" | "team";
 }
 
 // ============ API Service ============
 
 export class KanbanReportsApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-
-    const defaultHeaders: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` })
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              ...(newToken && { Authorization: `Bearer ${newToken}` }),
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   /**
    * Get Overview metrics for Kanban board
    * Includes task distribution, completion rates, and throughput
    */
+
   async getOverviewMetrics(
     projectId: string,
     params?: DateRangeParams
   ): Promise<OverviewResponse> {
     const queryParams = new URLSearchParams();
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/reports/kanban/${projectId}/overview${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<OverviewResponse>(endpoint);
+    const endpoint = `/api/v1/reports/kanban/${projectId}/overview${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<OverviewResponse>(endpoint);
+    return response.data;
   }
 
   /**
@@ -248,13 +200,15 @@ export class KanbanReportsApiService {
   ): Promise<FlowMetrics> {
     const queryParams = new URLSearchParams();
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/reports/kanban/${projectId}/flow-metrics${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<FlowMetrics>(endpoint);
+    const endpoint = `/api/v1/reports/kanban/${projectId}/flow-metrics${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<FlowMetrics>(endpoint);
+    return response.data;
   }
 
   /**
@@ -267,13 +221,15 @@ export class KanbanReportsApiService {
   ): Promise<CycleTimeMetrics> {
     const queryParams = new URLSearchParams();
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/reports/kanban/${projectId}/cycle-lead-time${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<CycleTimeMetrics>(endpoint);
+    const endpoint = `/api/v1/reports/kanban/${projectId}/cycle-lead-time${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<CycleTimeMetrics>(endpoint);
+    return response.data;
   }
 
   /**
@@ -286,16 +242,21 @@ export class KanbanReportsApiService {
   ): Promise<WIPAnalysis> {
     const queryParams = new URLSearchParams();
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
     if (params?.aging_threshold_days) {
-      queryParams.append('aging_threshold_days', params.aging_threshold_days.toString());
+      queryParams.append(
+        "aging_threshold_days",
+        params.aging_threshold_days.toString()
+      );
     }
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/reports/kanban/${projectId}/wip-analysis${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<WIPAnalysis>(endpoint);
+    const endpoint = `/api/v1/reports/kanban/${projectId}/wip-analysis${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<WIPAnalysis>(endpoint);
+    return response.data;
   }
 
   /**
@@ -308,13 +269,15 @@ export class KanbanReportsApiService {
   ): Promise<TeamPerformanceMetrics> {
     const queryParams = new URLSearchParams();
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/reports/kanban/${projectId}/team-performance${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<TeamPerformanceMetrics>(endpoint);
+    const endpoint = `/api/v1/reports/kanban/${projectId}/team-performance${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<TeamPerformanceMetrics>(endpoint);
+    return response.data;
   }
 
   /**
@@ -323,32 +286,25 @@ export class KanbanReportsApiService {
    */
   async exportReport(
     projectId: string,
-    reportType: 'overview' | 'flow' | 'cycle' | 'wip' | 'team',
-    format: 'csv' | 'pdf' | 'excel' = 'csv',
+    reportType: "overview" | "flow" | "cycle" | "wip" | "team",
+    format: "csv" | "pdf" | "excel" = "csv",
     params?: DateRangeParams
   ): Promise<Blob> {
     const queryParams = new URLSearchParams({
       format: format,
-      report_type: reportType
+      report_type: reportType,
     });
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
 
-    const url = getApiUrl(`/api/v1/projects/${projectId}/kanban-reports/export?${queryParams.toString()}`);
-    const token = authApiService.getAccessToken();
+    const url = getApiUrl(
+      `/api/v1/projects/${projectId}/kanban-reports/export?${queryParams.toString()}`
+    );
 
-    const response = await fetch(url, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
-    });
+    const response = await axiosInstance.get(url, { responseType: "blob" });
 
-    if (!response.ok) {
-      throw new Error('Failed to export report');
-    }
-
-    return response.blob();
+    return response.data;
   }
 
   /**
@@ -367,13 +323,21 @@ export class KanbanReportsApiService {
   }> {
     const queryParams = new URLSearchParams();
 
-    if (params?.from_date) queryParams.append('from_date', params.from_date);
-    if (params?.to_date) queryParams.append('to_date', params.to_date);
+    if (params?.from_date) queryParams.append("from_date", params.from_date);
+    if (params?.to_date) queryParams.append("to_date", params.to_date);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/comprehensive${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest(endpoint);
+    const endpoint = `/api/v1/projects/${projectId}/kanban-reports/comprehensive${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<{
+      overview: OverviewResponse;
+      flow: FlowMetrics;
+      cycle_time: CycleTimeMetrics;
+      wip: WIPAnalysis;
+      team: TeamPerformanceMetrics;
+    }>(endpoint);
+    return response.data;
   }
 }
 

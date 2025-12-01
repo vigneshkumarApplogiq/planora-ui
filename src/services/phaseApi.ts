@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface Phase {
   id?: string;
@@ -8,7 +8,7 @@ export interface Phase {
   project_id: string;
   project_name: string;
   phase_order: number;
-  status: 'pending' | 'active' | 'completed' | 'delayed' | 'on-hold';
+  status: "pending" | "active" | "completed" | "delayed" | "on-hold";
   progress: number;
   start_date: string;
   end_date: string;
@@ -29,7 +29,7 @@ export interface CreatePhaseRequest {
   project_id: string;
   project_name: string;
   phase_order: number;
-  status: 'pending' | 'active' | 'completed' | 'delayed' | 'on-hold';
+  status: "pending" | "active" | "completed" | "delayed" | "on-hold";
   progress: number;
   start_date: string;
   end_date: string;
@@ -57,121 +57,65 @@ export interface PhasesResponse {
 }
 
 export class PhaseApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${token}`
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            throw new Error('Failed to get new token after refresh');
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status} ${retryResponse.statusText}`);
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getPhases(projectId?: string, page: number = 1, perPage: number = 50): Promise<PhasesResponse> {
+  async getPhases(
+    projectId?: string,
+    page: number = 1,
+    perPage: number = 50
+  ): Promise<PhasesResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
     });
 
     if (projectId) {
-      params.append('project_id', projectId);
+      params.append("project_id", projectId);
     }
 
     const queryString = params.toString();
-    const endpoint = `/api/v1/phases${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/phases${queryString ? `?${queryString}` : ""}`;
+    const response = await axiosInstance.get<PhasesResponse>(endpoint);
 
-    return this.makeRequest<PhasesResponse>(endpoint);
+    return response.data;
   }
 
   async getPhaseById(id: string): Promise<Phase> {
-    return this.makeRequest<Phase>(`/api/v1/phases/${id}`);
+    const response = await axiosInstance.get<Phase>(`/api/v1/phases/${id}`);
+    return response.data;
   }
 
   async createPhase(phaseData: CreatePhaseRequest): Promise<Phase> {
-    return this.makeRequest<Phase>('/api/v1/phases/', {
-      method: 'POST',
-      body: JSON.stringify(phaseData),
-    });
+    const response = await axiosInstance.post<Phase>(
+      "/api/v1/phases/",
+      phaseData
+    );
+    return response.data;
   }
 
   async updatePhase(id: string, phaseData: UpdatePhaseRequest): Promise<Phase> {
-    return this.makeRequest<Phase>(`/api/v1/phases/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(phaseData),
-    });
+    const response = await axiosInstance.put<Phase>(
+      `/api/v1/phases/${id}`,
+      phaseData
+    );
+    return response.data;
   }
 
   async deletePhase(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/phases/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/phases/${id}`);
+    return response.data;
   }
 
   async updatePhaseStatus(id: string, status: string): Promise<Phase> {
-    return this.makeRequest<Phase>(`/api/v1/phases/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
+    const response = await axiosInstance.patch<Phase>(`/api/v1/phases/${id}`, {
+      status,
     });
+    return response.data;
   }
 
   async updatePhaseProgress(id: string, progress: number): Promise<Phase> {
-    return this.makeRequest<Phase>(`/api/v1/phases/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ progress }),
+    const response = await axiosInstance.patch<Phase>(`/api/v1/phases/${id}`, {
+      progress,
     });
+    return response.data;
   }
 }
 

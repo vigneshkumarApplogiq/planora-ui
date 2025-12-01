@@ -24,16 +24,16 @@ import {
   getUserInitials,
 } from "../../utils/profileUtils";
 import { Input } from "../ui/input";
+import { getInitialTheme, toggleTheme } from "../../utils/themeUtils";
 
 interface MainLayoutProps {
   user: any;
   onLogout: () => void;
 }
-
 export function MainLayout({ user, onLogout }: MainLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(getInitialTheme());
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -74,6 +74,7 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
     } else {
       document.documentElement.classList.remove("dark");
     }
+    localStorage.setItem("darkmode", darkMode ? "true" : "false");
   }, [darkMode]);
 
   // Keyboard shortcuts and click outside handler
@@ -143,9 +144,9 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] dark:bg-background">
+    <div className="min-h-screen bg-[#FFFFFF] dark:bg-background">
       {/* Top Header */}
-      <header className="fixed top-0  bg-[#F8F9FA] dark:bg-background left-0 right-0 z-50 border-b border-gray-500/30 dark:border-gray-500/50 ">
+      <header className="fixed top-0  bg-background left-0 right-0 z-50 border-b border-gray-500/30 dark:border-gray-500/50 ">
         <div className="flex items-center justify-between px-6 h-16">
           {/* Left side - Logo */}
           <div className="flex items-center space-x-4">
@@ -214,7 +215,7 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
                 e.stopPropagation();
                 setShowNotifications(true);
               }}
-              className="relative cursor-pointer bg-gray-700/40 border-gray-500/40 hover:bg-gray-700/60 text-white hover:text-white backdrop-blur-sm"
+              className="relative bg-muted  hover:bg-muted text-foreground cursor-pointer"
             >
               <Bell className="w-4 h-4" />
               <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#DC3545] to-[#c82333] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">
@@ -228,9 +229,9 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setDarkMode(!darkMode);
+                setDarkMode((prev) => !prev);
               }}
-              className=" bg-input-background  hover:bg-input/80 border-gray-500/40  text-muted-foreground hover:text-muted-foreground backdrop-blur-sm"
+              className="bg-muted  hover:bg-muted text-foreground cursor-pointer"
             >
               {darkMode ? (
                 <Sun className="w-4 h-4" />
@@ -242,13 +243,12 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>
               <Button
-                variant="outline"
                 size="sm"
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   setShowUserMenu(!showUserMenu);
                 }}
-                className="flex items-center space-x-3 bg-gray-700/40 border-gray-500/40 hover:bg-gray-700/60 text-white hover:text-white backdrop-blur-sm px-3 py-2 h-10"
+                className="flex items-center space-x-3 bg-muted  hover:bg-muted cursor-pointer text-foreground backdrop-blur-sm px-3 py-2 h-10"
               >
                 <Avatar className="w-8 h-8 ring-2 ring-green-600/50">
                   <AvatarImage
@@ -260,10 +260,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-white drop-shadow-sm">
+                  <p className="text-sm font-medium text-foreground drop-shadow-sm">
                     {user.name}
                   </p>
-                  <p className="text-xs text-gray-200 -mt-0.5 drop-shadow-sm">
+                  <p className="text-xs text-muted-foreground -mt-0.5 drop-shadow-sm">
                     {user.role
                       .replace("_", " ")
                       .replace(/\b\w/g, (l: string) => l.toUpperCase())}

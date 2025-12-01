@@ -1,5 +1,4 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import axiosInstance from "../config/api";
 
 export interface Project {
   id: string;
@@ -172,7 +171,6 @@ export interface MyProject {
 
 export type MyProjectsResponse = MyProject[];
 
-
 export interface CreateProjectRequest {
   name: string;
   description: string;
@@ -221,91 +219,30 @@ export interface ProjectsQueryParams {
 }
 
 export class ProjectApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    // Get the access token for authorization
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${token}`
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      // Handle unauthorized/forbidden errors
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          // Retry the request with new token
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            throw new Error('Failed to get new token after refresh');
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          // If retry also fails, throw error
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status} ${retryResponse.statusText}`);
-        } catch (refreshError) {
-          // Refresh failed, user needs to login again
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getProjects(params: ProjectsQueryParams = {}): Promise<ProjectsResponse> {
+  async getProjects(
+    params: ProjectsQueryParams = {}
+  ): Promise<ProjectsResponse> {
     const searchParams = new URLSearchParams();
 
-    if (params.page !== undefined) searchParams.append('page', params.page.toString());
-    if (params.per_page !== undefined) searchParams.append('per_page', params.per_page.toString());
-    if (params.search) searchParams.append('search', params.search);
-    if (params.status) searchParams.append('status', params.status);
-    if (params.priority) searchParams.append('priority', params.priority);
-    if (params.methodology) searchParams.append('methodology', params.methodology);
-    if (params.projectType) searchParams.append('project_type', params.projectType);
-    if (params.customerId) searchParams.append('customer_id', params.customerId);
-    if (params.teamLead) searchParams.append('team_lead', params.teamLead);
+    if (params.page !== undefined)
+      searchParams.append("page", params.page.toString());
+    if (params.per_page !== undefined)
+      searchParams.append("per_page", params.per_page.toString());
+    if (params.search) searchParams.append("search", params.search);
+    if (params.status) searchParams.append("status", params.status);
+    if (params.priority) searchParams.append("priority", params.priority);
+    if (params.methodology)
+      searchParams.append("methodology", params.methodology);
+    if (params.projectType)
+      searchParams.append("project_type", params.projectType);
+    if (params.customerId)
+      searchParams.append("customer_id", params.customerId);
+    if (params.teamLead) searchParams.append("team_lead", params.teamLead);
 
     const queryString = searchParams.toString();
-    const endpoint = `/api/v1/projects${queryString ? `?${queryString}` : ''}`;
-
-    const response = await this.makeRequest<ProjectsResponse>(endpoint);
+    const endpoint = `/api/v1/projects${queryString ? `?${queryString}` : ""}`;
+    const res = await axiosInstance.get<ProjectsResponse>(endpoint);
+    const response = res.data;
 
     if (response && Array.isArray(response.items)) {
       return response;
@@ -323,41 +260,48 @@ export class ProjectApiService {
   }
 
   async getProjectById(id: string): Promise<Project> {
-    return this.makeRequest<Project>(`/api/v1/projects/${id}`);
+    const response = await axiosInstance.get<Project>(`/api/v1/projects/${id}`);
+    return response.data;
   }
 
   async createProject(projectData: CreateProjectRequest): Promise<Project> {
-    return this.makeRequest<Project>('/api/v1/projects/', {
-      method: 'POST',
-      body: JSON.stringify(projectData),
-    });
+    const response = await axiosInstance.post<Project>(
+      "/api/v1/projects/",
+      projectData
+    );
+    return response.data;
   }
 
-  async updateProject(id: string, projectData: UpdateProjectRequest): Promise<Project> {
-    return this.makeRequest<Project>(`/api/v1/projects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(projectData),
-    });
+  async updateProject(
+    id: string,
+    projectData: UpdateProjectRequest
+  ): Promise<Project> {
+    const response = await axiosInstance.put<Project>(
+      `/api/v1/projects/${id}`,
+      projectData
+    );
+    return response.data;
   }
 
   async deleteProject(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/projects/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/projects/${id}`);
+    return response.data;
   }
 
   async updateProjectStatus(id: string, status: string): Promise<Project> {
-    return this.makeRequest<Project>(`/api/v1/projects/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+    const response = await axiosInstance.patch<Project>(
+      `/api/v1/projects/${id}`,
+      { status }
+    );
+    return response.data;
   }
 
   async updateProjectProgress(id: string, progress: number): Promise<Project> {
-    return this.makeRequest<Project>(`/api/v1/projects/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ progress }),
-    });
+    const response = await axiosInstance.patch<Project>(
+      `/api/v1/projects/${id}`,
+      { progress }
+    );
+    return response.data;
   }
 
   async getProjectsByStatus(status: string): Promise<Project[]> {
@@ -366,69 +310,104 @@ export class ProjectApiService {
   }
 
   async getActiveProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('Active');
+    return this.getProjectsByStatus("Active");
   }
 
   async getCompletedProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('Completed');
+    return this.getProjectsByStatus("Completed");
   }
 
   async getOnHoldProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('On Hold');
+    return this.getProjectsByStatus("On Hold");
   }
 
   async getPlanningProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('Planning');
+    return this.getProjectsByStatus("Planning");
   }
 
   async getActiveProjectsList(): Promise<Project[]> {
-    return this.makeRequest<Project[]>('/api/v1/projects/active/list');
+    const response = await axiosInstance.get<Project[]>(
+      "/api/v1/projects/active/list"
+    );
+    return response.data;
   }
 
   async getMyProjects(): Promise<MyProjectsResponse> {
-    return this.makeRequest<MyProjectsResponse>('/api/v1/projects/myprojects');
+    const response = await axiosInstance.get<MyProjectsResponse>(
+      "/api/v1/projects/myprojects"
+    );
+    return response.data;
   }
 
   async getProjectMasters(): Promise<ProjectMastersResponse> {
-    return this.makeRequest<ProjectMastersResponse>('/api/v1/masters/project');
+    const response = await axiosInstance.get<ProjectMastersResponse>(
+      "/api/v1/masters/project"
+    );
+    return response.data;
   }
 
   async getProjectOwners(): Promise<ProjectOwnersResponse> {
-    return this.makeRequest<ProjectOwnersResponse>('/api/v1/users/project-owner/');
+    const response = await axiosInstance.get<ProjectOwnersResponse>(
+      "/api/v1/users/project-owner/"
+    );
+    return response.data;
   }
 
   async getProjectMembers(): Promise<ProjectMembersResponse> {
-    return this.makeRequest<ProjectMembersResponse>('/api/v1/users/team-members');
+    const response = await axiosInstance.get<ProjectMembersResponse>(
+      "/api/v1/users/team-members"
+    );
+    return response.data;
   }
 
-  async getProjectTeamMembers(projectId: string): Promise<ProjectTeamMembersResponse> {
-    return this.makeRequest<ProjectTeamMembersResponse>(`/api/v1/projects/members/${projectId}`);
+  async getProjectTeamMembers(
+    projectId: string
+  ): Promise<ProjectTeamMembersResponse> {
+    const response = await axiosInstance.get<ProjectTeamMembersResponse>(
+      `/api/v1/projects/members/${projectId}`
+    );
+    return response.data;
   }
 
-  async getProjectMembersV2(projectId: string): Promise<ProjectMembersResponse> {
-    return this.makeRequest<ProjectMembersResponse>(`/api/v1/projects/members/${projectId}`);
+  async getProjectMembersV2(
+    projectId: string
+  ): Promise<ProjectMembersResponse> {
+    const response = await axiosInstance.get<ProjectMembersResponse>(
+      `/api/v1/projects/members/${projectId}`
+    );
+    return response.data;
   }
 
-  async updateTask(taskId: string, updates: any): Promise<{ success: boolean; data?: any }> {
+  async updateTask(
+    taskId: string,
+    updates: any
+  ): Promise<{ success: boolean; data?: any }> {
     try {
-      const data = await this.makeRequest<any>(`/api/v1/tasks/${taskId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      });
+      const response = await axiosInstance.patch<any>(
+        `/api/v1/tasks/${taskId}`,
+        updates
+      );
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error("Error updating task:", error);
       return { success: false };
     }
   }
 
   // Methodology API Methods
-  async getMethodologyData(projectId: string, methodology: string): Promise<{ success: boolean; data?: any }> {
+  async getMethodologyData(
+    projectId: string,
+    methodology: string
+  ): Promise<{ success: boolean; data?: any }> {
     try {
-      const data = await this.makeRequest<any>(`/api/v1/projects/${projectId}/methodology/${methodology}`);
+      const response = await axiosInstance.get<any>(
+        `/api/v1/projects/${projectId}/methodology/${methodology}`
+      );
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error fetching methodology data:', error);
+      console.error("Error fetching methodology data:", error);
       return { success: false };
     }
   }
@@ -443,19 +422,21 @@ export class ProjectApiService {
   }): Promise<{ success: boolean; data?: any[] }> {
     try {
       const searchParams = new URLSearchParams();
-      if (params.projectId) searchParams.append('project_id', params.projectId);
-      if (params.userId) searchParams.append('user_id', params.userId);
-      if (params.startDate) searchParams.append('start_date', params.startDate);
-      if (params.endDate) searchParams.append('end_date', params.endDate);
-      if (params.limit) searchParams.append('limit', params.limit.toString());
+      if (params.projectId) searchParams.append("project_id", params.projectId);
+      if (params.userId) searchParams.append("user_id", params.userId);
+      if (params.startDate) searchParams.append("start_date", params.startDate);
+      if (params.endDate) searchParams.append("end_date", params.endDate);
+      if (params.limit) searchParams.append("limit", params.limit.toString());
 
       const queryString = searchParams.toString();
-      const endpoint = `/api/v1/time-entries${queryString ? `?${queryString}` : ''}`;
-
-      const data = await this.makeRequest<any[]>(endpoint);
+      const endpoint = `/api/v1/time-entries${
+        queryString ? `?${queryString}` : ""
+      }`;
+      const response = await axiosInstance.get<any[]>(endpoint);
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error fetching time entries:', error);
+      console.error("Error fetching time entries:", error);
       return { success: false };
     }
   }
@@ -467,28 +448,35 @@ export class ProjectApiService {
   }): Promise<{ success: boolean; data?: any }> {
     try {
       const searchParams = new URLSearchParams();
-      if (params.projectId) searchParams.append('project_id', params.projectId);
-      if (params.userId) searchParams.append('user_id', params.userId);
-      if (params.period) searchParams.append('period', params.period);
+      if (params.projectId) searchParams.append("project_id", params.projectId);
+      if (params.userId) searchParams.append("user_id", params.userId);
+      if (params.period) searchParams.append("period", params.period);
 
       const queryString = searchParams.toString();
-      const endpoint = `/api/v1/time-tracking/summary${queryString ? `?${queryString}` : ''}`;
-
-      const data = await this.makeRequest<any>(endpoint);
+      const endpoint = `/api/v1/time-tracking/summary${
+        queryString ? `?${queryString}` : ""
+      }`;
+      const response = await axiosInstance.get<any>(endpoint);
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error fetching time tracking summary:', error);
+      console.error("Error fetching time tracking summary:", error);
       return { success: false };
     }
   }
 
-  async getActiveTimer(userId?: string): Promise<{ success: boolean; data?: any }> {
+  async getActiveTimer(
+    userId?: string
+  ): Promise<{ success: boolean; data?: any }> {
     try {
-      const endpoint = userId ? `/api/v1/time-tracking/active?user_id=${userId}` : '/api/v1/time-tracking/active';
-      const data = await this.makeRequest<any>(endpoint);
+      const endpoint = userId
+        ? `/api/v1/time-tracking/active?user_id=${userId}`
+        : "/api/v1/time-tracking/active";
+      const response = await axiosInstance.get<any>(endpoint);
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error fetching active timer:', error);
+      console.error("Error fetching active timer:", error);
       return { success: false };
     }
   }
@@ -501,63 +489,68 @@ export class ProjectApiService {
     category: string;
   }): Promise<{ success: boolean; data?: any }> {
     try {
-      const data = await this.makeRequest<any>('/api/v1/time-tracking/start', {
-        method: 'POST',
-        body: JSON.stringify(params),
-      });
+      const response = await axiosInstance.post<any>(
+        "/api/v1/time-tracking/start",
+        params
+      );
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error starting timer:', error);
+      console.error("Error starting timer:", error);
       return { success: false };
     }
   }
 
   async stopTimer(timerId: string): Promise<{ success: boolean; data?: any }> {
     try {
-      const data = await this.makeRequest<any>(`/api/v1/time-tracking/${timerId}/stop`, {
-        method: 'PATCH',
-      });
+      const response = await axiosInstance.patch<any>(
+        `/api/v1/time-tracking/${timerId}/stop`
+      );
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error stopping timer:', error);
+      console.error("Error stopping timer:", error);
       return { success: false };
     }
   }
 
   async createTimeEntry(entry: any): Promise<{ success: boolean; data?: any }> {
     try {
-      const data = await this.makeRequest<any>('/api/v1/time-entries', {
-        method: 'POST',
-        body: JSON.stringify(entry),
-      });
+      const response = await axiosInstance.post<any>(
+        "/api/v1/time-entries",
+        entry
+      );
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error creating time entry:', error);
+      console.error("Error creating time entry:", error);
       return { success: false };
     }
   }
 
-  async updateTimeEntry(entryId: string, updates: any): Promise<{ success: boolean; data?: any }> {
+  async updateTimeEntry(
+    entryId: string,
+    updates: any
+  ): Promise<{ success: boolean; data?: any }> {
     try {
-      const data = await this.makeRequest<any>(`/api/v1/time-entries/${entryId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      });
+      const response = await axiosInstance.patch<any>(
+        `/api/v1/time-entries/${entryId}`
+      );
+      const data = response.data;
       return { success: true, data };
     } catch (error) {
-      console.error('Error updating time entry:', error);
+      console.error("Error updating time entry:", error);
       return { success: false };
     }
   }
 
   async deleteTimeEntry(entryId: string): Promise<{ success: boolean }> {
     try {
-      await this.makeRequest<void>(`/api/v1/time-entries/${entryId}`, {
-        method: 'DELETE',
-      });
+      await axiosInstance.delete<any>(`/api/v1/time-entries/${entryId}`);
+
       return { success: true };
     } catch (error) {
-      console.error('Error deleting time entry:', error);
+      console.error("Error deleting time entry:", error);
       return { success: false };
     }
   }

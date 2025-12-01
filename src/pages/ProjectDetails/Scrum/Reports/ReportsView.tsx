@@ -1,12 +1,33 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../../components/ui/card'
-import { Button } from '../../../../components/ui/button'
-import { Badge } from '../../../../components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs'
-import { Calendar } from '../../../../components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '../../../../components/ui/popover'
-import { toast } from 'sonner'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
+import { Badge } from "../../../../components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../../components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../../components/ui/tabs";
+import { Calendar } from "../../../../components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../../../components/ui/popover";
+import { toast } from "sonner";
 import {
   TrendingUp,
   TrendingDown,
@@ -23,8 +44,8 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
-  RefreshCw
-} from 'lucide-react'
+  RefreshCw,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -40,8 +61,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
-} from 'recharts'
+  ResponsiveContainer,
+} from "recharts";
 import {
   scrumReportsApiService,
   type VelocityResponse,
@@ -49,28 +70,51 @@ import {
   type SprintOverviewResponse,
   type TeamPerformanceResponse,
   type TaskCompletionResponse,
-  type QualityMetricsResponse
-} from '../../../../services/scrumReportsApi'
+  type QualityMetricsResponse,
+} from "../../../../services/scrumReportsApi";
 
 // Simple date formatting function
 const formatDate = (date: Date, formatType: string) => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  
-  if (formatType === 'MMM d') {
-    return `${months[date.getMonth()]} ${date.getDate()}`
-  } else if (formatType === 'MMM d, yyyy' || formatType === 'PPP') {
-    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  if (formatType === "MMM d") {
+    return `${months[date.getMonth()]} ${date.getDate()}`;
+  } else if (formatType === "MMM d, yyyy" || formatType === "PPP") {
+    return `${
+      months[date.getMonth()]
+    } ${date.getDate()}, ${date.getFullYear()}`;
   }
-  return date.toLocaleDateString()
-}
+  return date.toLocaleDateString();
+};
 
 interface ReportsViewProps {
-  projectId: string
-  user: any
-  project?: any
+  user: any;
+  project?: any;
 }
 
-const COLORS = ['#007BFF', '#28A745', '#FFC107', '#DC3545', '#6F42C1', '#17A2B8', '#FD7E14', '#20C997']
+const COLORS = [
+  "#007BFF",
+  "#28A745",
+  "#FFC107",
+  "#DC3545",
+  "#6F42C1",
+  "#17A2B8",
+  "#FD7E14",
+  "#20C997",
+];
 
 // Mock data for fallback when APIs are not available
 const mockReportData = {
@@ -79,37 +123,37 @@ const mockReportData = {
     previous: 38,
     average: 40,
     sprints: [
-      { name: 'Sprint 1', planned: 45, completed: 42, velocity: 93 },
-      { name: 'Sprint 2', planned: 40, completed: 38, velocity: 95 },
-      { name: 'Sprint 3', planned: 42, completed: 40, velocity: 95 },
-      { name: 'Sprint 4', planned: 48, completed: 45, velocity: 94 },
-      { name: 'Sprint 5', planned: 44, completed: 42, velocity: 95 }
-    ]
+      { name: "Sprint 1", planned: 45, completed: 42, velocity: 93 },
+      { name: "Sprint 2", planned: 40, completed: 38, velocity: 95 },
+      { name: "Sprint 3", planned: 42, completed: 40, velocity: 95 },
+      { name: "Sprint 4", planned: 48, completed: 45, velocity: 94 },
+      { name: "Sprint 5", planned: 44, completed: 42, velocity: 95 },
+    ],
   },
   burndown: {
     totalStoryPoints: 120,
     completedStoryPoints: 85,
     remainingStoryPoints: 35,
     chartData: [
-      { day: 'Day 1', ideal: 120, actual: 120 },
-      { day: 'Day 2', ideal: 105, actual: 110 },
-      { day: 'Day 3', ideal: 90, actual: 95 },
-      { day: 'Day 4', ideal: 75, actual: 85 },
-      { day: 'Day 5', ideal: 60, actual: 70 },
-      { day: 'Day 6', ideal: 45, actual: 55 },
-      { day: 'Day 7', ideal: 30, actual: 40 },
-      { day: 'Day 8', ideal: 15, actual: 25 },
-      { day: 'Day 9', ideal: 0, actual: 10 }
-    ]
+      { day: "Day 1", ideal: 120, actual: 120 },
+      { day: "Day 2", ideal: 105, actual: 110 },
+      { day: "Day 3", ideal: 90, actual: 95 },
+      { day: "Day 4", ideal: 75, actual: 85 },
+      { day: "Day 5", ideal: 60, actual: 70 },
+      { day: "Day 6", ideal: 45, actual: 55 },
+      { day: "Day 7", ideal: 30, actual: 40 },
+      { day: "Day 8", ideal: 15, actual: 25 },
+      { day: "Day 9", ideal: 0, actual: 10 },
+    ],
   },
   taskCompletion: {
     completionRate: 78,
     distribution: [
-      { status: 'To Do', count: 12, percentage: 20 },
-      { status: 'In Progress', count: 8, percentage: 13 },
-      { status: 'In Review', count: 5, percentage: 8 },
-      { status: 'Done', count: 35, percentage: 59 }
-    ]
+      { status: "To Do", count: 12, percentage: 20 },
+      { status: "In Progress", count: 8, percentage: 13 },
+      { status: "In Review", count: 5, percentage: 8 },
+      { status: "Done", count: 35, percentage: 59 },
+    ],
   },
   timeTracking: {
     totalHours: 320,
@@ -117,16 +161,34 @@ const mockReportData = {
     avgHoursPerDay: 7.5,
     overtime: 15,
     weeklyData: [
-      { week: 'Week 1', hours: 40, billable: 35 },
-      { week: 'Week 2', hours: 45, billable: 40 },
-      { week: 'Week 3', hours: 42, billable: 38 },
-      { week: 'Week 4', hours: 48, billable: 42 }
-    ]
+      { week: "Week 1", hours: 40, billable: 35 },
+      { week: "Week 2", hours: 45, billable: 40 },
+      { week: "Week 3", hours: 42, billable: 38 },
+      { week: "Week 4", hours: 48, billable: 42 },
+    ],
   },
   teamPerformance: [
-    { name: 'John Doe', tasksCompleted: 12, hoursLogged: 85, completionRate: 92, efficiency: 92 },
-    { name: 'Jane Smith', tasksCompleted: 15, hoursLogged: 78, completionRate: 88, efficiency: 88 },
-    { name: 'Bob Johnson', tasksCompleted: 10, hoursLogged: 72, completionRate: 85, efficiency: 85 }
+    {
+      name: "John Doe",
+      tasksCompleted: 12,
+      hoursLogged: 85,
+      completionRate: 92,
+      efficiency: 92,
+    },
+    {
+      name: "Jane Smith",
+      tasksCompleted: 15,
+      hoursLogged: 78,
+      completionRate: 88,
+      efficiency: 88,
+    },
+    {
+      name: "Bob Johnson",
+      tasksCompleted: 10,
+      hoursLogged: 72,
+      completionRate: 85,
+      efficiency: 85,
+    },
   ],
   qualityMetrics: {
     bugsFound: 24,
@@ -134,99 +196,149 @@ const mockReportData = {
     bugResolutionTime: 2.5,
     testCoverage: 85,
     bugTrend: [
-      { week: 'Week 1', found: 8, fixed: 5 },
-      { week: 'Week 2', found: 6, fixed: 7 },
-      { week: 'Week 3', found: 5, fixed: 4 },
-      { week: 'Week 4', found: 5, fixed: 4 }
-    ]
-  }
-}
+      { week: "Week 1", found: 8, fixed: 5 },
+      { week: "Week 2", found: 6, fixed: 7 },
+      { week: "Week 3", found: 5, fixed: 4 },
+      { week: "Week 4", found: 5, fixed: 4 },
+    ],
+  },
+};
 
-export function ReportsView({ projectId, project }: ReportsViewProps) {
+export function ReportsView({ project, user }: ReportsViewProps) {
+  console.log("12132313123asdasdsad ", project);
   // Loading and Data States
-  const [loading, setLoading] = useState(true)
-  const [velocityData, setVelocityData] = useState<VelocityResponse | null>(null)
-  const [burndownData, setBurndownData] = useState<BurndownResponse | null>(null)
-  const [overviewData, setOverviewData] = useState<SprintOverviewResponse | null>(null)
-  const [teamData, setTeamData] = useState<TeamPerformanceResponse | null>(null)
-  const [taskData, setTaskData] = useState<TaskCompletionResponse | null>(null)
-  const [qualityData, setQualityData] = useState<QualityMetricsResponse | null>(null)
+  const [loading, setLoading] = useState(true);
+  const [velocityData, setVelocityData] = useState<VelocityResponse | null>(
+    null
+  );
+  const [burndownData, setBurndownData] = useState<BurndownResponse | null>(
+    null
+  );
+  const [overviewData, setOverviewData] =
+    useState<SprintOverviewResponse | null>(null);
+  const [teamData, setTeamData] = useState<TeamPerformanceResponse | null>(
+    null
+  );
+  const [taskData, setTaskData] = useState<TaskCompletionResponse | null>(null);
+  const [qualityData, setQualityData] = useState<QualityMetricsResponse | null>(
+    null
+  );
 
   // UI States
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
     from: undefined,
-    to: undefined
-  })
-  const [reportType, setReportType] = useState('all')
-  const [selectedTab, setSelectedTab] = useState('overview')
+    to: undefined,
+  });
+  const [reportType, setReportType] = useState("all");
+  const [selectedTab, setSelectedTab] = useState("overview");
 
   // Load all reports on mount or when project changes
   useEffect(() => {
-    if (projectId || project?.id) {
-      loadAllReports()
+    if (project?.id) {
+      loadAllReports();
     }
-  }, [projectId, project?.id])
+  }, [project?.id]);
 
   const loadAllReports = async () => {
-    const effectiveProjectId = projectId || project?.id
+    const effectiveProjectId = project?.id;
     if (!effectiveProjectId) {
-      console.warn('[Scrum Reports] No project ID available')
-      return
+      console.warn("[Scrum Reports] No project ID available");
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
       // Prepare date range params
       const params = {
-        from_date: dateRange.from ? dateRange.from.toISOString().split('T')[0] : undefined,
-        to_date: dateRange.to ? dateRange.to.toISOString().split('T')[0] : undefined
-      }
+        from_date: dateRange.from
+          ? dateRange.from.toISOString().split("T")[0]
+          : undefined,
+        to_date: dateRange.to
+          ? dateRange.to.toISOString().split("T")[0]
+          : undefined,
+      };
 
       // Load all reports in parallel
-      const [velocity, burndown, overview, team, tasks, quality] = await Promise.all([
-        scrumReportsApiService.getVelocityMetrics(effectiveProjectId, params).catch(e => {
-          console.warn('[Scrum Reports] Velocity API not available:', e.message)
-          return null
-        }),
-        scrumReportsApiService.getBurndownMetrics(effectiveProjectId, undefined, params).catch(e => {
-          console.warn('[Scrum Reports] Burndown API not available:', e.message)
-          return null
-        }),
-        scrumReportsApiService.getSprintOverview(effectiveProjectId, params).catch(e => {
-          console.warn('[Scrum Reports] Overview API not available:', e.message)
-          return null
-        }),
-        scrumReportsApiService.getTeamPerformance(effectiveProjectId, params).catch(e => {
-          console.warn('[Scrum Reports] Team Performance API not available:', e.message)
-          return null
-        }),
-        scrumReportsApiService.getTaskCompletionMetrics(effectiveProjectId, params).catch(e => {
-          console.warn('[Scrum Reports] Task Completion API not available:', e.message)
-          return null
-        }),
-        scrumReportsApiService.getQualityMetrics(effectiveProjectId, params).catch(e => {
-          console.warn('[Scrum Reports] Quality Metrics API not available:', e.message)
-          return null
-        })
-      ])
+      const [velocity, burndown, overview, team, tasks, quality] =
+        await Promise.all([
+          scrumReportsApiService
+            .getVelocityMetrics(effectiveProjectId, params)
+            .catch((e) => {
+              console.warn(
+                "[Scrum Reports] Velocity API not available:",
+                e.message
+              );
+              return null;
+            }),
+          scrumReportsApiService
+            .getBurndownMetrics(effectiveProjectId, undefined, params)
+            .catch((e) => {
+              console.warn(
+                "[Scrum Reports] Burndown API not available:",
+                e.message
+              );
+              return null;
+            }),
+          scrumReportsApiService
+            .getSprintOverview(effectiveProjectId, params)
+            .catch((e) => {
+              console.warn(
+                "[Scrum Reports] Overview API not available:",
+                e.message
+              );
+              return null;
+            }),
+          scrumReportsApiService
+            .getTeamPerformance(effectiveProjectId, params)
+            .catch((e) => {
+              console.warn(
+                "[Scrum Reports] Team Performance API not available:",
+                e.message
+              );
+              return null;
+            }),
+          scrumReportsApiService
+            .getTaskCompletionMetrics(effectiveProjectId, params)
+            .catch((e) => {
+              console.warn(
+                "[Scrum Reports] Task Completion API not available:",
+                e.message
+              );
+              return null;
+            }),
+          scrumReportsApiService
+            .getQualityMetrics(effectiveProjectId, params)
+            .catch((e) => {
+              console.warn(
+                "[Scrum Reports] Quality Metrics API not available:",
+                e.message
+              );
+              return null;
+            }),
+        ]);
 
-      setVelocityData(velocity)
-      setBurndownData(burndown)
-      setOverviewData(overview)
-      setTeamData(team)
-      setTaskData(tasks)
-      setQualityData(quality)
+      setVelocityData(velocity);
+      setBurndownData(burndown);
+      setOverviewData(overview);
+      setTeamData(team);
+      setTaskData(tasks);
+      setQualityData(quality);
     } catch (error) {
-      console.error('❌ [Scrum Reports] Error loading reports:', error)
-      toast.error('Failed to load some reports. Backend API may not be available yet.')
+      console.error("❌ [Scrum Reports] Error loading reports:", error);
+      toast.error(
+        "Failed to load some reports. Backend API may not be available yet."
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleRefresh = () => {
-    loadAllReports()
-  }
+    loadAllReports();
+  };
 
   // Show loading state
   if (loading) {
@@ -235,41 +347,49 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <span className="ml-2">Loading reports...</span>
       </div>
-    )
+    );
   }
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'up': return <ArrowUp className="w-4 h-4 text-green-600" />
-      case 'down': return <ArrowDown className="w-4 h-4 text-red-600" />
-      case 'stable': return <Minus className="w-4 h-4 text-gray-600" />
-      default: return <Minus className="w-4 h-4 text-gray-600" />
+      case "up":
+        return <ArrowUp className="w-4 h-4 text-green-600" />;
+      case "down":
+        return <ArrowDown className="w-4 h-4 text-red-600" />;
+      case "stable":
+        return <Minus className="w-4 h-4 text-gray-600" />;
+      default:
+        return <Minus className="w-4 h-4 text-gray-600" />;
     }
-  }
+  };
 
   const getTrendColor = (trend: string) => {
     switch (trend) {
-      case 'up': return 'text-green-600'
-      case 'down': return 'text-red-600'
-      case 'stable': return 'text-gray-600'
-      default: return 'text-gray-600'
+      case "up":
+        return "text-green-600";
+      case "down":
+        return "text-red-600";
+      case "stable":
+        return "text-gray-600";
+      default:
+        return "text-gray-600";
     }
-  }
+  };
 
-  const MetricCard = ({ 
-    title, 
-    value, 
-    unit = '', 
-    trend, 
-    trendValue, 
-    icon: Icon 
-  }: { 
-    title: string
-    value: number | string
-    unit?: string
-    trend?: string
-    trendValue?: number
-    icon: any 
+  const MetricCard = ({
+    title,
+    value,
+    unit = "",
+    trend,
+    trendValue,
+    icon: Icon,
+  }: {
+    title: string;
+    value: number | string;
+    unit?: string;
+    trend?: string;
+    trendValue?: number;
+    icon: any;
   }) => (
     <Card>
       <CardContent className="p-6">
@@ -277,10 +397,15 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
           <div>
             <p className="text-muted-foreground text-sm">{title}</p>
             <p className="text-2xl font-semibold">
-              {value}{unit}
+              {value}
+              {unit}
             </p>
             {trend && trendValue && (
-              <div className={`flex items-center space-x-1 text-sm ${getTrendColor(trend)}`}>
+              <div
+                className={`flex items-center space-x-1 text-sm ${getTrendColor(
+                  trend
+                )}`}
+              >
                 {getTrendIcon(trend)}
                 <span>{trendValue}% vs last period</span>
               </div>
@@ -292,12 +417,12 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   return (
     <div className="space-y-6">
       {/* API Availability Notice */}
-      {(!velocityData && !burndownData && !overviewData && !teamData && !taskData && !qualityData) && (
+      {/* {(!velocityData && !burndownData && !overviewData && !teamData && !taskData && !qualityData) && (
         <Card className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
@@ -320,18 +445,27 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Scrum Reports & Analytics</h2>
-          <p className="text-sm text-muted-foreground">Sprint velocity, burndown charts, and team performance insights</p>
+          <p className="text-sm text-muted-foreground">
+            Sprint velocity, burndown charts, and team performance insights
+          </p>
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <Select value={reportType} onValueChange={setReportType}>
@@ -346,12 +480,16 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
               <SelectItem value="quality">Quality</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline">
                 <CalendarIcon className="w-4 h-4 mr-2" />
-                {dateRange.from ? formatDate(dateRange.from, "MMM d") : "Start date"} - {dateRange.to ? formatDate(dateRange.to, "MMM d") : "End date"}
+                {dateRange.from
+                  ? formatDate(dateRange.from, "MMM d")
+                  : "Start date"}{" "}
+                -{" "}
+                {dateRange.to ? formatDate(dateRange.to, "MMM d") : "End date"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -360,12 +498,16 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                 mode="range"
                 defaultMonth={dateRange.from}
                 selected={{ from: dateRange.from, to: dateRange.to }}
-                onSelect={(range: { from: Date | undefined, to: Date | undefined } | undefined) => setDateRange({ from: range?.from, to: range?.to })}
+                onSelect={(
+                  range:
+                    | { from: Date | undefined; to: Date | undefined }
+                    | undefined
+                ) => setDateRange({ from: range?.from, to: range?.to })}
                 numberOfMonths={2}
               />
             </PopoverContent>
           </Popover>
-          
+
           <Button className="bg-[#28A745] hover:bg-[#218838]">
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -373,13 +515,27 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+      <Tabs
+        value={selectedTab}
+        onValueChange={setSelectedTab}
+        className="w-full"
+      >
         <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto">
-          <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
-          <TabsTrigger value="velocity" className="whitespace-nowrap">Velocity</TabsTrigger>
-          <TabsTrigger value="burndown" className="whitespace-nowrap">Burndown</TabsTrigger>
-          <TabsTrigger value="team" className="whitespace-nowrap">Team</TabsTrigger>
-          <TabsTrigger value="quality" className="whitespace-nowrap">Quality</TabsTrigger>
+          <TabsTrigger value="overview" className="whitespace-nowrap">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="velocity" className="whitespace-nowrap">
+            Velocity
+          </TabsTrigger>
+          <TabsTrigger value="burndown" className="whitespace-nowrap">
+            Burndown
+          </TabsTrigger>
+          <TabsTrigger value="team" className="whitespace-nowrap">
+            Team
+          </TabsTrigger>
+          <TabsTrigger value="quality" className="whitespace-nowrap">
+            Quality
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -433,7 +589,13 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="completed" stroke="#28A745" name="Velocity" strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="completed"
+                      stroke="#28A745"
+                      name="Velocity"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -451,14 +613,21 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ status, percentage }) => `${status}: ${percentage}%`}
+                      label={({ status, percentage }) =>
+                        `${status}: ${percentage}%`
+                      }
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="count"
                     >
-                      {mockReportData.taskCompletion.distribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
+                      {mockReportData.taskCompletion.distribution.map(
+                        (entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        )
+                      )}
                     </Pie>
                     <Tooltip />
                   </RechartsPieChart>
@@ -477,7 +646,14 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     <XAxis dataKey="day" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="actual" stroke="#007BFF" fill="#007BFF" fillOpacity={0.5} name="Remaining" />
+                    <Area
+                      type="monotone"
+                      dataKey="actual"
+                      stroke="#007BFF"
+                      fill="#007BFF"
+                      fillOpacity={0.5}
+                      name="Remaining"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -495,7 +671,11 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="tasksCompleted" fill="#007BFF" name="Tasks Completed" />
+                    <Bar
+                      dataKey="tasksCompleted"
+                      fill="#007BFF"
+                      name="Tasks Completed"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -538,20 +718,37 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="planned" stroke="#007BFF" name="Planned" strokeWidth={2} />
-                    <Line type="monotone" dataKey="completed" stroke="#28A745" name="Completed" strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="planned"
+                      stroke="#007BFF"
+                      name="Planned"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="completed"
+                      stroke="#28A745"
+                      name="Completed"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Sprint Velocity Details</CardTitle>
+                <CardTitle className="text-lg">
+                  Sprint Velocity Details
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {mockReportData.velocity.sprints.map((sprint, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded"
+                    >
                       <div>
                         <p className="font-medium">{sprint.name}</p>
                         <p className="text-sm text-muted-foreground">
@@ -559,10 +756,19 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold">{sprint.velocity || 'In Progress'}</p>
+                        <p className="text-lg font-semibold">
+                          {sprint.velocity || "In Progress"}
+                        </p>
                         {sprint.velocity > 0 && (
-                          <p className={`text-sm ${sprint.velocity >= sprint.planned ? 'text-green-600' : 'text-red-600'}`}>
-                            {sprint.velocity >= sprint.planned ? '+' : ''}{sprint.velocity - sprint.planned} vs planned
+                          <p
+                            className={`text-sm ${
+                              sprint.velocity >= sprint.planned
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {sprint.velocity >= sprint.planned ? "+" : ""}
+                            {sprint.velocity - sprint.planned} vs planned
                           </p>
                         )}
                       </div>
@@ -608,8 +814,22 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Area type="monotone" dataKey="ideal" stroke="#6c757d" fill="#6c757d" fillOpacity={0.3} name="Ideal Burndown" />
-                  <Area type="monotone" dataKey="actual" stroke="#007BFF" fill="#007BFF" fillOpacity={0.5} name="Actual Burndown" />
+                  <Area
+                    type="monotone"
+                    dataKey="ideal"
+                    stroke="#6c757d"
+                    fill="#6c757d"
+                    fillOpacity={0.3}
+                    name="Ideal Burndown"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="actual"
+                    stroke="#007BFF"
+                    fill="#007BFF"
+                    fillOpacity={0.5}
+                    name="Actual Burndown"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -622,9 +842,12 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
             <CardContent>
               <div className="space-y-4">
                 <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                  <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">On Track</h4>
+                  <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">
+                    On Track
+                  </h4>
                   <p className="text-sm text-green-700 dark:text-green-300">
-                    The team is performing well and is on track to complete the sprint goals.
+                    The team is performing well and is on track to complete the
+                    sprint goals.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -694,7 +917,11 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     <Tooltip />
                     <Legend />
                     <Bar dataKey="hours" fill="#007BFF" name="Total Hours" />
-                    <Bar dataKey="billable" fill="#28A745" name="Billable Hours" />
+                    <Bar
+                      dataKey="billable"
+                      fill="#28A745"
+                      name="Billable Hours"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -706,16 +933,24 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
               <CardContent>
                 <div className="space-y-4">
                   {mockReportData.teamPerformance.map((member, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded"
+                    >
                       <div>
                         <p className="font-medium">{member.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {member.tasksCompleted} tasks • {member.hoursLogged}h logged
+                          {member.tasksCompleted} tasks • {member.hoursLogged}h
+                          logged
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold">{member.efficiency}%</p>
-                        <p className="text-sm text-muted-foreground">Efficiency</p>
+                        <p className="text-lg font-semibold">
+                          {member.efficiency}%
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Efficiency
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -764,8 +999,20 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="found" stroke="#DC3545" name="Bugs Found" strokeWidth={2} />
-                    <Line type="monotone" dataKey="fixed" stroke="#28A745" name="Bugs Fixed" strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="found"
+                      stroke="#DC3545"
+                      name="Bugs Found"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="fixed"
+                      stroke="#28A745"
+                      name="Bugs Fixed"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -773,15 +1020,28 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Quality Metrics Overview</CardTitle>
+                <CardTitle className="text-lg">
+                  Quality Metrics Overview
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[
-                    { metric: 'Test Coverage', value: mockReportData.qualityMetrics.testCoverage },
-                    { metric: 'Bugs Fixed Rate', value: (mockReportData.qualityMetrics.bugsFixed / mockReportData.qualityMetrics.bugsFound) * 100 },
-                    { metric: 'Code Quality', value: 78 }
-                  ]}>
+                  <BarChart
+                    data={[
+                      {
+                        metric: "Test Coverage",
+                        value: mockReportData.qualityMetrics.testCoverage,
+                      },
+                      {
+                        metric: "Bugs Fixed Rate",
+                        value:
+                          (mockReportData.qualityMetrics.bugsFixed /
+                            mockReportData.qualityMetrics.bugsFound) *
+                          100,
+                      },
+                      { metric: "Code Quality", value: 78 },
+                    ]}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="metric" />
                     <YAxis domain={[0, 100]} />
@@ -812,7 +1072,9 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Technical Debt</span>
-                      <span className="text-sm font-medium text-yellow-600">Medium</span>
+                      <span className="text-sm font-medium text-yellow-600">
+                        Medium
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -839,5 +1101,5 @@ export function ReportsView({ projectId, project }: ReportsViewProps) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

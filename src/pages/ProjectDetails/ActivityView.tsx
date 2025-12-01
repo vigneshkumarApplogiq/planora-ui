@@ -222,7 +222,9 @@ export function ActivityView({ project, user }: ActivityViewProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Project Activity</h2>
+          <h2 className="text-2xl text-foreground font-semibold">
+            Project Activity
+          </h2>
           <p className="text-muted-foreground">
             Real-time updates and project timeline
           </p>
@@ -309,7 +311,7 @@ export function ActivityView({ project, user }: ActivityViewProps) {
                     key={activity.id}
                     className={`flex items-start space-x-4 p-4 border-l-4 ${getActivityColor(
                       activity.activity_type
-                    )} bg-gray-50 dark:bg-gray-800/50 rounded-r-lg`}
+                    )} bg-background rounded-r-lg`}
                   >
                     <Avatar className="w-8 h-8 mt-1">
                       <AvatarFallback className="bg-[#28A745] text-white text-xs">
@@ -325,7 +327,7 @@ export function ActivityView({ project, user }: ActivityViewProps) {
                       <div className="flex items-center space-x-2 mb-1">
                         {getActivityIcon(activity.activity_type)}
                         <span className="text-sm">
-                          <span className="font-medium">
+                          <span className="font-medium text-foreground">
                             {activity.user_name}
                           </span>
                           <span className="text-muted-foreground">

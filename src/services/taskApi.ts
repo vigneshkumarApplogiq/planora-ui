@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface Task {
   id?: string;
@@ -104,121 +104,65 @@ export interface TasksResponse {
 }
 
 export class TaskApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${token}`
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            throw new Error('Failed to get new token after refresh');
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status} ${retryResponse.statusText}`);
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getTasks(projectId?: string, page: number = 1, perPage: number = 50): Promise<TasksResponse> {
+  async getTasks(
+    projectId?: string,
+    page: number = 1,
+    perPage: number = 50
+  ): Promise<TasksResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
     });
 
     if (projectId) {
-      params.append('project_id', projectId);
+      params.append("project_id", projectId);
     }
 
     const queryString = params.toString();
-    const endpoint = `/api/v1/tasks${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/tasks${queryString ? `?${queryString}` : ""}`;
+    const response = await axiosInstance.get<TasksResponse>(endpoint);
 
-    return this.makeRequest<TasksResponse>(endpoint);
+    return response.data;
   }
 
   async getTask(id: string): Promise<Task> {
-    return this.makeRequest<Task>(`/api/v1/tasks/${id}`);
+    const response = await axiosInstance.get<Task>(`/api/v1/tasks/${id}`);
+    return response.data;
   }
 
   async createTask(taskData: CreateTaskRequest): Promise<Task> {
-    return this.makeRequest<Task>('/api/v1/tasks/', {
-      method: 'POST',
-      body: JSON.stringify(taskData),
-    });
+    const response = await axiosInstance.post<Task>("/api/v1/tasks/", taskData);
+    return response.data;
   }
 
-  async updateTask(id: string, taskData: Partial<CreateTaskRequest>): Promise<Task> {
-    return this.makeRequest<Task>(`/api/v1/tasks/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(taskData),
-    });
+  async updateTask(
+    id: string,
+    taskData: Partial<CreateTaskRequest>
+  ): Promise<Task> {
+    const response = await axiosInstance.put<Task>(
+      `/api/v1/tasks/${id}`,
+      taskData
+    );
+    return response.data;
   }
 
   async deleteTask(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/tasks/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/tasks/${id}`);
+    return response.data;
   }
 
   async updateTaskStatus(id: string, status: string): Promise<Task> {
-    return this.makeRequest<Task>(`/api/v1/tasks/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
+    const response = await axiosInstance.patch<Task>(`/api/v1/tasks/${id}`, {
+      status,
     });
+    return response.data;
   }
 
   async updateTaskProgress(id: string, progress: number): Promise<Task> {
-    return this.makeRequest<Task>(`/api/v1/tasks/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ progress }),
+    const response = await axiosInstance.patch<Task>(`/api/v1/tasks/${id}`, {
+      progress,
     });
+    return response.data;
   }
 }
 

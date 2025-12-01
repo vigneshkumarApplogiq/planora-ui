@@ -1,5 +1,4 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import axiosInstance from "../config/api";
 
 export interface Sprint {
   id: string;
@@ -45,112 +44,61 @@ export interface SprintsResponse {
 }
 
 export class SprintsApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-
-    const defaultHeaders: HeadersInit = {
-      ...(token && { Authorization: `Bearer ${token}` })
-    };
-
-    // Don't set Content-Type for FormData - browser will set it automatically
-    if (!(options?.body instanceof FormData)) {
-      defaultHeaders['Content-Type'] = 'application/json';
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-
-          const retryHeaders: HeadersInit = {
-            ...(newToken && { Authorization: `Bearer ${newToken}` })
-          };
-
-          if (!(options?.body instanceof FormData)) {
-            retryHeaders['Content-Type'] = 'application/json';
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...retryHeaders,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getSprints(projectId?: string, page: number = 1, perPage: number = 50): Promise<SprintsResponse> {
+  async getSprints(
+    projectId?: string,
+    page: number = 1,
+    perPage: number = 50
+  ): Promise<SprintsResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       per_page: perPage.toString(),
     });
 
     if (projectId) {
-      params.append('project_id', projectId);
+      params.append("project_id", projectId);
     }
 
     const queryString = params.toString();
-    const endpoint = `/api/v1/sprints${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<SprintsResponse>(endpoint);
+    const endpoint = `/api/v1/sprints${queryString ? `?${queryString}` : ""}`;
+    const response = await axiosInstance.get<SprintsResponse>(endpoint);
+    return response.data;
   }
 
   async getSprint(id: string): Promise<Sprint> {
-    return this.makeRequest<Sprint>(`/api/v1/sprints/${id}`);
+    const response = await axiosInstance.get<Sprint>(`/api/v1/sprints/${id}`);
+    return response.data;
   }
 
   async createSprint(sprintData: CreateSprintRequest): Promise<Sprint> {
-    return this.makeRequest<Sprint>('/api/v1/sprints/', {
-      method: 'POST',
-      body: JSON.stringify(sprintData),
-    });
+    const response = await axiosInstance.post<Sprint>(
+      "/api/v1/sprints/",
+      sprintData
+    );
+    return response.data;
   }
 
-  async updateSprint(id: string, sprintData: Partial<CreateSprintRequest>): Promise<Sprint> {
-    return this.makeRequest<Sprint>(`/api/v1/sprints/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(sprintData),
-    });
+  async updateSprint(
+    id: string,
+    sprintData: Partial<CreateSprintRequest>
+  ): Promise<Sprint> {
+    const response = await axiosInstance.put<Sprint>(
+      `/api/v1/sprints/${id}`,
+      sprintData
+    );
+    return response.data;
   }
 
   async deleteSprint(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/sprints/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/sprints/${id}`);
+    return response.data;
   }
 
   async updateSprintStatus(id: string, status: string): Promise<Sprint> {
-    return this.makeRequest<Sprint>(`/api/v1/sprints/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+    const response = await axiosInstance.patch<Sprint>(
+      `/api/v1/sprints/${id}`,
+      { status }
+    );
+    return response.data;
   }
 
   async getSprintsByProject(projectId: string): Promise<Sprint[]> {

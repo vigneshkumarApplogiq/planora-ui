@@ -1,5 +1,5 @@
 import { authApiService } from "./authApi";
-import { getApiUrl } from "../config/api";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface AssigneeDetail {
   id: string;
@@ -147,73 +147,6 @@ export interface StoriesResponse {
 }
 
 export class StoriesApiService {
-  private async makeRequest<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-
-    const defaultHeaders: HeadersInit = {
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
-
-    // Don't set Content-Type for FormData - browser will set it automatically
-    if (!(options?.body instanceof FormData)) {
-      defaultHeaders["Content-Type"] = "application/json";
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-
-          const retryHeaders: HeadersInit = {
-            ...(newToken && { Authorization: `Bearer ${newToken}` }),
-          };
-
-          if (!(options?.body instanceof FormData)) {
-            retryHeaders["Content-Type"] = "application/json";
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...retryHeaders,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error("Authentication failed. Please login again.");
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.detail ||
-          `API Error: ${response.status} ${response.statusText}`
-      );
-    }
-
-    return response.json();
-  }
-
   async getStories(
     projectId?: string,
     page: number = 1,
@@ -242,49 +175,51 @@ export class StoriesApiService {
 
     const queryString = params.toString();
     const endpoint = `/api/v1/stories${queryString ? `?${queryString}` : ""}`;
-
-    return this.makeRequest<StoriesResponse>(endpoint);
+    const response = await axiosInstance.get<StoriesResponse>(endpoint);
+    return response.data;
   }
 
   async getStory(id: string): Promise<Story> {
-    return this.makeRequest<Story>(`/api/v1/stories/${id}`);
+    const response = await axiosInstance.get<Story>(`/api/v1/stories/${id}`);
+    return response.data;
   }
 
   async createStory(storyData: CreateStoryRequest): Promise<Story> {
-    return this.makeRequest<Story>("/api/v1/stories/", {
-      method: "POST",
-      body: JSON.stringify(storyData),
-    });
+    const response = await axiosInstance.post<Story>(
+      "/api/v1/stories/",
+      storyData
+    );
+    return response.data;
   }
 
   async updateStory(
     id: string,
     storyData: Partial<CreateStoryRequest>
   ): Promise<Story> {
-    return this.makeRequest<Story>(`/api/v1/stories/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(storyData),
-    });
+    const response = await axiosInstance.put<Story>(
+      `/api/v1/stories/${id}`,
+      storyData
+    );
+    return response.data;
   }
 
   async deleteStory(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/stories/${id}`, {
-      method: "DELETE",
-    });
+    const response = await axiosInstance.delete<void>(`/api/v1/stories/${id}`);
+    return response.data;
   }
 
   async updateStoryStatus(id: string, status: string): Promise<Story> {
-    return this.makeRequest<Story>(`/api/v1/stories/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
+    const response = await axiosInstance.patch<Story>(`/api/v1/stories/${id}`, {
+      status,
     });
+    return response.data;
   }
 
   async updateStoryProgress(id: string, progress: number): Promise<Story> {
-    return this.makeRequest<Story>(`/api/v1/stories/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ progress }),
+    const response = await axiosInstance.patch<Story>(`/api/v1/stories/${id}`, {
+      progress,
     });
+    return response.data;
   }
 }
 

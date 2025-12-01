@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface Activity {
   id: string;
@@ -38,72 +38,27 @@ export interface GetActivitiesParams {
 }
 
 export class ActivityApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-
-    const defaultHeaders: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` })
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              ...(newToken && { Authorization: `Bearer ${newToken}` }),
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   async getActivities(
     projectId: string,
     params?: GetActivitiesParams
   ): Promise<ActivitiesResponse> {
     const queryParams = new URLSearchParams();
 
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
-    if (params?.activity_type) queryParams.append('activity_type', params.activity_type);
-    if (params?.entity_type) queryParams.append('entity_type', params.entity_type);
-    if (params?.user_id) queryParams.append('user_id', params.user_id);
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.per_page)
+      queryParams.append("per_page", params.per_page.toString());
+    if (params?.activity_type)
+      queryParams.append("activity_type", params.activity_type);
+    if (params?.entity_type)
+      queryParams.append("entity_type", params.entity_type);
+    if (params?.user_id) queryParams.append("user_id", params.user_id);
 
     const queryString = queryParams.toString();
-    const endpoint = `/api/v1/projects/${projectId}/activities${queryString ? `?${queryString}` : ''}`;
-
-    return this.makeRequest<ActivitiesResponse>(endpoint);
+    const endpoint = `/api/v1/projects/${projectId}/activities${
+      queryString ? `?${queryString}` : ""
+    }`;
+    const response = await axiosInstance.get<ActivitiesResponse>(endpoint);
+    return response.data;
   }
 }
 

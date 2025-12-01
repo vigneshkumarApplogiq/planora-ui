@@ -1,5 +1,5 @@
-import { authApiService } from './authApi';
-import { getApiUrl } from '../config/api';
+import { authApiService } from "./authApi";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export interface Deliverable {
   id?: string;
@@ -13,9 +13,16 @@ export interface Deliverable {
   milestone_name: string;
   story_id?: string;
   deliverable_type: string;
-  status: 'pending' | 'in-progress' | 'submitted' | 'under-review' | 'approved' | 'rejected' | 'completed';
+  status:
+    | "pending"
+    | "in-progress"
+    | "submitted"
+    | "under-review"
+    | "approved"
+    | "rejected"
+    | "completed";
   progress: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: "low" | "medium" | "high" | "critical";
   due_date: string;
   submission_date?: string;
   approval_date?: string;
@@ -43,9 +50,16 @@ export interface CreateDeliverableRequest {
   milestone_name: string;
   story_id?: string;
   deliverable_type: string;
-  status: 'pending' | 'in-progress' | 'submitted' | 'under-review' | 'approved' | 'rejected' | 'completed';
+  status:
+    | "pending"
+    | "in-progress"
+    | "submitted"
+    | "under-review"
+    | "approved"
+    | "rejected"
+    | "completed";
   progress: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: "low" | "medium" | "high" | "critical";
   due_date: string;
   submission_date?: string;
   approval_date?: string;
@@ -60,7 +74,8 @@ export interface CreateDeliverableRequest {
   notes?: string;
 }
 
-export interface UpdateDeliverableRequest extends Partial<CreateDeliverableRequest> {
+export interface UpdateDeliverableRequest
+  extends Partial<CreateDeliverableRequest> {
   id?: string;
 }
 
@@ -75,69 +90,6 @@ export interface DeliverablesResponse {
 }
 
 export class DeliverableApiService {
-  private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      throw new Error('Authentication required. Please login again.');
-    }
-
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${token}`
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            throw new Error('Failed to get new token after refresh');
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(retryErrorData.detail || `API Error after retry: ${retryResponse.status} ${retryResponse.statusText}`);
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `API Error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
   async getDeliverables(
     projectId?: string,
     phaseId?: string,
@@ -151,91 +103,128 @@ export class DeliverableApiService {
     });
 
     if (projectId) {
-      params.append('project_id', projectId);
+      params.append("project_id", projectId);
     }
 
     if (phaseId) {
-      params.append('phase_id', phaseId);
+      params.append("phase_id", phaseId);
     }
 
     if (milestoneId) {
-      params.append('milestone_id', milestoneId);
+      params.append("milestone_id", milestoneId);
     }
 
     const queryString = params.toString();
-    const endpoint = `/api/v1/deliverables${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/v1/deliverables${
+      queryString ? `?${queryString}` : ""
+    }`;
 
-    return this.makeRequest<DeliverablesResponse>(endpoint);
+    const response = await axiosInstance.get<DeliverablesResponse>(endpoint);
+    return response.data;
   }
 
   async getDeliverableById(id: string): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`);
+    const response = await axiosInstance.get<Deliverable>(
+      `/api/v1/deliverables/${id}`
+    );
+    return response.data;
   }
 
-  async createDeliverable(deliverableData: CreateDeliverableRequest): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>('/api/v1/deliverables/', {
-      method: 'POST',
-      body: JSON.stringify(deliverableData),
-    });
+  async createDeliverable(
+    deliverableData: CreateDeliverableRequest
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.post<Deliverable>(
+      "/api/v1/deliverables/",
+      deliverableData
+    );
+
+    return response.data;
   }
 
-  async updateDeliverable(id: string, deliverableData: UpdateDeliverableRequest): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(deliverableData),
-    });
+  async updateDeliverable(
+    id: string,
+    deliverableData: UpdateDeliverableRequest
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.put<Deliverable>(
+      `/api/v1/deliverables/${id}`,
+      deliverableData
+    );
+    return response.data;
   }
 
   async deleteDeliverable(id: string): Promise<void> {
-    return this.makeRequest<void>(`/api/v1/deliverables/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await axiosInstance.delete<void>(
+      `/api/v1/deliverables/${id}`
+    );
+    return response.data;
   }
 
-  async updateDeliverableStatus(id: string, status: string): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+  async updateDeliverableStatus(
+    id: string,
+    status: string
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.patch<Deliverable>(
+      `/api/v1/deliverables/${id}`,
+      { status }
+    );
+    return response.data;
   }
 
-  async updateDeliverableProgress(id: string, progress: number): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ progress }),
-    });
+  async updateDeliverableProgress(
+    id: string,
+    progress: number
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.patch<Deliverable>(
+      `/api/v1/deliverables/${id}`,
+      { progress }
+    );
+    return response.data;
   }
 
-  async submitDeliverable(id: string, submissionDate: string, filePath?: string): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        status: 'submitted',
+  async submitDeliverable(
+    id: string,
+    submissionDate: string,
+    filePath?: string
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.patch<Deliverable>(
+      `/api/v1/deliverables/${id}`,
+      {
+        status: "submitted",
         submission_date: submissionDate,
-        file_path: filePath
-      }),
-    });
+        file_path: filePath,
+      }
+    );
+    return response.data;
   }
 
-  async approveDeliverable(id: string, approvalDate: string, reviewComments?: string): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        status: 'approved',
+  async approveDeliverable(
+    id: string,
+    approvalDate: string,
+    reviewComments?: string
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.patch<Deliverable>(
+      `/api/v1/deliverables/${id}`,
+      {
+        status: "approved",
         approval_date: approvalDate,
-        review_comments: reviewComments
-      }),
-    });
+        review_comments: reviewComments,
+      }
+    );
+    return response.data;
   }
 
-  async rejectDeliverable(id: string, reviewComments: string): Promise<Deliverable> {
-    return this.makeRequest<Deliverable>(`/api/v1/deliverables/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        status: 'rejected',
-        review_comments: reviewComments
-      }),
-    });
+  async rejectDeliverable(
+    id: string,
+    reviewComments: string
+  ): Promise<Deliverable> {
+    const response = await axiosInstance.patch<Deliverable>(
+      `/api/v1/deliverables/${id}`,
+      {
+        status: "rejected",
+        review_comments: reviewComments,
+      }
+    );
+    return response.data;
   }
 }
 

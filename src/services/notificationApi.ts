@@ -1,82 +1,7 @@
 import { authApiService } from "./authApi";
-import { getApiUrl } from "../config/api";
+import axiosInstance, { getApiUrl } from "../config/api";
 
 export class NotificationApiService {
-  private async makeRequest<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<T> {
-    const url = getApiUrl(endpoint);
-
-    // Get the access token for authorization
-    const token = authApiService.getAccessToken();
-    const tokenType = authApiService.getTokenType();
-
-    if (!token) {
-      throw new Error("Authentication required. Please login again.");
-    }
-
-    const defaultHeaders = {
-      "Content-Type": "application/json",
-      Authorization: `${tokenType} ${token}`,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options?.headers,
-      },
-    });
-
-    if (!response.ok) {
-      // Handle unauthorized/forbidden errors
-      if (response.status === 401 || response.status === 403) {
-        try {
-          await authApiService.refreshToken();
-          // Retry the request with new token
-          const newToken = authApiService.getAccessToken();
-          const newTokenType = authApiService.getTokenType();
-
-          if (!newToken) {
-            throw new Error("Failed to get new token after refresh");
-          }
-
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              ...defaultHeaders,
-              Authorization: `${newTokenType} ${newToken}`,
-              ...options?.headers,
-            },
-          });
-
-          if (retryResponse.ok) {
-            return retryResponse.json();
-          }
-
-          const retryErrorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(
-            retryErrorData.detail ||
-              `API Error after retry: ${retryResponse.status} ${retryResponse.statusText}`
-          );
-        } catch (refreshError) {
-          authApiService.clearTokens();
-          authApiService.clearUserProfile();
-          throw new Error("Authentication failed. Please login again.");
-        }
-      }
-
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.detail ||
-          `API Error: ${response.status} ${response.statusText}`
-      );
-    }
-
-    return response.json();
-  }
-
   async getNotifications(params: { unread_only?: boolean } = {}): Promise<any> {
     const searchParams = new URLSearchParams();
     if (params.unread_only)
@@ -86,30 +11,32 @@ export class NotificationApiService {
     const endpoint = `/api/v1/notifications/${
       queryString ? `?${queryString}` : ""
     }`;
+    const response = await axiosInstance.get<any>(endpoint);
 
-    return this.makeRequest(endpoint);
+    return response.data;
   }
 
   async markNotificationAsRead(notificationId: string): Promise<any> {
     const endpoint = `/api/v1/notifications/${notificationId}/mark-read`;
-    return this.makeRequest(endpoint, { method: "POST" });
+    const response = await axiosInstance.post<any>(endpoint);
+    return response.data;
   }
   async markAllNotificationsAsRead(): Promise<any> {
     const endpoint = `/api/v1/notifications/mark-all-read`;
-    return this.makeRequest(endpoint, { method: "POST" });
+    const response = await axiosInstance.post<any>(endpoint);
+    return response?.data;
   }
 
   async getNotificationSettings(): Promise<any> {
     const endpoint = `/api/v1/notifications/settings/`;
-    return this.makeRequest(endpoint);
+    const response = await axiosInstance.get<any>(endpoint);
+    return response?.data;
   }
 
   async updateNotificationSettings(data: any): Promise<any> {
     const endpoint = `/api/v1/notifications/settings/`;
-    return this.makeRequest(endpoint, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+    const response = await axiosInstance.put<any>(endpoint, data);
+    return response?.data;
   }
 }
 

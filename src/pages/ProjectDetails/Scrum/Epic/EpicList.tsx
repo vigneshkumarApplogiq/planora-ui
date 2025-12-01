@@ -105,16 +105,17 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
     try {
       setLoadingMasters(true);
       const masters = await projectApiService.getProjectMasters();
+      console.log("masters: ", masters);
       setProjectMasters(masters);
 
       // Filter active statuses and priorities, sorted by sort_order
       const activeStatuses = masters.statuses
-        .filter((status) => status.is_active)
-        .sort((a, b) => a.sort_order - b.sort_order);
+        ?.filter((status) => status.is_active)
+        ?.sort((a, b) => a.sort_order - b.sort_order);
 
       const activePriorities = masters.priorities
-        .filter((priority) => priority.is_active)
-        .sort((a, b) => a.sort_order - b.sort_order);
+        ?.filter((priority) => priority.is_active)
+        ?.sort((a, b) => a.sort_order - b.sort_order);
 
       setAvailableStatuses(activeStatuses);
       setAvailablePriorities(activePriorities);
@@ -237,6 +238,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
         undefined,
         searchTerm
       );
+      console.log(response, "responseadasdsad");
       setEpics(response.items);
       setTotalItems(response.total);
       setCurrentPage(response.page);
@@ -320,10 +322,10 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
       {/* Header - Title and Create Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-bold text-foreground">
             Epic Management
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Manage project epics and track their progress
           </p>
         </div>
@@ -410,21 +412,21 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
 
         <div className="flex items-center space-x-4">
           {/* View Toggle */}
-          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center space-x-2 bg-muted rounded-lg p-1">
             <Button
-              variant={viewMode === "card" ? "default" : "ghost"}
+              variant={"ghost"}
               size="sm"
               onClick={() => setViewMode("card")}
-              className="h-8 px-3"
+              className="h-8 px-3 bg-muted-foreground"
             >
               <Grid3x3 className="w-4 h-4 mr-1" />
               Cards
             </Button>
             <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
+              variant={"ghost"}
               size="sm"
               onClick={() => setViewMode("table")}
-              className="h-8 px-3"
+              className="h-8 px-3 bg-muted-foreground"
             >
               <List className="w-4 h-4 mr-1" />
               Table
@@ -432,7 +434,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
           </div>
 
           {/* Results Count */}
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted">
             Showing {totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
             {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}{" "}
             epics
@@ -448,7 +450,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               <Target className="w-5 h-5 text-[#007BFF] mr-2" />
             </div>
             <div className="text-2xl font-semibold text-[#007BFF]">
-              {epics.filter((epic) => epic.status === "In Progress").length}
+              {epics?.filter((epic) => epic.status === "In Progress").length}
             </div>
             <div className="text-xs text-muted-foreground">Active Epics</div>
           </CardContent>
@@ -459,7 +461,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               <CheckCircle2 className="w-5 h-5 text-[#28A745] mr-2" />
             </div>
             <div className="text-2xl font-semibold text-[#28A745]">
-              {epics.filter((epic) => epic.status === "Completed").length}
+              {epics?.filter((epic) => epic.status === "Completed").length}
             </div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </CardContent>
@@ -471,10 +473,10 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
             </div>
             <div className="text-2xl font-semibold text-[#FFC107]">
               {Math.round(
-                epics.reduce(
+                epics?.reduce(
                   (sum, epic) => sum + (epic.completion_percentage || 0),
                   0
-                ) / Math.max(epics.length, 1)
+                ) / Math.max(epics?.length, 1)
               )}
               %
             </div>
@@ -488,10 +490,10 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
             </div>
             <div className="text-2xl font-semibold text-[#DC3545]">
               {
-                epics.filter(
+                epics?.filter(
                   (epic) =>
                     epic.priority === "High" || epic.priority === "Critical"
-                ).length
+                )?.length
               }
             </div>
             <div className="text-xs text-muted-foreground">High Priority</div>
@@ -506,31 +508,31 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#28A745] mb-4"></div>
             <p className="text-gray-500 dark:text-gray-400">Loading epics...</p>
           </div>
-        ) : epics.length > 0 ? (
+        ) : epics?.length > 0 ? (
           viewMode === "table" ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-6 py-4">
+                  <TableRow className="border-b border-gray-200 dark:border-gray-700 bg-muted">
+                    <TableHead className="font-semibold text-foreground px-6 py-4">
                       Title
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                    <TableHead className="font-semibold text-foreground px-4 py-4">
                       Status
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                    <TableHead className="font-semibold text-foreground px-4 py-4">
                       Priority
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                    <TableHead className="font-semibold text-foreground px-4 py-4">
                       Assignee
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                    <TableHead className="font-semibold text-foreground px-4 py-4">
                       Progress
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-4 py-4">
+                    <TableHead className="font-semibold text-foreground px-4 py-4">
                       Due Date
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-900 dark:text-gray-100 px-6 py-4 text-right">
+                    <TableHead className="font-semibold text-foreground px-6 py-4 text-right">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -544,10 +546,10 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                     >
                       <TableCell className="px-4 py-4">
                         <div className="space-y-1 max-w-xs">
-                          <div className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">
+                          <div className="font-medium text-foreground line-clamp-1">
                             {epic.title}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                          <div className="text-sm text-muted-foreground line-clamp-2">
                             {epic.description}
                           </div>
                         </div>
@@ -586,7 +588,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            <div className="text-sm font-medium text-foreground truncate">
                               {epic.assignee_name || "Unassigned"}
                             </div>
                           </div>
@@ -595,10 +597,10 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                       <TableCell className="px-4 py-4">
                         <div className="space-y-2 min-w-[120px]">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                            <span className="font-medium text-muted">
                               {epic.completion_percentage}%
                             </span>
-                            <span className="text-gray-500 dark:text-gray-400 text-xs">
+                            <span className="text-muted text-xs">
                               {epic.completed_story_points}/
                               {epic.total_story_points} SP
                             </span>
@@ -614,7 +616,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                         </div>
                       </TableCell>
                       <TableCell className="px-4 py-4">
-                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center space-x-2 text-sm text-muted">
                           <Calendar className="w-4 h-4" />
                           <span>{formatDate(epic.due_date)}</span>
                         </div>
@@ -672,11 +674,11 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
               </Table>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
-              {epics.map((epic) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-2">
+              {epics?.map((epic) => (
                 <Card
                   key={epic.id}
-                  className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 bg-white dark:bg-gray-800 cursor-pointer"
+                  className="group relative overflow-hidden hover:shadow-md transition-all duration-300 hover:scale-[1.02] border  cursor-pointer"
                   onClick={() => handleViewEpic(epic)}
                 >
                   {/* Status Indicator Bar */}
@@ -692,18 +694,18 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                     }`}
                   />
 
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <div className="space-y-5">
                       {/* Header with Action Buttons */}
                       <div className="flex items-start justify-between">
                         <div className="flex-1 pr-4">
                           <div className="flex items-center space-x-2 mb-2">
                             <Target className="w-5 h-5 text-indigo-500" />
-                            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight">
+                            <h3 className="font-bold text-muted text-lg leading-tight">
                               {epic.title}
                             </h3>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+                          <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
                             {epic.description}
                           </p>
                         </div>
@@ -734,11 +736,11 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                       </div>
 
                       {/* Status and Priority Badges */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between py-2">
                         <div className="flex items-center space-x-3">
                           <Badge
                             variant="outline"
-                            className={`px-3 py-1 font-semibold text-xs rounded-full shadow-sm ${
+                            className={`px-3 py-1 font-semibold text-xs rounded-full  ${
                               epic.status === "Completed"
                                 ? "bg-green-50 text-green-700 border-green-200"
                                 : epic.status === "In Progress"
@@ -753,7 +755,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                           </Badge>
                           <Badge
                             variant="outline"
-                            className={`px-3 py-1 font-semibold text-xs rounded-full shadow-sm ${
+                            className={`px-3 py-1 font-semibold text-xs rounded-full  ${
                               epic.priority === "Critical"
                                 ? "bg-red-50 text-red-700 border-red-200"
                                 : epic.priority === "High"
@@ -770,7 +772,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                       </div>
 
                       {/* Progress Section */}
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+                      <div className="bg-muted rounded-lg p-4  space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <Clock className="w-4 h-4 text-gray-500" />
@@ -778,7 +780,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                               Progress
                             </span>
                           </div>
-                          <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                          <span className="text-xl font-bold text-foreground">
                             {epic.completion_percentage}%
                           </span>
                         </div>
@@ -798,7 +800,7 @@ export function EpicList({ projectId, user, teamMembers = [] }: EpicListProps) {
                       </div>
 
                       {/* Bottom Info */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between pt-4 ">
                         {/* Assignee */}
                         <div className="flex items-center space-x-3">
                           <div className="relative">

@@ -78,18 +78,18 @@ export function ProjectSettings({
   const [permissions, setPermissions] = useState({
     publicProject: false,
     guestAccess: false,
-    timeTracking: true,
-    fileSharing: true,
-    taskCreation: true,
+    timeTracking: false,
+    fileSharing: false,
+    taskCreation: false,
   });
 
   const [notifications, setNotifications] = useState({
-    taskUpdates: true,
-    fileUploads: true,
-    comments: true,
-    mentions: true,
-    deadlines: true,
-    statusChanges: true,
+    taskUpdates: false,
+    fileUploads: false,
+    comments: false,
+    mentions: false,
+    deadlines: false,
+    statusChanges: false,
   });
 
   // Load master data (customers and project types) on mount
@@ -485,7 +485,7 @@ export function ProjectSettings({
                 <div>
                   <Label htmlFor="methodology">Methodology</Label>
                   <Select
-                    value={projectData.methodology}
+                    value={projectData.methodology?.toLowerCase()}
                     onValueChange={(value: string) =>
                       setProjectData({ ...projectData, methodology: value })
                     }
@@ -507,7 +507,7 @@ export function ProjectSettings({
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    value={projectData.status}
+                    value={projectData.status?.toLowerCase()}
                     onValueChange={(value: string) =>
                       setProjectData({ ...projectData, status: value })
                     }
@@ -528,7 +528,7 @@ export function ProjectSettings({
                 <div>
                   <Label htmlFor="priority">Priority</Label>
                   <Select
-                    value={projectData.priority}
+                    value={projectData.priority?.toLowerCase()}
                     onValueChange={(value: string) =>
                       setProjectData({ ...projectData, priority: value })
                     }
@@ -553,12 +553,13 @@ export function ProjectSettings({
                   <Input
                     id="start_date"
                     type="date"
-                    value={projectData.start_date}
-                    onChange={(e) =>
+                    value={projectData.start_date?.slice(0, 10)}
+                    onChange={(e) => {
                       setProjectData({
                         ...projectData,
                         start_date: e.target.value,
                       })
+                    }
                     }
                     className="mt-1"
                   />
@@ -569,7 +570,7 @@ export function ProjectSettings({
                   <Input
                     id="end_date"
                     type="date"
-                    value={projectData.end_date}
+                    value={projectData.end_date?.slice(0, 10)}
                     onChange={(e) =>
                       setProjectData({
                         ...projectData,

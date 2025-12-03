@@ -176,6 +176,23 @@ export interface MyProject {
 
 export type MyProjectsResponse = MyProject[];
 
+export interface notifications {
+  "task_updates": boolean;
+  "file_uploads": boolean;
+  "comments": boolean;
+  "mentions": boolean;
+  "deadlines": boolean;
+  "status_changes": boolean;
+}
+
+export interface permissions {
+  "public_project": boolean;
+  "guest_access": boolean;
+  "time_tracking": boolean;
+  "file_sharing": boolean;
+  "task_creation": boolean;
+}
+
 export interface CreateProjectRequest {
   name: string;
   description: string;
@@ -193,6 +210,8 @@ export interface CreateProjectRequest {
   project_type: string;
   color?: string;
   prefix?: string;
+  notifications: notifications;
+  permissions: permissions;
 }
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {

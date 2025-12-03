@@ -570,6 +570,21 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         project_type: values.type,
         color: "#007BFF", // Default project color
         prefix: values.prefix,
+        permissions: {
+          public_project: false,
+          guest_access: false,
+          time_tracking: true,
+          file_sharing: true,
+          task_creation: true
+        },
+        notifications: {
+          task_updates: true,
+          file_uploads: true,
+          comments: true,
+          mentions: true,
+          deadlines: true,
+          status_changes: true
+        }
       };
 
       await dispatch(createProject(projectData)).unwrap();
@@ -587,7 +602,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
         priority:
           availablePriorities.length > 0
             ? availablePriorities.find((p) => p.value === "Medium")?.value ||
-              availablePriorities[0].value
+            availablePriorities[0].value
             : "",
         methodology: "",
         type: "",
@@ -706,15 +721,15 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
             {isAdmin
               ? "All Projects"
               : isProjectManager
-              ? "Managed Projects"
-              : "My Projects"}
+                ? "Managed Projects"
+                : "My Projects"}
           </h1>
           <p className="text-muted-foreground">
             {isAdmin
               ? "End-to-end project lifecycle management with Agile, Waterfall & Hybrid workflows"
               : isProjectManager
-              ? "Projects under your management and team collaboration"
-              : "Your assigned projects and contributions"}
+                ? "Projects under your management and team collaboration"
+                : "Your assigned projects and contributions"}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -1333,8 +1348,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       className={cn(
                         "mt-1",
                         formik.touched.name &&
-                          formik.errors.name &&
-                          "border-red-500"
+                        formik.errors.name &&
+                        "border-red-500"
                       )}
                     />
                     {formik.touched.name && formik.errors.name && (
@@ -1371,8 +1386,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         className={cn(
                           "mt-1",
                           formik.touched.customer &&
-                            formik.errors.customer &&
-                            "border-red-500"
+                          formik.errors.customer &&
+                          "border-red-500"
                         )}
                       >
                         <SelectValue
@@ -1458,8 +1473,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                       className={cn(
                         "mt-1",
                         formik.touched.prefix &&
-                          formik.errors.prefix &&
-                          "border-red-500"
+                        formik.errors.prefix &&
+                        "border-red-500"
                       )}
                     />
                     {formik.touched.prefix && formik.errors.prefix && (
@@ -1484,8 +1499,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         className={cn(
                           "mt-1",
                           formik.touched.status &&
-                            formik.errors.status &&
-                            "border-red-500"
+                          formik.errors.status &&
+                          "border-red-500"
                         )}
                       >
                         <SelectValue placeholder="Select status" />
@@ -1495,9 +1510,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           <SelectItem key={status.value} value={status.value}>
                             <div className="flex items-center space-x-2">
                               <div
-                                className={`w-2 h-2 rounded-full ${
-                                  status.color.split(" ")[0]
-                                }`}
+                                className={`w-2 h-2 rounded-full ${status.color.split(" ")[0]
+                                  }`}
                               />
                               <span>{status.value}</span>
                             </div>
@@ -1525,8 +1539,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         className={cn(
                           "mt-1",
                           formik.touched.priority &&
-                            formik.errors.priority &&
-                            "border-red-500"
+                          formik.errors.priority &&
+                          "border-red-500"
                         )}
                       >
                         <SelectValue placeholder="Select priority" />
@@ -1539,9 +1553,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                           >
                             <div className="flex items-center space-x-2">
                               <div
-                                className={`w-2 h-2 rounded-full ${
-                                  priority.color.split(" ")[0]
-                                }`}
+                                className={`w-2 h-2 rounded-full ${priority.color.split(" ")[0]
+                                  }`}
                               />
                               <span>{priority.value}</span>
                             </div>
@@ -1569,8 +1582,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         className={cn(
                           "mt-1",
                           formik.touched.methodology &&
-                            formik.errors.methodology &&
-                            "border-red-500"
+                          formik.errors.methodology &&
+                          "border-red-500"
                         )}
                       >
                         <SelectValue placeholder="Select methodology" />
@@ -1604,8 +1617,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         className={cn(
                           "mt-1",
                           formik.touched.type &&
-                            formik.errors.type &&
-                            "border-red-500"
+                          formik.errors.type &&
+                          "border-red-500"
                         )}
                       >
                         <SelectValue placeholder="Select project type" />
@@ -1638,8 +1651,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         className={cn(
                           "mt-1",
                           formik.touched.owner &&
-                            formik.errors.owner &&
-                            "border-red-500"
+                          formik.errors.owner &&
+                          "border-red-500"
                         )}
                       >
                         <SelectValue placeholder="Select project owner" />
@@ -1870,8 +1883,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                               "w-full justify-start text-left font-normal mt-1",
                               !newProject.startDate && "text-muted-foreground",
                               formik.touched.startDate &&
-                                formik.errors.startDate &&
-                                "border-red-500"
+                              formik.errors.startDate &&
+                              "border-red-500"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1915,8 +1928,8 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                               "w-full justify-start text-left font-normal mt-1",
                               !newProject.dueDate && "text-muted-foreground",
                               formik.touched.dueDate &&
-                                formik.errors.dueDate &&
-                                "border-red-500"
+                              formik.errors.dueDate &&
+                              "border-red-500"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1956,7 +1969,7 @@ export function Projects({ onProjectSelect, user }: ProjectsProps) {
                         {Math.ceil(
                           (newProject.dueDate.getTime() -
                             newProject.startDate.getTime()) /
-                            (1000 * 3600 * 24)
+                          (1000 * 3600 * 24)
                         )}{" "}
                         days
                       </p>
